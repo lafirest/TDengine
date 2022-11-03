@@ -199,7 +199,7 @@ static SRBTreeNode *tRBTreePredecessor(SRBTree *pTree, SRBTreeNode *pNode) {
   return pNode;
 }
 
-void tRBTreeCreate(SRBTree *pTree, tRBTreeCmprFn cmprFn) {
+void tRBTreeInit(SRBTree *pTree, tRBTreeCmprFn cmprFn) {
   pTree->cmprFn = cmprFn;
   pTree->n = 0;
   pTree->NIL = &pTree->NILNODE;

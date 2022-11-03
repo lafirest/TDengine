@@ -153,8 +153,8 @@ static SBlockData *loadLastBlock(SLDataIter *pIter, const char *idStr) {
 
   tsdbDebug("read last block, total load:%d, trigger by uid:%" PRIu64
             ", last file index:%d, last block index:%d, entry:%d, rows:%d, %p, elapsed time:%.2f ms, %s",
-            pInfo->loadBlocks, pIter->uid, pIter->iStt, pIter->iSttBlk, pInfo->currentLoadBlockIndex, pBlock->nRow, pBlock, el,
-            idStr);
+            pInfo->loadBlocks, pIter->uid, pIter->iStt, pIter->iSttBlk, pInfo->currentLoadBlockIndex, pBlock->nRow,
+            pBlock, el, idStr);
 
   pInfo->blockIndex[pInfo->currentLoadBlockIndex] = pIter->iSttBlk;
   tsdbDebug("last block index list:%d, %d, %s", pInfo->blockIndex[0], pInfo->blockIndex[1], idStr);
@@ -551,10 +551,10 @@ int32_t tMergeTreeOpen(SMergeTree *pMTree, int8_t backward, SDataFReader *pFRead
   }
 
   pMTree->idStr = idStr;
-  if (!pMTree->backward) { // asc
-    tRBTreeCreate(&pMTree->rbt, tLDataIterCmprFn);
-  } else { // desc
-    tRBTreeCreate(&pMTree->rbt, tLDataIterDescCmprFn);
+  if (!pMTree->backward) {  // asc
+    tRBTreeInit(&pMTree->rbt, tLDataIterCmprFn);
+  } else {  // desc
+    tRBTreeInit(&pMTree->rbt, tLDataIterDescCmprFn);
   }
   int32_t code = TSDB_CODE_SUCCESS;
 

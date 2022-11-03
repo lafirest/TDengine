@@ -106,7 +106,7 @@ struct STsdbFileGroup {
   STsdbFileObj *fHead;
   STsdbFileObj *fData;
   STsdbFileObj *fSma;
-  SArray       *aFStt;
+  SArray       *aFStt;  // SArray<STsdbFileObj *>
 };
 
 // STsdbFileSystem ======================================================

@@ -522,9 +522,9 @@ typedef struct {
 
 typedef struct {
   STsdb     *pTsdb;
-  SRBTree    mergeTree;
-  SBlockData bData;
   SArray    *aFileOpP;
+  SRBTree    mTree;
+  SBlockData bData;
 } STsdbMerger;
 
 // SSttDataIter
@@ -536,7 +536,7 @@ _exit:
   return code;
 }
 
-static int32_t tsdbSttDataIterCreate(STsdbFile *pFile, SSttDataIter **ppIter) {
+static int32_t tsdbSttDataIterCreate(const STsdbFile *pFile, SSttDataIter **ppIter) {
   int32_t code = 0;
   int32_t lino = 0;
 
@@ -602,18 +602,39 @@ static int32_t tsdbMergerOpen(STsdb *pTsdb, STsdbMerger **ppMerger) {
   }
 
   pMerger->pTsdb = pTsdb;
-  // todo
+  pMerger->aFileOpP = taosArrayInit(0, sizeof(STsdbFileOp *));
+  if (NULL == pMerger->aFileOpP) {
+    code = TSDB_CODE_OUT_OF_MEMORY;
+    TSDB_CHECK_CODE(code, lino, _exit);
+  }
+
+  code = tBlockDataCreate(&pMerger->bData);
+  TSDB_CHECK_CODE(code, lino, _exit);
+
 _exit:
   if (code) {
     tsdbError("vgId:%d %s failed at line %d since %s", TD_VID(pTsdb->pVnode), __func__, lino, tstrerror(code));
     *ppMerger = NULL;
+
+    if (pMerger) {
+      tBlockDataDestroy(&pMerger->bData, 1);
+      if (pMerger->aFileOpP) {
+        pMerger->aFileOpP = taosArrayDestroy(pMerger->aFileOpP);
+      }
+      taosMemoryFree(pMerger);
+    }
   } else {
+    *ppMerger = pMerger;
   }
   return code;
 }
 
 static void tsdbMergerClose(STsdbMerger *pMerger) {
   if (pMerger) {
+    tBlockDataDestroy(&pMerger->bData, 1);
+    if (pMerger->aFileOpP) {
+      taosArrayDestroyEx(pMerger->aFileOpP, (FDelete)tsdbFileOpDestroy);
+    }
     taosMemoryFree(pMerger);
   }
 }
@@ -623,12 +644,56 @@ static int32_t tsdbMergeFileGroup(STsdbMerger *pMerger, STsdbFileGroup *pFg) {
   int32_t lino = 0;
 
   STsdb *pTsdb = pMerger->pTsdb;
-  // TODO
+
+  // add operations (todo)
+  STsdbFileOp *pOp = NULL;
+  STsdbFile    file = {
+         .ftype = TSDB_FTYPE_STT,
+         .did = {0},  // todo
+         .fid = pFg->fid,
+         .id = tsdbNextFileID(pTsdb),
+  };
+
+  code = tsdbFileOpCreate(TSDB_FOP_ADD, &file, &pOp);
+  TSDB_CHECK_CODE(code, lino, _exit);
+
+  if (NULL == taosArrayPush(pMerger->aFileOpP, &pOp)) {
+    code = TSDB_CODE_OUT_OF_MEMORY;
+    tsdbFileOpDestroy(&pOp);
+    TSDB_CHECK_CODE(code, lino, _exit);
+  }
+
+  for (int32_t iStt = 0; iStt < taosArrayGetSize(pFg->aFStt); iStt++) {
+    STsdbFileObj *pSttFileObj = (STsdbFileObj *)taosArrayGetP(pFg->aFStt, iStt);
+
+    code = tsdbFileOpCreate(TSDB_FOP_REMOVE, &pSttFileObj->file, &pOp);
+    TSDB_CHECK_CODE(code, lino, _exit);
+
+    if (NULL == taosArrayPush(pMerger->aFileOpP, &pOp)) {
+      tsdbFileOpDestroy(&pOp);
+      code = TSDB_CODE_OUT_OF_MEMORY;
+      TSDB_CHECK_CODE(code, lino, _exit);
+    }
+
+    SSttDataIter *pIter = NULL;
+    code = tsdbSttDataIterCreate(&pSttFileObj->file, &pIter);
+    TSDB_CHECK_CODE(code, lino, _exit);
+
+    SRBTreeNode *pTNode = tRBTreePut(&pMerger->mTree, &pIter->rbtn);
+    ASSERT(pTNode);
+  }
+
+  // loop to commit
+  while (true) {
+    /* code */
+  }
+
 _exit:
   if (code) {
-    tsdbError("vgId:%d %s failed at line %d since %s", TD_VID(pTsdb->pVnode), __func__, lino, tstrerror(code));
+    tsdbError("vgId:%d %s failed at line %d since %s, fid:%d", TD_VID(pTsdb->pVnode), __func__, lino, tstrerror(code),
+              pFg->fid);
   } else {
-    tsdbDebug("vgId:%d %s done", TD_VID(pTsdb->pVnode), __func__);
+    tsdbDebug("vgId:%d %s done, fid:%d", TD_VID(pTsdb->pVnode), __func__, pFg->fid);
   }
   return code;
 }

@@ -100,7 +100,7 @@ int tdbPagerOpen(SPCache *pCache, const char *fileName, SPager **ppPager) {
   ret = tdbGetFileSize(pPager->fd, pPager->pageSize, &(pPager->dbOrigSize));
   pPager->dbFileSize = pPager->dbOrigSize;
 
-  tRBTreeCreate(&pPager->rbt, pageCmpFn);
+  tRBTreeInit(&pPager->rbt, pageCmpFn);
 
   *ppPager = pPager;
   return 0;
@@ -278,7 +278,7 @@ int tdbPagerCommit(SPager *pPager, TXN *pTxn) {
     tdbPCacheRelease(pPager->pCache, pPage, pTxn);
   }
 
-  tRBTreeCreate(&pPager->rbt, pageCmpFn);
+  tRBTreeInit(&pPager->rbt, pageCmpFn);
 
   // sync the db file
   if (tdbOsFSync(pPager->fd) < 0) {
@@ -374,7 +374,7 @@ int tdbPagerAbort(SPager *pPager, TXN *pTxn) {
     tdbPCacheRelease(pPager->pCache, pPage, pTxn);
   }
 
-  tRBTreeCreate(&pPager->rbt, pageCmpFn);
+  tRBTreeInit(&pPager->rbt, pageCmpFn);
 
   // 4, remove the journal file
   tdbOsClose(pPager->jfd);

@@ -86,7 +86,7 @@ static int32_t tsdbSnapReadOpenFile(STsdbSnapReader* pReader) {
   if (code) goto _err;
 
   pReader->pIter = NULL;
-  tRBTreeCreate(&pReader->rbt, tFDataIterCmprFn);
+  tRBTreeInit(&pReader->rbt, tFDataIterCmprFn);
 
   // .data file
   SFDataIter* pIter = &pReader->aFDataIter[0];

@@ -408,7 +408,7 @@ static int32_t tsdbOpenCommitIter(SCommitter *pCommitter) {
   int32_t lino = 0;
 
   pCommitter->pIter = NULL;
-  tRBTreeCreate(&pCommitter->rbt, tDataIterCmprFn);
+  tRBTreeInit(&pCommitter->rbt, tDataIterCmprFn);
 
   // memory
   TSDBKEY    tKey = {.ts = pCommitter->minKey, .version = VERSION_MIN};
