@@ -24,7 +24,6 @@ typedef struct STsdbFileOp     STsdbFileOp;
 typedef struct STsdbFileWriter STsdbFileWriter;
 typedef struct STsdbFileReader STsdbFileReader;
 typedef struct STsdbFileObj    STsdbFileObj;
-typedef struct STsdbFileArray  STsdbFileArray;
 typedef struct STsdbFileGroup  STsdbFileGroup;
 typedef struct STsdbFileSystem STsdbFileSystem;
 
@@ -82,22 +81,21 @@ int32_t tsdbFileWriterOpen(STsdb *pTsdb, STsdbFile *pFile, STsdbFileWriter **ppW
 int32_t tsdbFileWriterClose(STsdbFileWriter **ppWriter, int8_t flush);
 int32_t tsdbFileAppend(STsdbFileWriter *pWriter, const uint8_t *pBuf, int64_t size);
 
-// STsdbFileObj ======================================================
-struct STsdbFileObj {
-  volatile int32_t nRef;
-  STsdbFile        file;
-};
-
 // STsdbFileReader ======================================================
 struct STsdbFileReader {
+  STsdb    *pTsdb;
   STsdbFile file;
   TSDBFILE *pFILE;
 };
 
-// STsdbFileArray ======================================================
-struct STsdbFileArray {
-  int32_t level;
-  SArray *aFileObj;
+int32_t tsdbFileReaderOpen(STsdb *pTsdb, const STsdbFile *pFile, STsdbFileReader **ppReader);
+void    tsdbFileReaderClose(STsdbFileReader *pReader);
+int32_t tsdbFileRead(STsdbFileReader *pReader, int64_t loffset, uint8_t *pBuf, int64_t size);
+
+// STsdbFileObj ======================================================
+struct STsdbFileObj {
+  volatile int32_t nRef;
+  STsdbFile        file;
 };
 
 // STsdbFileGroup ======================================================

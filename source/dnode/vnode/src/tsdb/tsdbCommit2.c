@@ -25,6 +25,10 @@ static int32_t tsdbWriteBlockDataEx(STsdbFileWriter *pWriter, SBlockData *pBlock
   code = tCmprBlockData(pBlockData, cmprAlg, NULL, NULL, aBuf, aNBuf);
   TSDB_CHECK_CODE(code, lino, _exit);
 
+  pBlockInfo->offset = pWriter->pf->size;
+  pBlockInfo->szKey = aNBuf[2] + aNBuf[3];
+  pBlockInfo->szBlock = aNBuf[0] + aNBuf[1] + aNBuf[2] + aNBuf[3];
+
   for (int32_t iBuf = 3; iBuf >= 0; iBuf--) {
     if (aNBuf[iBuf]) {
       code = tsdbFileAppend(pWriter, aBuf[iBuf], aNBuf[iBuf]);
@@ -36,6 +40,30 @@ _exit:
   if (code) {
     tsdbError("vgId:%d %s failed at line %d since %s", TD_VID(pWriter->pTsdb->pVnode), __func__, lino, tstrerror(code));
   } else {
+  }
+  for (int32_t iBuf = 0; iBuf < sizeof(aBuf) / sizeof(aBuf[0]); iBuf++) {
+    tFree(aBuf[iBuf]);
+  }
+  return code;
+}
+
+static int32_t tsdbReadBlockDataEx(STsdbFileReader *pReader, SBlockInfo *pBlockInfo, SBlockData *pBlockData) {
+  int32_t code = 0;
+  int32_t lino = 0;
+
+  uint8_t *aBuf[2] = {NULL};
+  code = tRealloc(&aBuf[0], pBlockInfo->szBlock);
+  TSDB_CHECK_CODE(code, lino, _exit);
+
+  code = tsdbFileRead(pReader, pBlockInfo->offset, aBuf[0], pBlockInfo->szBlock);
+  TSDB_CHECK_CODE(code, lino, _exit);
+
+  code = tDecmprBlockData(aBuf[0], pBlockInfo->szBlock, pBlockData, &aBuf[1]);
+  TSDB_CHECK_CODE(code, lino, _exit);
+
+_exit:
+  if (code) {
+    tsdbError("vgId:%d %s failed at line %d since %s", TD_VID(pReader->pTsdb->pVnode), __func__, lino, tstrerror(code));
   }
   for (int32_t iBuf = 0; iBuf < sizeof(aBuf) / sizeof(aBuf[0]); iBuf++) {
     tFree(aBuf[iBuf]);
@@ -83,6 +111,44 @@ _exit:
   return code;
 }
 
+static int32_t tsdbReadSttBlkEx(STsdbFileReader *pReader, SArray *aSttBlk) {
+  int32_t code = 0;
+  int32_t lino = 0;
+
+  ASSERT(TSDB_FTYPE_STT == pReader->file.ftype);
+  taosArrayClear(aSttBlk);
+
+  int64_t size = pReader->file.size - pReader->file.offset;
+
+  if (0 == size) return code;
+
+  uint8_t *pBuf = NULL;
+
+  code = tRealloc(&pBuf, size);
+  TSDB_CHECK_CODE(code, lino, _exit);
+
+  code = tsdbFileRead(pReader, pReader->file.offset, pBuf, size);
+  TSDB_CHECK_CODE(code, lino, _exit);
+
+  int64_t n = 0;
+  while (n < size) {
+    SSttBlk *pSttBlk = taosArrayPush(aSttBlk, &(SSttBlk){0});
+    if (NULL == pSttBlk) {
+      code = TSDB_CODE_OUT_OF_MEMORY;
+      TSDB_CHECK_CODE(code, lino, _exit);
+    }
+    n += tGetSttBlk(pBuf + n, pSttBlk);
+  }
+
+  ASSERT(n == size);
+
+_exit:
+  if (code) {
+    tsdbError("vgId:%d %s failed at line %d since %s", TD_VID(pReader->pTsdb->pVnode), __func__, lino, tstrerror(code));
+  }
+  tFree(pBuf);
+  return code;
+}
 // FLUSH MEMTABLE TO FILE SYSTEM ===================================
 typedef struct {
   // configs
@@ -512,32 +578,64 @@ _exit:
 
 // MERGE MULTIPLE STT ===================================
 typedef struct {
+  SRowInfo        *pRInfo;
   SRowInfo         rInfo;
   SArray          *aSttBlk;
   int32_t          iSttBlk;
+  int32_t          iRow;
   SBlockData       bData;
-  SRBTreeNode      rbtn;
   STsdbFileReader *pReader;
+  SRBTreeNode      rbtn;
 } SSttDataIter;
 
+#define RBTN_TO_STT_DATA_ITER(PNODE) ((SSttDataIter *)(((uint8_t *)(PNODE)) - offsetof(SSttDataIter, rbtn)))
+
 typedef struct {
-  STsdb     *pTsdb;
-  SArray    *aFileOpP;
-  SArray    *aSttIterP;  // SArray<SSttDataIter *>
-  SRBTree    mTree;
-  SBlockData bData;
+  STsdb        *pTsdb;
+  SArray       *aFileOpP;
+  SArray       *aSttIterP;  // SArray<SSttDataIter *>
+  SRBTree       mTree;
+  SSttDataIter *pIter;
+  SBlockData    bData;
 } STsdbMerger;
 
 // SSttDataIter
 static int32_t tsdbSttDataIterNext(SSttDataIter *pIter) {
   int32_t code = 0;
   int32_t lino = 0;
-  // TODO
+
+  if (pIter->iRow >= pIter->bData.nRow) {
+    pIter->iSttBlk++;
+
+    if (pIter->iSttBlk < taosArrayGetSize(pIter->aSttBlk)) {
+      SSttBlk *pSttBlk = (SSttBlk *)taosArrayGet(pIter->aSttBlk, pIter->iSttBlk);
+
+      code = tsdbReadBlockDataEx(pIter->pReader, &pSttBlk->bInfo, &pIter->bData);
+      TSDB_CHECK_CODE(code, lino, _exit);
+
+      pIter->iRow = 0;
+    } else {
+      pIter->pRInfo = NULL;
+      goto _exit;
+    }
+  }
+
+  ASSERT(pIter->iRow < pIter->bData.nRow);
+
+  pIter->rInfo.suid = pIter->bData.suid;
+  pIter->rInfo.uid = pIter->bData.uid ? pIter->bData.uid : pIter->bData.aUid[pIter->iRow];
+  pIter->rInfo.row = tsdbRowFromBlockData(&pIter->bData, pIter->iRow);
+  pIter->iRow++;
+
 _exit:
+  if (code) {
+    tsdbError("vgId:%d %s failed at line %d since %s", TD_VID(pIter->pReader->pTsdb->pVnode), __func__, lino,
+              tstrerror(code));
+  }
   return code;
 }
 
-static int32_t tsdbSttDataIterCreate(const STsdbFile *pFile, SSttDataIter **ppIter) {
+static int32_t tsdbSttDataIterCreate(STsdb *pTsdb, const STsdbFile *pFile, SSttDataIter **ppIter) {
   int32_t code = 0;
   int32_t lino = 0;
 
@@ -556,6 +654,15 @@ static int32_t tsdbSttDataIterCreate(const STsdbFile *pFile, SSttDataIter **ppIt
   code = tBlockDataCreate(&pIter->bData);
   TSDB_CHECK_CODE(code, lino, _exit);
 
+  code = tsdbFileReaderOpen(pTsdb, pFile, &pIter->pReader);
+  TSDB_CHECK_CODE(code, lino, _exit);
+
+  code = tsdbReadSttBlkEx(pIter->pReader, pIter->aSttBlk);
+  TSDB_CHECK_CODE(code, lino, _exit);
+
+  pIter->pRInfo = &pIter->rInfo;
+  pIter->iSttBlk = -1;
+  pIter->iRow = 0;
   code = tsdbSttDataIterNext(pIter);
   TSDB_CHECK_CODE(code, lino, _exit);
 
@@ -567,6 +674,10 @@ _exit:
     if (pIter) {
       if (pIter->aSttBlk) {
         taosArrayDestroy(pIter->aSttBlk);
+      }
+      tBlockDataDestroy(&pIter->bData, 1);
+      if (pIter->pReader) {
+        tsdbFileReaderClose(pIter->pReader);
       }
       taosMemoryFree(pIter);
     }
@@ -586,9 +697,30 @@ static void tsdbSttDataIterDestroy(SSttDataIter *pIter) {
   }
 }
 
-static SRowInfo *tsdbSttDataIterGet(SSttDataIter *pIter) {
-  // todo
-  return NULL;
+static SRowInfo *tsdbSttDataIterGet(SSttDataIter *pIter) { return pIter->pRInfo; }
+
+static int32_t tsdbSttDataIterCmprFn(const SRBTreeNode *p1, const SRBTreeNode *p2) {
+  SSttDataIter *pIter1 = RBTN_TO_STT_DATA_ITER(p1);
+  SSttDataIter *pIter2 = RBTN_TO_STT_DATA_ITER(p2);
+
+  ASSERT(pIter1->pRInfo && pIter2->pRInfo);
+
+  if (pIter1->pRInfo->suid < pIter2->pRInfo->suid) {
+    return -1;
+  } else if (pIter1->pRInfo->suid > pIter2->pRInfo->suid) {
+    return 1;
+  }
+
+  if (pIter1->pRInfo->uid < pIter2->pRInfo->uid) {
+    return -1;
+  } else if (pIter1->pRInfo->uid > pIter2->pRInfo->uid) {
+    return 1;
+  }
+
+  TSDBKEY key1 = TSDBROW_KEY(&pIter1->pRInfo->row);
+  TSDBKEY key2 = TSDBROW_KEY(&pIter2->pRInfo->row);
+
+  return tsdbKeyCmprFn(&key1, &key2);
 }
 
 // STsdbMerger
@@ -610,7 +742,7 @@ static int32_t tsdbMergerOpen(STsdb *pTsdb, STsdbMerger **ppMerger) {
   }
 
   pMerger->aSttIterP = taosArrayInit(0, sizeof(SSttDataIter *));
-  if (pMerger->aSttIterP) {
+  if (NULL == pMerger->aSttIterP) {
     code = TSDB_CODE_OUT_OF_MEMORY;
     TSDB_CHECK_CODE(code, lino, _exit);
   }
@@ -653,15 +785,49 @@ static void tsdbMergerClose(STsdbMerger *pMerger) {
 }
 
 static SRowInfo *tsdbGetMergeRow(STsdbMerger *pMerger) {
-  // todo
-  return NULL;
+  if (NULL == pMerger->pIter) {
+    SRBTreeNode *pNode = tRBTreeMin(&pMerger->mTree);
+
+    if (pNode) {
+      tRBTreeDrop(&pMerger->mTree, pNode);
+      pMerger->pIter = RBTN_TO_STT_DATA_ITER(pNode);
+    }
+  }
+
+  return pMerger->pIter ? tsdbSttDataIterGet(pMerger->pIter) : NULL;
 }
 
 static int32_t tsdbNextMergeRow(STsdbMerger *pMerger) {
   int32_t code = 0;
   int32_t lino = 0;
-  // TODO
+
+  if (NULL == pMerger->pIter) goto _exit;
+
+  code = tsdbSttDataIterNext(pMerger->pIter);
+  TSDB_CHECK_CODE(code, lino, _exit);
+
+  if (NULL == pMerger->pIter->pRInfo) {
+    pMerger->pIter = NULL;
+    goto _exit;
+  }
+
+  SRBTreeNode *pNode = tRBTreeMin(&pMerger->mTree);
+  if (NULL == pNode) {
+    goto _exit;
+  }
+
+  SSttDataIter *pIter = RBTN_TO_STT_DATA_ITER(pNode);
+  int32_t       c = tsdbSttDataIterCmprFn(&pMerger->pIter->rbtn, &pIter->rbtn);
+  ASSERT(c);
+  if (c > 0) {
+    tRBTreePut(&pMerger->mTree, &pMerger->pIter->rbtn);
+    pMerger->pIter = NULL;
+  }
+
 _exit:
+  if (code) {
+    tsdbError("%s failed at line %d since %s", __func__, lino, tstrerror(code));
+  }
   return code;
 }
 
@@ -673,6 +839,7 @@ static int32_t tsdbMergeFileGroup(STsdbMerger *pMerger, STsdbFileGroup *pFg) {
 
   // prepare
   ASSERT(taosArrayGetSize(pMerger->aSttIterP) == 0);
+  tRBTreeInit(&pMerger->mTree, tsdbSttDataIterCmprFn);
   for (int32_t iStt = 0; iStt < taosArrayGetSize(pFg->aFStt); iStt++) {
     STsdbFileObj *pSttFileObj = (STsdbFileObj *)taosArrayGetP(pFg->aFStt, iStt);
 
@@ -695,7 +862,7 @@ static int32_t tsdbMergeFileGroup(STsdbMerger *pMerger, STsdbFileGroup *pFg) {
       TSDB_CHECK_CODE(code, lino, _exit);
     }
 
-    code = tsdbSttDataIterCreate(&pSttFileObj->file, ppIter);
+    code = tsdbSttDataIterCreate(pTsdb, &pSttFileObj->file, ppIter);
     TSDB_CHECK_CODE(code, lino, _exit);
 
     SRBTreeNode *pTNode = tRBTreePut(&pMerger->mTree, &(*ppIter)->rbtn);
@@ -719,22 +886,25 @@ static int32_t tsdbMergeFileGroup(STsdbMerger *pMerger, STsdbFileGroup *pFg) {
   // }
 
   // loop to commit
+  int32_t nRow = 0;
   while (true) {
     SRowInfo *pRowInfo = tsdbGetMergeRow(pMerger);
     if (NULL == (pRowInfo)) {
       break;
     }
 
-    code = tBlockDataAppendRow(&pMerger->bData, &pRowInfo->row, NULL, pRowInfo->uid);
-    TSDB_CHECK_CODE(code, lino, _exit);
+    nRow++;
+
+    // code = tBlockDataAppendRow(&pMerger->bData, &pRowInfo->row, NULL, pRowInfo->uid);
+    // TSDB_CHECK_CODE(code, lino, _exit);
 
     code = tsdbNextMergeRow(pMerger);
     TSDB_CHECK_CODE(code, lino, _exit);
 
-    if (pMerger->bData.nRow >= pTsdb->pVnode->config.tsdbCfg.maxRows) {
-      // code = tsdbFlushBlockData();
-      TSDB_CHECK_CODE(code, lino, _exit);
-    }
+    // if (pMerger->bData.nRow >= pTsdb->pVnode->config.tsdbCfg.maxRows) {
+    //   // code = tsdbFlushBlockData();
+    //   TSDB_CHECK_CODE(code, lino, _exit);
+    // }
   }
 
   if (pMerger->bData.nRow) {

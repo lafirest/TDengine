@@ -575,6 +575,73 @@ _exit:
   return code;
 }
 
+// STsdbFileReader ======================================================
+int32_t tsdbFileReaderOpen(STsdb *pTsdb, const STsdbFile *pFile, STsdbFileReader **ppReader) {
+  int32_t code = 0;
+  int32_t lino = 0;
+
+  char fName[TSDB_FILENAME_LEN] = {0};
+  tsdbFileName(pTsdb, pFile, fName);
+
+  STsdbFileReader *pReader = (STsdbFileReader *)taosMemoryCalloc(1, sizeof(*pReader));
+  if (NULL == pReader) {
+    code = TSDB_CODE_OUT_OF_MEMORY;
+    TSDB_CHECK_CODE(code, lino, _exit);
+  }
+
+  pReader->pTsdb = pTsdb;
+  code = tsdbFOpen(fName, pTsdb->pVnode->config.tsdbPageSize, TD_FILE_READ, &pReader->pFILE);
+  TSDB_CHECK_CODE(code, lino, _exit);
+  pReader->file = *pFile;
+
+// TODO
+_exit:
+  if (code) {
+    tsdbError("vgId:%d %s failed at line %d since %s, fName:%s", TD_VID(pTsdb->pVnode), __func__, lino, tstrerror(code),
+              fName);
+
+    *ppReader = NULL;
+    if (pReader) {
+      if (pReader->pFILE) {
+        tsdbFClose(&pReader->pFILE, 0);
+      }
+      taosMemoryFree(pReader);
+    }
+  } else {
+    *ppReader = pReader;
+  }
+  return code;
+}
+
+void tsdbFileReaderClose(STsdbFileReader *pReader) {
+  if (pReader) {
+    if (pReader->pFILE) {
+      tsdbFClose(&pReader->pFILE, 0);
+    }
+    taosMemoryFree(pReader);
+  }
+}
+
+int32_t tsdbFileRead(STsdbFileReader *pReader, int64_t loffset, uint8_t *pBuf, int64_t size) {
+  int32_t code = 0;
+  int32_t lino = 0;
+
+  ASSERT(loffset >= 0 && size > 0);
+  ASSERT(loffset + size <= pReader->file.size);
+
+  int64_t n = tsdbFRead(pReader->pFILE, loffset, pBuf, size);
+  if (n < 0) {
+    code = TAOS_SYSTEM_ERROR(errno);
+    TSDB_CHECK_CODE(code, lino, _exit);
+  }
+
+_exit:
+  if (code) {
+    tsdbError("vgId:%d %s failed at line %d since %s", TD_VID(pReader->pTsdb->pVnode), __func__, lino, tstrerror(code));
+  }
+  return code;
+}
+
 // STsdbFileObj ==========================================
 static int32_t tsdbNewFileObj(const STsdbFile *pFile, STsdbFileObj **ppFileObj) {
   int32_t code = 0;
@@ -645,7 +712,6 @@ _exit:
   }
   return code;
 }
-// STsdbFileArray ======================================================
 
 // STsdbFileGroup ==========================================
 static int32_t tsdbFileGroupNew() {
