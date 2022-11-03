@@ -637,7 +637,7 @@ static int32_t tsdbMerge(STsdb *pTsdb) {
   int32_t code = 0;
   int32_t lino = 0;
 
-  STsdbFileSystem *pFS = pTsdb->pFS;  // todo
+  STsdbFileSystem *pFS = pTsdb->pFSN;  // todo
   int32_t          sttTrigger = pTsdb->pVnode->config.sttTrigger;
   STsdbMerger     *pMerger = NULL;
 

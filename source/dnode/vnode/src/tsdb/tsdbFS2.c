@@ -1358,6 +1358,17 @@ _exit:
 int64_t tsdbNextFileID(STsdb *pTsdb) { return atomic_add_fetch_64(&pTsdb->id, 1); }
 
 bool tsdbShouldMerge(STsdb *pTsdb) {
-  // TODO
+  // todo: make it thread safe
+  int32_t          sttTrigger = pTsdb->pVnode->config.sttTrigger;
+  STsdbFileSystem *pFS = pTsdb->pFSN;  // (todo)
+
+  for (int32_t iFg = 0; iFg < taosArrayGetSize(pFS->aFileGroup); iFg++) {
+    STsdbFileGroup *pFg = (STsdbFileGroup *)taosArrayGet(pFS->aFileGroup, iFg);
+
+    if (taosArrayGetSize(pFg->aFStt) >= sttTrigger) {
+      return true;
+    }
+  }
+
   return false;
 }
