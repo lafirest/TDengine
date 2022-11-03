@@ -907,7 +907,7 @@ static int32_t tsdbMergeFileGroup(STsdbMerger *pMerger, STsdbFileGroup *pFg) {
   code = tsdbFileWriterOpen(pTsdb, &(*ppOp)->file, &pMerger->pWriter);
   TSDB_CHECK_CODE(code, lino, _exit);
 
-  tBlockDataClear(&pMerger->bData);
+  tBlockDataReset(&pMerger->bData);
   taosArrayClear(pMerger->aSttBlk);
   while (true) {
     SRowInfo *pRowInfo = tsdbGetMergeRow(pMerger);
@@ -919,7 +919,7 @@ static int32_t tsdbMergeFileGroup(STsdbMerger *pMerger, STsdbFileGroup *pFg) {
       code = tsdbWriteBlockDataEx(pMerger->pWriter, &pMerger->bData, pMerger->aSttBlk, pMerger->cmprAlg);
       TSDB_CHECK_CODE(code, lino, _exit);
 
-      tBlockDataClear(&pMerger->bData);
+      tBlockDataReset(&pMerger->bData);
     }
 
     if (!TABLE_SAME_SCHEMA(pMerger->bData.suid, pMerger->bData.uid, pRowInfo->suid, pRowInfo->uid)) {
@@ -938,14 +938,13 @@ static int32_t tsdbMergeFileGroup(STsdbMerger *pMerger, STsdbFileGroup *pFg) {
     TSDB_CHECK_CODE(code, lino, _exit);
 
     if (pMerger->bData.nRow >= pTsdb->pVnode->config.tsdbCfg.maxRows) {
-      // code = tsdbFlushBlockData();
+      code = tsdbWriteBlockDataEx(pMerger->pWriter, &pMerger->bData, pMerger->aSttBlk, pMerger->cmprAlg);
       TSDB_CHECK_CODE(code, lino, _exit);
     }
   }
 
   if (pMerger->bData.nRow) {
     code = tsdbWriteBlockDataEx(pMerger->pWriter, &pMerger->bData, pMerger->aSttBlk, pMerger->cmprAlg);
-    TSDB_CHECK_CODE(code, lino, _exit);
     TSDB_CHECK_CODE(code, lino, _exit);
   }
 
