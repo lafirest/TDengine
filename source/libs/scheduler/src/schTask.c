@@ -937,6 +937,14 @@ int32_t schLaunchLocalTask(SSchJob *pJob, SSchTask *pTask) {
   qwMsg.msgType = pTask->plan->msgType;
   qwMsg.connInfo.handle = pJob->conn.pTrans;
 
+  if (tsQueryPlannerTrace) {
+    char   *msg = NULL;
+    int32_t msgLen = 0;
+    SCH_ERR_RET(qSubPlanToString(pTask->plan, &msg, &msgLen));
+    SCH_TASK_DLOGL("physical plan len:%d, %s", msgLen, msg);
+    taosMemoryFree(msg);
+  }
+
   if (SCH_IS_EXPLAIN_JOB(pJob)) {
     explainRes = taosArrayInit(pJob->taskNum, sizeof(SExplainLocalRsp));
   }
