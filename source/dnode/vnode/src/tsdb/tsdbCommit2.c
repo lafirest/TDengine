@@ -15,8 +15,10 @@
 
 #include "tsdb.h"
 
-static int32_t tsdbWriteBlockDataEx(STsdbFileWriter *pWriter, SBlockData *pBlockData, SBlockInfo *pBlockInfo,
-                                    int8_t cmprAlg) {
+typedef struct STsdbFlusher STsdbFlusher;
+
+static int32_t tsdbWriteBlockDataImpl(STsdbFileWriter *pWriter, SBlockData *pBlockData, SBlockInfo *pBlockInfo,
+                                      int8_t cmprAlg) {
   int32_t code = 0;
   int32_t lino = 0;
 
@@ -43,6 +45,48 @@ _exit:
   }
   for (int32_t iBuf = 0; iBuf < sizeof(aBuf) / sizeof(aBuf[0]); iBuf++) {
     tFree(aBuf[iBuf]);
+  }
+  return code;
+}
+
+static int32_t tsdbWriteBlockDataEx(STsdbFileWriter *pWriter, SBlockData *pBData, SArray *aSttBlk, int8_t cmprAlg) {
+  int32_t code = 0;
+  int32_t lino = 0;
+
+  if (0 == pBData->nRow) return code;
+
+  SSttBlk *pSttBlk = taosArrayPush(aSttBlk, &(SSttBlk){0});
+  if (NULL == pSttBlk) {
+    code = TSDB_CODE_OUT_OF_MEMORY;
+    TSDB_CHECK_CODE(code, lino, _exit);
+  }
+
+  pSttBlk->suid = pBData->suid;
+  pSttBlk->nRow = pBData->nRow;
+  pSttBlk->minKey = TSKEY_MAX;
+  pSttBlk->maxKey = TSKEY_MIN;
+  pSttBlk->minVer = VERSION_MAX;
+  pSttBlk->maxVer = VERSION_MIN;
+  for (int32_t iRow = 0; iRow < pBData->nRow; iRow++) {
+    pSttBlk->minKey = TMIN(pSttBlk->minKey, pBData->aTSKEY[iRow]);
+    pSttBlk->maxKey = TMAX(pSttBlk->maxKey, pBData->aTSKEY[iRow]);
+    pSttBlk->minVer = TMIN(pSttBlk->minVer, pBData->aVersion[iRow]);
+    pSttBlk->maxVer = TMAX(pSttBlk->maxVer, pBData->aVersion[iRow]);
+  }
+  pSttBlk->minUid = pBData->uid ? pBData->uid : pBData->aUid[0];
+  pSttBlk->maxUid = pBData->uid ? pBData->uid : pBData->aUid[pBData->nRow - 1];
+
+  // write
+  code = tsdbWriteBlockDataImpl(pWriter, pBData, &pSttBlk->bInfo, cmprAlg);
+  TSDB_CHECK_CODE(code, lino, _exit);
+
+  tBlockDataClear(pBData);
+
+_exit:
+  if (code) {
+    tsdbError("%s failed at line %d since %s", __func__, lino, tstrerror(code));
+  } else {
+    tsdbTrace("%s done", __func__);
   }
   return code;
 }
@@ -150,7 +194,7 @@ _exit:
   return code;
 }
 // FLUSH MEMTABLE TO FILE SYSTEM ===================================
-typedef struct {
+struct STsdbFlusher {
   // configs
   STsdb  *pTsdb;
   int32_t minutes;
@@ -174,7 +218,7 @@ typedef struct {
   SSkmInfo         skmTable;
   SSkmInfo         skmRow;
   // tomestone data
-} STsdbFlusher;
+};
 
 static int32_t tsdbFlusherInit(STsdb *pTsdb, STsdbFlusher *pFlusher) {
   int32_t code = 0;
@@ -248,51 +292,6 @@ _exit:
   return code;
 }
 
-static int32_t tsdbFlushBlockData(STsdbFlusher *pFlusher) {
-  int32_t code = 0;
-  int32_t lino = 0;
-
-  if (0 == pFlusher->bData.nRow) return code;
-
-  SBlockData *pBlockData = &pFlusher->bData;
-  SSttBlk     sttBlk = {0};
-
-  sttBlk.suid = pBlockData->suid;
-  sttBlk.nRow = pBlockData->nRow;
-  sttBlk.minKey = TSKEY_MAX;
-  sttBlk.maxKey = TSKEY_MIN;
-  sttBlk.minVer = VERSION_MAX;
-  sttBlk.maxVer = VERSION_MIN;
-  for (int32_t iRow = 0; iRow < pBlockData->nRow; iRow++) {
-    sttBlk.minKey = TMIN(sttBlk.minKey, pBlockData->aTSKEY[iRow]);
-    sttBlk.maxKey = TMAX(sttBlk.maxKey, pBlockData->aTSKEY[iRow]);
-    sttBlk.minVer = TMIN(sttBlk.minVer, pBlockData->aVersion[iRow]);
-    sttBlk.maxVer = TMAX(sttBlk.maxVer, pBlockData->aVersion[iRow]);
-  }
-  sttBlk.minUid = pBlockData->uid ? pBlockData->uid : pBlockData->aUid[0];
-  sttBlk.maxUid = pBlockData->uid ? pBlockData->uid : pBlockData->aUid[pBlockData->nRow - 1];
-
-  // write
-  code = tsdbWriteBlockDataEx(pFlusher->pWriter, pBlockData, &sttBlk.bInfo, pFlusher->cmprAlg);
-  TSDB_CHECK_CODE(code, lino, _exit);
-
-  if (NULL == taosArrayPush(pFlusher->aSttBlk, &sttBlk)) {
-    code = TSDB_CODE_OUT_OF_MEMORY;
-    TSDB_CHECK_CODE(code, lino, _exit);
-  }
-
-  tBlockDataClear(&pFlusher->bData);
-
-_exit:
-  if (code) {
-    tsdbError("vgId:%d %s failed at line %d since %s", TD_VID(pFlusher->pTsdb->pVnode), __func__, lino,
-              tstrerror(code));
-  } else {
-    tsdbTrace("vgId:%d %s done", TD_VID(pFlusher->pTsdb->pVnode), __func__);
-  }
-  return code;
-}
-
 static int32_t tsdbFlushTableTimeSeriesData(STsdbFlusher *pFlusher, TSKEY *nextKey) {
   int32_t code = 0;
   int32_t lino = 0;
@@ -310,7 +309,7 @@ static int32_t tsdbFlushTableTimeSeriesData(STsdbFlusher *pFlusher, TSKEY *nextK
 
   // check if need to flush the data
   if (!TABLE_SAME_SCHEMA(pFlusher->bData.suid, pFlusher->bData.uid, pTbData->suid, pTbData->uid)) {
-    code = tsdbFlushBlockData(pFlusher);
+    code = tsdbWriteBlockDataEx(pFlusher->pWriter, &pFlusher->bData, pFlusher->aSttBlk, pFlusher->cmprAlg);
     TSDB_CHECK_CODE(code, lino, _exit);
 
     tBlockDataReset(&pFlusher->bData);
@@ -344,7 +343,7 @@ static int32_t tsdbFlushTableTimeSeriesData(STsdbFlusher *pFlusher, TSKEY *nextK
     tsdbTbDataIterNext(&iter);
 
     if (pFlusher->bData.nRow >= pFlusher->maxRow) {
-      code = tsdbFlushBlockData(pFlusher);
+      code = tsdbWriteBlockDataEx(pFlusher->pWriter, &pFlusher->bData, pFlusher->aSttBlk, pFlusher->cmprAlg);
       TSDB_CHECK_CODE(code, lino, _exit);
     }
   }
@@ -408,7 +407,7 @@ static int32_t tsdbFlushFileTimeSeriesData(STsdbFlusher *pFlusher, TSKEY *nextKe
 
   // flush remain data
   if (pFlusher->bData.nRow > 0) {
-    code = tsdbFlushBlockData(pFlusher);
+    code = tsdbWriteBlockDataEx(pFlusher->pWriter, &pFlusher->bData, pFlusher->aSttBlk, pFlusher->cmprAlg);
     TSDB_CHECK_CODE(code, lino, _exit);
   }
 
@@ -592,11 +591,16 @@ typedef struct {
 
 typedef struct {
   STsdb        *pTsdb;
+  int8_t        cmprAlg;
   SArray       *aFileOpP;
   SArray       *aSttIterP;  // SArray<SSttDataIter *>
   SRBTree       mTree;
   SSttDataIter *pIter;
-  SBlockData    bData;
+
+  SSkmInfo         skmTable;
+  STsdbFileWriter *pWriter;
+  SBlockData       bData;
+  SArray          *aSttBlk;
 } STsdbMerger;
 
 // SSttDataIter
@@ -687,7 +691,8 @@ _exit:
   return code;
 }
 
-static void tsdbSttDataIterDestroy(SSttDataIter *pIter) {
+static void tsdbSttDataIterDestroy(SSttDataIter **ppIter) {
+  SSttDataIter *pIter = *ppIter;
   if (pIter) {
     tBlockDataDestroy(&pIter->bData, 1);
     if (pIter->aSttBlk) {
@@ -735,6 +740,7 @@ static int32_t tsdbMergerOpen(STsdb *pTsdb, STsdbMerger **ppMerger) {
   }
 
   pMerger->pTsdb = pTsdb;
+  pMerger->cmprAlg = pTsdb->pVnode->config.tsdbCfg.compression;
   pMerger->aFileOpP = taosArrayInit(0, sizeof(STsdbFileOp *));
   if (NULL == pMerger->aFileOpP) {
     code = TSDB_CODE_OUT_OF_MEMORY;
@@ -750,12 +756,21 @@ static int32_t tsdbMergerOpen(STsdb *pTsdb, STsdbMerger **ppMerger) {
   code = tBlockDataCreate(&pMerger->bData);
   TSDB_CHECK_CODE(code, lino, _exit);
 
+  pMerger->aSttBlk = taosArrayInit(0, sizeof(SSttBlk));
+  if (NULL == pMerger->aSttBlk) {
+    code = TSDB_CODE_OUT_OF_MEMORY;
+    TSDB_CHECK_CODE(code, lino, _exit);
+  }
+
 _exit:
   if (code) {
     tsdbError("vgId:%d %s failed at line %d since %s", TD_VID(pTsdb->pVnode), __func__, lino, tstrerror(code));
     *ppMerger = NULL;
 
     if (pMerger) {
+      if (pMerger->aSttBlk) {
+        pMerger->aSttBlk = taosArrayDestroy(pMerger->aSttBlk);
+      }
       tBlockDataDestroy(&pMerger->bData, 1);
       if (pMerger->aSttIterP) {
         pMerger->aSttIterP = taosArrayDestroy(pMerger->aSttIterP);
@@ -773,6 +788,9 @@ _exit:
 
 static void tsdbMergerClose(STsdbMerger *pMerger) {
   if (pMerger) {
+    if (pMerger->aSttBlk) {
+      pMerger->aSttBlk = taosArrayDestroy(pMerger->aSttBlk);
+    }
     tBlockDataDestroy(&pMerger->bData, 1);
     if (pMerger->aSttIterP) {
       taosArrayDestroy(pMerger->aSttIterP);
@@ -869,50 +887,76 @@ static int32_t tsdbMergeFileGroup(STsdbMerger *pMerger, STsdbFileGroup *pFg) {
     ASSERT(pTNode);
   }
 
-  // STsdbFile file = {
-  //     .ftype = TSDB_FTYPE_STT,
-  //     .did = {0},  // todo
-  //     .fid = pFg->fid,
-  //     .id = tsdbNextFileID(pTsdb),
-  // };
+  STsdbFileOp  *pOp = NULL;
+  STsdbFileOp **ppOp = (STsdbFileOp **)taosArrayPush(pMerger->aFileOpP, &pOp);
+  if (NULL == ppOp) {
+    code = TSDB_CODE_OUT_OF_MEMORY;
+    TSDB_CHECK_CODE(code, lino, _exit);
+  }
 
-  // code = tsdbFileOpCreate(TSDB_FOP_ADD, &file, &pOp);
-  // TSDB_CHECK_CODE(code, lino, _exit);
+  code = tsdbFileOpCreate(TSDB_FOP_ADD,
+                          &(STsdbFile){
+                              .ftype = TSDB_FTYPE_STT,
+                              .did = {0},  // todo
+                              .fid = pFg->fid,
+                              .id = tsdbNextFileID(pTsdb),
+                          },
+                          ppOp);
+  TSDB_CHECK_CODE(code, lino, _exit);
 
-  // if (NULL == taosArrayPush(pMerger->aFileOpP, &pOp)) {
-  //   code = TSDB_CODE_OUT_OF_MEMORY;
-  //   tsdbFileOpDestroy(&pOp);
-  //   TSDB_CHECK_CODE(code, lino, _exit);
-  // }
+  code = tsdbFileWriterOpen(pTsdb, &(*ppOp)->file, &pMerger->pWriter);
+  TSDB_CHECK_CODE(code, lino, _exit);
 
-  // loop to commit
-  int32_t nRow = 0;
+  tBlockDataClear(&pMerger->bData);
+  taosArrayClear(pMerger->aSttBlk);
   while (true) {
     SRowInfo *pRowInfo = tsdbGetMergeRow(pMerger);
     if (NULL == (pRowInfo)) {
       break;
     }
 
-    nRow++;
+    if (!TABLE_SAME_SCHEMA(pMerger->bData.suid, pMerger->bData.uid, pRowInfo->suid, pRowInfo->uid)) {
+      code = tsdbWriteBlockDataEx(pMerger->pWriter, &pMerger->bData, pMerger->aSttBlk, pMerger->cmprAlg);
+      TSDB_CHECK_CODE(code, lino, _exit);
 
-    // code = tBlockDataAppendRow(&pMerger->bData, &pRowInfo->row, NULL, pRowInfo->uid);
-    // TSDB_CHECK_CODE(code, lino, _exit);
+      tBlockDataClear(&pMerger->bData);
+    }
+
+    if (!TABLE_SAME_SCHEMA(pMerger->bData.suid, pMerger->bData.uid, pRowInfo->suid, pRowInfo->uid)) {
+      code = tsdbUpdateSkmInfo(pTsdb->pVnode->pMeta, pRowInfo->suid, pRowInfo->uid, -1, &pMerger->skmTable);
+      TSDB_CHECK_CODE(code, lino, _exit);
+
+      code = tBlockDataInit(&pMerger->bData, &(TABLEID){.suid = pRowInfo->suid, .uid = 0}, pMerger->skmTable.pTSchema,
+                            NULL, 0);
+      TSDB_CHECK_CODE(code, lino, _exit);
+    }
+
+    code = tBlockDataAppendRow(&pMerger->bData, &pRowInfo->row, NULL, pRowInfo->uid);
+    TSDB_CHECK_CODE(code, lino, _exit);
 
     code = tsdbNextMergeRow(pMerger);
     TSDB_CHECK_CODE(code, lino, _exit);
 
-    // if (pMerger->bData.nRow >= pTsdb->pVnode->config.tsdbCfg.maxRows) {
-    //   // code = tsdbFlushBlockData();
-    //   TSDB_CHECK_CODE(code, lino, _exit);
-    // }
+    if (pMerger->bData.nRow >= pTsdb->pVnode->config.tsdbCfg.maxRows) {
+      // code = tsdbFlushBlockData();
+      TSDB_CHECK_CODE(code, lino, _exit);
+    }
   }
 
   if (pMerger->bData.nRow) {
-    // code = tsdbFlushBlockData(pMerger);
+    code = tsdbWriteBlockDataEx(pMerger->pWriter, &pMerger->bData, pMerger->aSttBlk, pMerger->cmprAlg);
+    TSDB_CHECK_CODE(code, lino, _exit);
     TSDB_CHECK_CODE(code, lino, _exit);
   }
 
-  // clear (todo)
+  code = tsdbWriteSttBlkEx(pMerger->pWriter, pMerger->aSttBlk);
+  TSDB_CHECK_CODE(code, lino, _exit);
+
+  // clear
+  code = tsdbFileWriterClose(&pMerger->pWriter, 1);
+  TSDB_CHECK_CODE(code, lino, _exit);
+
+  // taosArrayClearEx(pMerger->aSttIterP, tsdbSttDataIterDestroy); (todo)
 
 _exit:
   if (code) {
@@ -921,7 +965,6 @@ _exit:
   } else {
     tsdbDebug("vgId:%d %s done, fid:%d", TD_VID(pTsdb->pVnode), __func__, pFg->fid);
   }
-  // todo (do some clear)
   return code;
 }
 
