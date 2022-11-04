@@ -749,6 +749,13 @@ static void destroyPartitionOperatorInfo(void* param) {
 
   taosArrayDestroy(pInfo->pGroupColVals);
   taosMemoryFree(pInfo->keyBuf);
+
+  int32_t size = taosArrayGetSize(pInfo->sortedGroupArray);
+  for (int32_t i = 0; i < size; i++) {
+    SDataGroupInfo* pGp = taosArrayGet(pInfo->sortedGroupArray, i);
+    taosArrayDestroy(pGp->pPageList);
+  }
+
   taosArrayDestroy(pInfo->sortedGroupArray);
 
   void* pGroupIter = taosHashIterate(pInfo->pGroupSet, NULL);
