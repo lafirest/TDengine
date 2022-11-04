@@ -590,13 +590,14 @@ typedef struct {
 #define RBTN_TO_STT_DATA_ITER(PNODE) ((SSttDataIter *)(((uint8_t *)(PNODE)) - offsetof(SSttDataIter, rbtn)))
 
 typedef struct {
-  STsdb        *pTsdb;
-  int8_t        cmprAlg;
-  SArray       *aFileOpP;
-  SArray       *aSttIterP;  // SArray<SSttDataIter *>
-  SRBTree       mTree;
-  SSttDataIter *pIter;
+  STsdb  *pTsdb;
+  int8_t  cmprAlg;
+  int32_t maxRows;
+  SArray *aFileOpP;
 
+  SArray          *aSttIterP;  // SArray<SSttDataIter *>
+  SRBTree          mTree;
+  SSttDataIter    *pIter;
   SSkmInfo         skmTable;
   STsdbFileWriter *pWriter;
   SBlockData       bData;
@@ -691,8 +692,8 @@ _exit:
   return code;
 }
 
-static void tsdbSttDataIterDestroy(SSttDataIter **ppIter) {
-  SSttDataIter *pIter = *ppIter;
+static void tsdbSttDataIterDestroy(void *p) {
+  SSttDataIter *pIter = *(SSttDataIter **)p;
   if (pIter) {
     tBlockDataDestroy(&pIter->bData, 1);
     if (pIter->aSttBlk) {
@@ -741,6 +742,7 @@ static int32_t tsdbMergerOpen(STsdb *pTsdb, STsdbMerger **ppMerger) {
 
   pMerger->pTsdb = pTsdb;
   pMerger->cmprAlg = pTsdb->pVnode->config.tsdbCfg.compression;
+  pMerger->maxRows = pTsdb->pVnode->config.tsdbCfg.maxRows;
   pMerger->aFileOpP = taosArrayInit(0, sizeof(STsdbFileOp *));
   if (NULL == pMerger->aFileOpP) {
     code = TSDB_CODE_OUT_OF_MEMORY;
@@ -792,8 +794,13 @@ static void tsdbMergerClose(STsdbMerger *pMerger) {
       pMerger->aSttBlk = taosArrayDestroy(pMerger->aSttBlk);
     }
     tBlockDataDestroy(&pMerger->bData, 1);
+    ASSERT(0 == taosArrayGetSize(pMerger->aSttIterP));
     if (pMerger->aSttIterP) {
       taosArrayDestroy(pMerger->aSttIterP);
+    }
+    ASSERT(NULL == pMerger->pWriter);
+    if (pMerger->skmTable.pTSchema) {
+      tTSchemaDestroy(pMerger->skmTable.pTSchema);
     }
     if (pMerger->aFileOpP) {
       taosArrayDestroyEx(pMerger->aFileOpP, (FDelete)tsdbFileOpDestroy);
@@ -856,8 +863,12 @@ static int32_t tsdbMergeFileGroup(STsdbMerger *pMerger, STsdbFileGroup *pFg) {
   STsdb *pTsdb = pMerger->pTsdb;
 
   // prepare
-  ASSERT(taosArrayGetSize(pMerger->aSttIterP) == 0);
+  ASSERT(0 == taosArrayGetSize(pMerger->aSttIterP));
+  ASSERT(NULL == pMerger->pWriter);
   tRBTreeInit(&pMerger->mTree, tsdbSttDataIterCmprFn);
+  pMerger->pIter = NULL;
+  tBlockDataReset(&pMerger->bData);
+  taosArrayClear(pMerger->aSttBlk);
   for (int32_t iStt = 0; iStt < taosArrayGetSize(pFg->aFStt); iStt++) {
     STsdbFileObj *pSttFileObj = (STsdbFileObj *)taosArrayGetP(pFg->aFStt, iStt);
 
@@ -907,8 +918,7 @@ static int32_t tsdbMergeFileGroup(STsdbMerger *pMerger, STsdbFileGroup *pFg) {
   code = tsdbFileWriterOpen(pTsdb, &(*ppOp)->file, &pMerger->pWriter);
   TSDB_CHECK_CODE(code, lino, _exit);
 
-  tBlockDataReset(&pMerger->bData);
-  taosArrayClear(pMerger->aSttBlk);
+  // compact
   while (true) {
     SRowInfo *pRowInfo = tsdbGetMergeRow(pMerger);
     if (NULL == (pRowInfo)) {
@@ -920,9 +930,7 @@ static int32_t tsdbMergeFileGroup(STsdbMerger *pMerger, STsdbFileGroup *pFg) {
       TSDB_CHECK_CODE(code, lino, _exit);
 
       tBlockDataReset(&pMerger->bData);
-    }
 
-    if (!TABLE_SAME_SCHEMA(pMerger->bData.suid, pMerger->bData.uid, pRowInfo->suid, pRowInfo->uid)) {
       code = tsdbUpdateSkmInfo(pTsdb->pVnode->pMeta, pRowInfo->suid, pRowInfo->uid, -1, &pMerger->skmTable);
       TSDB_CHECK_CODE(code, lino, _exit);
 
@@ -937,7 +945,7 @@ static int32_t tsdbMergeFileGroup(STsdbMerger *pMerger, STsdbFileGroup *pFg) {
     code = tsdbNextMergeRow(pMerger);
     TSDB_CHECK_CODE(code, lino, _exit);
 
-    if (pMerger->bData.nRow >= pTsdb->pVnode->config.tsdbCfg.maxRows) {
+    if (pMerger->bData.nRow >= pMerger->maxRows) {
       code = tsdbWriteBlockDataEx(pMerger->pWriter, &pMerger->bData, pMerger->aSttBlk, pMerger->cmprAlg);
       TSDB_CHECK_CODE(code, lino, _exit);
     }
@@ -951,11 +959,9 @@ static int32_t tsdbMergeFileGroup(STsdbMerger *pMerger, STsdbFileGroup *pFg) {
   code = tsdbWriteSttBlkEx(pMerger->pWriter, pMerger->aSttBlk);
   TSDB_CHECK_CODE(code, lino, _exit);
 
-  // clear
+  // end
   code = tsdbFileWriterClose(&pMerger->pWriter, 1);
   TSDB_CHECK_CODE(code, lino, _exit);
-
-  // taosArrayClearEx(pMerger->aSttIterP, tsdbSttDataIterDestroy); (todo)
 
 _exit:
   if (code) {
@@ -964,6 +970,13 @@ _exit:
   } else {
     tsdbDebug("vgId:%d %s done, fid:%d", TD_VID(pTsdb->pVnode), __func__, pFg->fid);
   }
+  taosArrayClear(pMerger->aSttBlk);
+  if (pMerger->pWriter) {
+    ASSERT(code);
+    tsdbFileWriterClose(&pMerger->pWriter, 0);
+  }
+  taosArrayClearEx(pMerger->aSttIterP, tsdbSttDataIterDestroy);
+
   return code;
 }
 
@@ -991,17 +1004,16 @@ static int32_t tsdbMerge(STsdb *pTsdb) {
 
   if (pMerger) {
     code = tsdbPrepareFS(pTsdb, pMerger->aFileOpP);
-    TSDB_CHECK_CODE(code, lino, _exit);
+    TSDB_CHECK_CODE(code, lino, _exit);  // todo
 
     code = tsdbCommitFS(pTsdb);
-    TSDB_CHECK_CODE(code, lino, _exit);
+    TSDB_CHECK_CODE(code, lino, _exit);  // todo
   }
 
 _exit:
   if (code) {
     tsdbError("vgId:%d %s failed at line %d since %s", TD_VID(pTsdb->pVnode), __func__, lino, tstrerror(code));
   }
-
   if (pMerger) {
     tsdbMergerClose(pMerger);
   }

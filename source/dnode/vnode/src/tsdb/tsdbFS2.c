@@ -714,14 +714,6 @@ _exit:
 }
 
 // STsdbFileGroup ==========================================
-static int32_t tsdbFileGroupNew() {
-  int32_t code = 0;
-  int32_t lino = 0;
-  // TODO
-_exit:
-  return code;
-}
-
 static int32_t tsdbFileGroupCmprFn(const void *p1, const void *p2) {
   STsdbFileGroup *pFg1 = (STsdbFileGroup *)p1;
   STsdbFileGroup *pFg2 = (STsdbFileGroup *)p2;
@@ -1083,7 +1075,7 @@ static STsdbFileGroup *tsdbFileSystemGetFileGroup(STsdbFileSystem *pFS, int32_t 
   return (STsdbFileGroup *)taosArraySearch(pFS->aFileGroup, &fg, tsdbFileGroupCmprFn, flags);
 }
 
-static int32_t tsdbFileSystemApplyOp(STsdbFileSystem *pFS, const STsdbFileOp *pOp) {
+static int32_t tsdbFileSystemApplyOp(STsdb *pTsdb, STsdbFileSystem *pFS, const STsdbFileOp *pOp) {
   int32_t code = 0;
   int32_t lino = 0;
 
@@ -1141,8 +1133,41 @@ static int32_t tsdbFileSystemApplyOp(STsdbFileSystem *pFS, const STsdbFileOp *pO
       ASSERT(pFg);
 
       if (TSDB_FOP_REMOVE == pOp->op) {
-        /* TODO */
-        ASSERT(0);
+        switch (pOp->file.ftype) {
+          case TSDB_FTYPE_HEAD:
+            ASSERT(pFg->fHead);
+            tsdbUnrefFileObj(pTsdb, pFg->fHead, 0);
+            pFg->fHead = NULL;
+            break;
+          case TSDB_FTYPE_DATA:
+            ASSERT(pFg->fData);
+            tsdbUnrefFileObj(pTsdb, pFg->fData, 0);
+            pFg->fData = NULL;
+            break;
+          case TSDB_FTYPE_SMA:
+            ASSERT(pFg->fSma);
+            tsdbUnrefFileObj(pTsdb, pFg->fSma, 0);
+            pFg->fSma = NULL;
+            break;
+          case TSDB_FTYPE_STT: {
+            int32_t       iStt = 0;
+            STsdbFileObj *pSttFileObj = NULL;
+            for (; iStt < taosArrayGetSize(pFg->aFStt); iStt++) {
+              pSttFileObj = (STsdbFileObj *)taosArrayGetP(pFg->aFStt, iStt);
+              if (tsdbIsSameFile(&pSttFileObj->file, &pOp->file)) {
+                break;
+              }
+            }
+
+            ASSERT(pSttFileObj != NULL);
+
+            taosArrayRemove(pFg->aFStt, iStt);
+            tsdbUnrefFileObj(pTsdb, pSttFileObj, 0);
+          } break;
+          default:
+            ASSERT(0);
+            break;
+        }
       } else if (TSDB_FOP_MOD == pOp->op) {
         /* TODO */
         ASSERT(0);
@@ -1356,7 +1381,7 @@ int32_t tsdbPrepareFS(STsdb *pTsdb, SArray *aFileOpP) {
   for (int32_t iFileOp = 0; iFileOp < taosArrayGetSize(aFileOpP); iFileOp++) {
     STsdbFileOp *pOp = (STsdbFileOp *)taosArrayGetP(aFileOpP, iFileOp);
 
-    code = tsdbFileSystemApplyOp(pTsdb->pFSN, pOp);
+    code = tsdbFileSystemApplyOp(pTsdb, pTsdb->pFSN, pOp);
     TSDB_CHECK_CODE(code, lino, _exit);
   }
 
