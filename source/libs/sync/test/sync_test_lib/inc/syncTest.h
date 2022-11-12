@@ -42,6 +42,20 @@ extern "C" {
 
 extern void addEpIntoEpSet(SEpSet* pEpSet, const char* fqdn, uint16_t port);
 
+typedef struct SyncPing      SyncPing;
+typedef struct SyncPingReply SyncPingReply;
+
+typedef int32_t (*FpOnPingCb)(SSyncNode* ths, SyncPing* pMsg);
+typedef int32_t (*FpOnPingReplyCb)(SSyncNode* ths, SyncPingReply* pMsg);
+typedef int32_t (*FpOnClientRequestCb)(SSyncNode* ths, SRpcMsg* pMsg, SyncIndex* pRetIndex);
+typedef int32_t (*FpOnRequestVoteCb)(SSyncNode* ths, SyncRequestVote* pMsg);
+typedef int32_t (*FpOnRequestVoteReplyCb)(SSyncNode* ths, SyncRequestVoteReply* pMsg);
+typedef int32_t (*FpOnAppendEntriesCb)(SSyncNode* ths, SyncAppendEntries* pMsg);
+typedef int32_t (*FpOnAppendEntriesReplyCb)(SSyncNode* ths, SyncAppendEntriesReply* pMsg);
+typedef int32_t (*FpOnTimeoutCb)(SSyncNode* pSyncNode, SyncTimeout* pMsg);
+typedef int32_t (*FpOnSnapshotCb)(SSyncNode* ths, SyncSnapshotSend* pMsg);
+typedef int32_t (*FpOnSnapshotReplyCb)(SSyncNode* ths, SyncSnapshotRsp* pMsg);
+
 cJSON* syncEntry2Json(const SSyncRaftEntry* pEntry);
 char*  syncEntry2Str(const SSyncRaftEntry* pEntry);
 void   syncEntryPrint(const SSyncRaftEntry* pObj);
@@ -127,6 +141,18 @@ void   syncRpcMsgLog2(char* s, SRpcMsg* pMsg);
 
 
 // origin syncMessage
+typedef struct SyncPing {
+  uint32_t bytes;
+  int32_t  vgId;
+  uint32_t msgType;
+  SRaftId  srcId;
+  SRaftId  destId;
+  // private data
+  uint32_t dataLen;
+  char     data[];
+} SyncPing;
+
+
 SyncPing* syncPingBuild(uint32_t dataLen);
 SyncPing* syncPingBuild2(const SRaftId* srcId, const SRaftId* destId, int32_t vgId, const char* str);
 SyncPing* syncPingBuild3(const SRaftId* srcId, const SRaftId* destId, int32_t vgId);
@@ -141,9 +167,136 @@ void      syncPingPrint(const SyncPing* pMsg);
 void      syncPingPrint2(char* s, const SyncPing* pMsg);
 void      syncPingLog(const SyncPing* pMsg);
 void      syncPingLog2(char* s, const SyncPing* pMsg);
+void      syncPingDestroy(SyncPing* pMsg);
+void      syncPingSerialize(const SyncPing* pMsg, char* buf, uint32_t bufLen);
+void      syncPingDeserialize(const char* buf, uint32_t len, SyncPing* pMsg);
+SyncPing* syncPingDeserialize2(const char* buf, uint32_t len);
+SyncPing* syncPingFromRpcMsg2(const SRpcMsg* pRpcMsg);
+
+typedef struct SyncPingReply {
+  uint32_t bytes;
+  int32_t  vgId;
+  uint32_t msgType;
+  SRaftId  srcId;
+  SRaftId  destId;
+  // private data
+  uint32_t dataLen;
+  char     data[];
+} SyncPingReply;
+
+SyncPingReply* syncPingReplyBuild(uint32_t dataLen);
+SyncPingReply* syncPingReplyBuild2(const SRaftId* srcId, const SRaftId* destId, int32_t vgId, const char* str);
+SyncPingReply* syncPingReplyBuild3(const SRaftId* srcId, const SRaftId* destId, int32_t vgId);
+void           syncPingReplyDestroy(SyncPingReply* pMsg);
+void           syncPingReplySerialize(const SyncPingReply* pMsg, char* buf, uint32_t bufLen);
+void           syncPingReplyDeserialize(const char* buf, uint32_t len, SyncPingReply* pMsg);
+char*          syncPingReplySerialize2(const SyncPingReply* pMsg, uint32_t* len);
+SyncPingReply* syncPingReplyDeserialize2(const char* buf, uint32_t len);
+int32_t        syncPingReplySerialize3(const SyncPingReply* pMsg, char* buf, int32_t bufLen);
+SyncPingReply* syncPingReplyDeserialize3(void* buf, int32_t bufLen);
+void           syncPingReply2RpcMsg(const SyncPingReply* pMsg, SRpcMsg* pRpcMsg);
+void           syncPingReplyFromRpcMsg(const SRpcMsg* pRpcMsg, SyncPingReply* pMsg);
+SyncPingReply* syncPingReplyFromRpcMsg2(const SRpcMsg* pRpcMsg);
+cJSON*         syncPingReply2Json(const SyncPingReply* pMsg);
+char*          syncPingReply2Str(const SyncPingReply* pMsg);
+
+// for debug ----------------------
+void syncPingReplyPrint(const SyncPingReply* pMsg);
+void syncPingReplyPrint2(char* s, const SyncPingReply* pMsg);
+void syncPingReplyLog(const SyncPingReply* pMsg);
+void syncPingReplyLog2(char* s, const SyncPingReply* pMsg);
+
+int32_t syncNodeOnPing(SSyncNode* ths, SyncPing* pMsg);
+int32_t syncNodeOnPingReply(SSyncNode* ths, SyncPingReply* pMsg);
+int32_t syncNodePing(SSyncNode* pSyncNode, const SRaftId* destRaftId, SyncPing* pMsg);
+int32_t syncNodePingSelf(SSyncNode* pSyncNode);
+int32_t syncNodePingPeers(SSyncNode* pSyncNode);
+int32_t syncNodePingAll(SSyncNode* pSyncNode);
+
+SyncTimeout* syncTimeoutBuildX();
+SyncTimeout* syncTimeoutBuild2(ESyncTimeoutType timeoutType, uint64_t logicClock, int32_t timerMS, int32_t vgId,
+                               void* data);
+void         syncTimeoutDestroy(SyncTimeout* pMsg);
+void         syncTimeoutSerialize(const SyncTimeout* pMsg, char* buf, uint32_t bufLen);
+void         syncTimeoutDeserialize(const char* buf, uint32_t len, SyncTimeout* pMsg);
+char*        syncTimeoutSerialize2(const SyncTimeout* pMsg, uint32_t* len);
+SyncTimeout* syncTimeoutDeserialize2(const char* buf, uint32_t len);
+void         syncTimeout2RpcMsg(const SyncTimeout* pMsg, SRpcMsg* pRpcMsg);
+void         syncTimeoutFromRpcMsg(const SRpcMsg* pRpcMsg, SyncTimeout* pMsg);
+SyncTimeout* syncTimeoutFromRpcMsg2(const SRpcMsg* pRpcMsg);
+cJSON*       syncTimeout2Json(const SyncTimeout* pMsg);
+char*        syncTimeout2Str(const SyncTimeout* pMsg);
+void         syncTimeoutPrint(const SyncTimeout* pMsg);
+void         syncTimeoutPrint2(char* s, const SyncTimeout* pMsg);
+void         syncTimeoutLog(const SyncTimeout* pMsg);
+void         syncTimeoutLog2(char* s, const SyncTimeout* pMsg);
+
+SyncClientRequest* syncClientRequestAlloc(uint32_t dataLen);
+void               syncClientRequest2RpcMsg(const SyncClientRequest* pMsg, SRpcMsg* pRpcMsg);  // step 2
+void               syncClientRequestFromRpcMsg(const SRpcMsg* pRpcMsg, SyncClientRequest* pMsg);
+cJSON*             syncClientRequest2Json(const SyncClientRequest* pMsg);
+char*              syncClientRequest2Str(const SyncClientRequest* pMsg);
+void               syncClientRequestPrint(const SyncClientRequest* pMsg);
+void               syncClientRequestPrint2(char* s, const SyncClientRequest* pMsg);
+void               syncClientRequestLog(const SyncClientRequest* pMsg);
+void               syncClientRequestLog2(char* s, const SyncClientRequest* pMsg);
+
+SyncRequestVote* syncRequestVoteBuild(int32_t vgId);
+void             syncRequestVoteDestroy(SyncRequestVote* pMsg);
+void             syncRequestVoteSerialize(const SyncRequestVote* pMsg, char* buf, uint32_t bufLen);
+void             syncRequestVoteDeserialize(const char* buf, uint32_t len, SyncRequestVote* pMsg);
+char*            syncRequestVoteSerialize2(const SyncRequestVote* pMsg, uint32_t* len);
+SyncRequestVote* syncRequestVoteDeserialize2(const char* buf, uint32_t len);
+void             syncRequestVote2RpcMsg(const SyncRequestVote* pMsg, SRpcMsg* pRpcMsg);
+void             syncRequestVoteFromRpcMsg(const SRpcMsg* pRpcMsg, SyncRequestVote* pMsg);
+SyncRequestVote* syncRequestVoteFromRpcMsg2(const SRpcMsg* pRpcMsg);
+cJSON*           syncRequestVote2Json(const SyncRequestVote* pMsg);
+char*            syncRequestVote2Str(const SyncRequestVote* pMsg);
+
+// for debug ----------------------
+void syncRequestVotePrint(const SyncRequestVote* pMsg);
+void syncRequestVotePrint2(char* s, const SyncRequestVote* pMsg);
+void syncRequestVoteLog(const SyncRequestVote* pMsg);
+void syncRequestVoteLog2(char* s, const SyncRequestVote* pMsg);
+
+SyncRequestVoteReply* syncRequestVoteReplyBuild(int32_t vgId);
+void                  syncRequestVoteReplyDestroy(SyncRequestVoteReply* pMsg);
+void                  syncRequestVoteReplySerialize(const SyncRequestVoteReply* pMsg, char* buf, uint32_t bufLen);
+void                  syncRequestVoteReplyDeserialize(const char* buf, uint32_t len, SyncRequestVoteReply* pMsg);
+char*                 syncRequestVoteReplySerialize2(const SyncRequestVoteReply* pMsg, uint32_t* len);
+SyncRequestVoteReply* syncRequestVoteReplyDeserialize2(const char* buf, uint32_t len);
+void                  syncRequestVoteReply2RpcMsg(const SyncRequestVoteReply* pMsg, SRpcMsg* pRpcMsg);
+void                  syncRequestVoteReplyFromRpcMsg(const SRpcMsg* pRpcMsg, SyncRequestVoteReply* pMsg);
+SyncRequestVoteReply* syncRequestVoteReplyFromRpcMsg2(const SRpcMsg* pRpcMsg);
+cJSON*                syncRequestVoteReply2Json(const SyncRequestVoteReply* pMsg);
+char*                 syncRequestVoteReply2Str(const SyncRequestVoteReply* pMsg);
+
+// for debug ----------------------
+void syncRequestVoteReplyPrint(const SyncRequestVoteReply* pMsg);
+void syncRequestVoteReplyPrint2(char* s, const SyncRequestVoteReply* pMsg);
+void syncRequestVoteReplyLog(const SyncRequestVoteReply* pMsg);
+void syncRequestVoteReplyLog2(char* s, const SyncRequestVoteReply* pMsg);
+
+SyncAppendEntries* syncAppendEntriesBuild(uint32_t dataLen, int32_t vgId);
+void               syncAppendEntriesDestroy(SyncAppendEntries* pMsg);
+void               syncAppendEntriesSerialize(const SyncAppendEntries* pMsg, char* buf, uint32_t bufLen);
+void               syncAppendEntriesDeserialize(const char* buf, uint32_t len, SyncAppendEntries* pMsg);
+char*              syncAppendEntriesSerialize2(const SyncAppendEntries* pMsg, uint32_t* len);
+SyncAppendEntries* syncAppendEntriesDeserialize2(const char* buf, uint32_t len);
+void               syncAppendEntries2RpcMsg(const SyncAppendEntries* pMsg, SRpcMsg* pRpcMsg);
+void               syncAppendEntriesFromRpcMsg(const SRpcMsg* pRpcMsg, SyncAppendEntries* pMsg);
+SyncAppendEntries* syncAppendEntriesFromRpcMsg2(const SRpcMsg* pRpcMsg);
+cJSON*             syncAppendEntries2Json(const SyncAppendEntries* pMsg);
+char*              syncAppendEntries2Str(const SyncAppendEntries* pMsg);
+
+// for debug ----------------------
+void syncAppendEntriesPrint(const SyncAppendEntries* pMsg);
+void syncAppendEntriesPrint2(char* s, const SyncAppendEntries* pMsg);
+void syncAppendEntriesLog(const SyncAppendEntries* pMsg);
+void syncAppendEntriesLog2(char* s, const SyncAppendEntries* pMsg);
 
 #ifdef __cplusplus
 }
 #endif
 
-#endif /*_TD_LIBS_SYNC_RAFT_ENTRY_H*/
+#endif /*_TD_LIBS_SYNC_TEST_H*/

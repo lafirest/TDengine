@@ -142,31 +142,15 @@ int32_t syncProcessMsg(int64_t rid, SRpcMsg* pMsg) {
     code = syncNodeOnHeartbeatReply(pSyncNode, pSyncMsg);
     syncHeartbeatReplyDestroy(pSyncMsg);
   } else if (pMsg->msgType == TDMT_SYNC_TIMEOUT) {
-    SyncTimeout* pSyncMsg = syncTimeoutFromRpcMsg2(pMsg);
-    code = syncNodeOnTimer(pSyncNode, pSyncMsg);
-    syncTimeoutDestroy(pSyncMsg);
-  } else if (pMsg->msgType == TDMT_SYNC_PING) {
-    SyncPing* pSyncMsg = syncPingFromRpcMsg2(pMsg);
-    code = syncNodeOnPing(pSyncNode, pSyncMsg);
-    syncPingDestroy(pSyncMsg);
-  } else if (pMsg->msgType == TDMT_SYNC_PING_REPLY) {
-    SyncPingReply* pSyncMsg = syncPingReplyFromRpcMsg2(pMsg);
-    code = syncNodeOnPingReply(pSyncNode, pSyncMsg);
-    syncPingReplyDestroy(pSyncMsg);
+    code = syncNodeOnTimer(pSyncNode, pMsg);
   } else if (pMsg->msgType == TDMT_SYNC_CLIENT_REQUEST) {
     code = syncNodeOnClientRequest(pSyncNode, pMsg, NULL);
   } else if (pMsg->msgType == TDMT_SYNC_REQUEST_VOTE) {
-    SyncRequestVote* pSyncMsg = syncRequestVoteFromRpcMsg2(pMsg);
-    code = syncNodeOnRequestVote(pSyncNode, pSyncMsg);
-    syncRequestVoteDestroy(pSyncMsg);
+    syncNodeOnRequestVote(pSyncNode, pMsg);
   } else if (pMsg->msgType == TDMT_SYNC_REQUEST_VOTE_REPLY) {
-    SyncRequestVoteReply* pSyncMsg = syncRequestVoteReplyFromRpcMsg2(pMsg);
-    code = syncNodeOnRequestVoteReply(pSyncNode, pSyncMsg);
-    syncRequestVoteReplyDestroy(pSyncMsg);
+    code = syncNodeOnRequestVoteReply(pSyncNode, pMsg);
   } else if (pMsg->msgType == TDMT_SYNC_APPEND_ENTRIES) {
-    SyncAppendEntries* pSyncMsg = syncAppendEntriesFromRpcMsg2(pMsg);
-    code = syncNodeOnAppendEntries(pSyncNode, pSyncMsg);
-    syncAppendEntriesDestroy(pSyncMsg);
+    syncNodeOnAppendEntries(pSyncNode, pMsg);
   } else if (pMsg->msgType == TDMT_SYNC_APPEND_ENTRIES_REPLY) {
     SyncAppendEntriesReply* pSyncMsg = syncAppendEntriesReplyFromRpcMsg2(pMsg);
     code = syncNodeOnAppendEntriesReply(pSyncNode, pSyncMsg);
@@ -388,7 +372,7 @@ bool syncIsReadyForRead(int64_t rid) {
       if (!pSyncNode->pLogStore->syncLogIsEmpty(pSyncNode->pLogStore)) {
         SSyncRaftEntry* pEntry = NULL;
         int32_t         code = pSyncNode->pLogStore->syncLogGetEntry(
-            pSyncNode->pLogStore, pSyncNode->pLogStore->syncLogLastIndex(pSyncNode->pLogStore), &pEntry);
+                    pSyncNode->pLogStore, pSyncNode->pLogStore->syncLogLastIndex(pSyncNode->pLogStore), &pEntry);
         if (code == 0 && pEntry != NULL) {
           if (pEntry->originalRpcType == TDMT_SYNC_NOOP && pEntry->term == pSyncNode->pRaftStore->currentTerm) {
             ready = true;
@@ -905,18 +889,6 @@ SSyncNode* syncNodeOpen(SSyncInfo* pSyncInfo) {
   for (int32_t i = 0; i < TSDB_MAX_REPLICA; ++i) {
     syncHbTimerInit(pSyncNode, &(pSyncNode->peerHeartbeatTimerArr[i]), (pSyncNode->replicasId)[i]);
   }
-
-  // init callback
-  pSyncNode->FpOnPing = syncNodeOnPing;
-  pSyncNode->FpOnPingReply = syncNodeOnPingReply;
-  pSyncNode->FpOnClientRequest = syncNodeOnClientRequest;
-  pSyncNode->FpOnTimeout = syncNodeOnTimer;
-  pSyncNode->FpOnSnapshot = syncNodeOnSnapshot;
-  pSyncNode->FpOnSnapshotReply = syncNodeOnSnapshotReply;
-  pSyncNode->FpOnRequestVote = syncNodeOnRequestVote;
-  pSyncNode->FpOnRequestVoteReply = syncNodeOnRequestVoteReply;
-  pSyncNode->FpOnAppendEntries = syncNodeOnAppendEntries;
-  pSyncNode->FpOnAppendEntriesReply = syncNodeOnAppendEntriesReply;
 
   // tools
   pSyncNode->pSyncRespMgr = syncRespMgrCreate(pSyncNode, SYNC_RESP_TTL_MS);
@@ -1676,9 +1648,13 @@ void syncNodeVoteForTerm(SSyncNode* pSyncNode, SyncTerm term, SRaftId* pRaftId) 
 
 // simulate get vote from outside
 void syncNodeVoteForSelf(SSyncNode* pSyncNode) {
-  syncNodeVoteForTerm(pSyncNode, pSyncNode->pRaftStore->currentTerm, &(pSyncNode->myRaftId));
+  syncNodeVoteForTerm(pSyncNode, pSyncNode->pRaftStore->currentTerm, &pSyncNode->myRaftId);
 
-  SyncRequestVoteReply* pMsg = syncRequestVoteReplyBuild(pSyncNode->vgId);
+  SRpcMsg rpcMsg = {0};
+  int32_t ret = syncBuildRequestVoteReply(&rpcMsg, pSyncNode->vgId);
+  if (ret != 0) return;
+
+  SyncRequestVoteReply* pMsg = rpcMsg.pCont;
   pMsg->srcId = pSyncNode->myRaftId;
   pMsg->destId = pSyncNode->myRaftId;
   pMsg->term = pSyncNode->pRaftStore->currentTerm;
@@ -1686,10 +1662,8 @@ void syncNodeVoteForSelf(SSyncNode* pSyncNode) {
 
   voteGrantedVote(pSyncNode->pVotesGranted, pMsg);
   votesRespondAdd(pSyncNode->pVotesRespond, pMsg);
-  syncRequestVoteReplyDestroy(pMsg);
+  rpcFreeCont(rpcMsg.pCont);
 }
-
-// snapshot --------------
 
 // return if has a snapshot
 bool syncNodeHasSnapshot(SSyncNode* pSyncNode) {
@@ -1817,70 +1791,67 @@ int32_t syncNodeGetPreIndexTerm(SSyncNode* pSyncNode, SyncIndex index, SyncIndex
 }
 
 static void syncNodeEqPingTimer(void* param, void* tmrId) {
-  SSyncNode* pSyncNode = (SSyncNode*)param;
-  if (atomic_load_64(&pSyncNode->pingTimerLogicClockUser) <= atomic_load_64(&pSyncNode->pingTimerLogicClock)) {
-    SyncTimeout* pSyncMsg = syncTimeoutBuild2(SYNC_TIMEOUT_PING, atomic_load_64(&pSyncNode->pingTimerLogicClock),
-                                              pSyncNode->pingTimerMS, pSyncNode->vgId, pSyncNode);
-    SRpcMsg      rpcMsg;
-    syncTimeout2RpcMsg(pSyncMsg, &rpcMsg);
-    sNTrace(pSyncNode, "enqueue ping timer");
-    if (pSyncNode->syncEqMsg != NULL) {
-      int32_t code = pSyncNode->syncEqMsg(pSyncNode->msgcb, &rpcMsg);
-      if (code != 0) {
-        sError("vgId:%d, sync enqueue ping msg error, code:%d", pSyncNode->vgId, code);
-        rpcFreeCont(rpcMsg.pCont);
-        syncTimeoutDestroy(pSyncMsg);
-        return;
-      }
-    } else {
-      sTrace("syncNodeEqPingTimer pSyncNode->syncEqMsg is NULL");
-    }
-    syncTimeoutDestroy(pSyncMsg);
+  if (!syncIsInit()) return;
 
-    if (syncIsInit()) {
-      taosTmrReset(syncNodeEqPingTimer, pSyncNode->pingTimerMS, pSyncNode, syncEnv()->pTimerManager,
-                   &pSyncNode->pPingTimer);
-    } else {
-      sError("sync env is stop, syncNodeEqPingTimer");
+  SSyncNode* pNode = param;
+  if (atomic_load_64(&pNode->pingTimerLogicClockUser) <= atomic_load_64(&pNode->pingTimerLogicClock)) {
+    SRpcMsg rpcMsg = {0};
+    int32_t code = syncTimeoutBuild(&rpcMsg, SYNC_TIMEOUT_PING, atomic_load_64(&pNode->pingTimerLogicClock),
+                                    pNode->pingTimerMS, pNode);
+    if (code != 0) {
+      sNError(pNode, "failed to build ping msg");
+      rpcFreeCont(rpcMsg.pCont);
+      return;
     }
 
+    sNTrace(pNode, "enqueue ping msg");
+    code = pNode->syncEqMsg(pNode->msgcb, &rpcMsg);
+    if (code != 0) {
+      sNError(pNode, "failed to sync enqueue ping msg since %s", terrstr());
+      rpcFreeCont(rpcMsg.pCont);
+      return;
+    }
+
+    taosTmrReset(syncNodeEqPingTimer, pNode->pingTimerMS, pNode, syncEnv()->pTimerManager, &pNode->pPingTimer);
   } else {
     sTrace("==syncNodeEqPingTimer== pingTimerLogicClock:%" PRId64 ", pingTimerLogicClockUser:%" PRId64,
-           pSyncNode->pingTimerLogicClock, pSyncNode->pingTimerLogicClockUser);
+           pNode->pingTimerLogicClock, pNode->pingTimerLogicClockUser);
   }
 }
 
 static void syncNodeEqElectTimer(void* param, void* tmrId) {
-  SElectTimer* pElectTimer = (SElectTimer*)param;
-  SSyncNode*   pSyncNode = pElectTimer->pSyncNode;
+  if (!syncIsInit()) return;
 
-  SyncTimeout* pSyncMsg = syncTimeoutBuild2(SYNC_TIMEOUT_ELECTION, pElectTimer->logicClock, pSyncNode->electTimerMS,
-                                            pSyncNode->vgId, pSyncNode);
-  SRpcMsg      rpcMsg;
-  syncTimeout2RpcMsg(pSyncMsg, &rpcMsg);
-  if (pSyncNode->syncEqMsg != NULL && pSyncNode->msgcb != NULL && pSyncNode->msgcb->putToQueueFp != NULL) {
-    int32_t code = pSyncNode->syncEqMsg(pSyncNode->msgcb, &rpcMsg);
-    if (code != 0) {
-      sError("vgId:%d, sync enqueue elect msg error, code:%d", pSyncNode->vgId, code);
-      rpcFreeCont(rpcMsg.pCont);
-      syncTimeoutDestroy(pSyncMsg);
-      taosMemoryFree(pElectTimer);
-      return;
-    }
-    sNTrace(pSyncNode, "eq elect timer lc:%" PRId64, pSyncMsg->logicClock);
-  } else {
-    sTrace("syncNodeEqElectTimer syncEqMsg is NULL");
+  SElectTimer* pElectTimer = param;
+  SSyncNode*   pNode = pElectTimer->pSyncNode;
+
+  SRpcMsg rpcMsg = {0};
+  int32_t code = syncTimeoutBuild(&rpcMsg, SYNC_TIMEOUT_ELECTION, pElectTimer->logicClock, pNode->electTimerMS, pNode);
+
+  if (code != 0) {
+    sNError(pNode, "failed to build elect msg");
+    taosMemoryFree(pElectTimer);
+    return;
   }
 
-  syncTimeoutDestroy(pSyncMsg);
+  SyncTimeout* pTimeout = rpcMsg.pCont;
+  sNTrace(pNode, "enqueue elect msg lc:%" PRId64, pTimeout->logicClock);
+
+  code = pNode->syncEqMsg(pNode->msgcb, &rpcMsg);
+  if (code != 0) {
+    sNError(pNode, "failed to sync enqueue elect msg since %s", terrstr());
+    rpcFreeCont(rpcMsg.pCont);
+    taosMemoryFree(pElectTimer);
+    return;
+  }
+
   taosMemoryFree(pElectTimer);
 
 #if 0
   // reset timer ms
-  if (syncIsInit() && pSyncNode->electBaseLine > 0) {
-    pSyncNode->electTimerMS = syncUtilElectRandomMS(pSyncNode->electBaseLine, 2 * pSyncNode->electBaseLine);
-    taosTmrReset(syncNodeEqElectTimer, pSyncNode->electTimerMS, pSyncNode, syncEnv()->pTimerManager,
-                 &pSyncNode->pElectTimer);
+  if (syncIsInit() && pNode->electBaseLine > 0) {
+    pNode->electTimerMS = syncUtilElectRandomMS(pNode->electBaseLine, 2 * pNode->electBaseLine);
+    taosTmrReset(syncNodeEqElectTimer, pNode->electTimerMS, pNode, syncEnv()->pTimerManager, &pNode->pElectTimer);
   } else {
     sError("sync env is stop, syncNodeEqElectTimer");
   }
@@ -1888,41 +1859,34 @@ static void syncNodeEqElectTimer(void* param, void* tmrId) {
 }
 
 static void syncNodeEqHeartbeatTimer(void* param, void* tmrId) {
-  SSyncNode* pSyncNode = (SSyncNode*)param;
-  sNTrace(pSyncNode, "eq hb timer");
+  if (!syncIsInit()) return;
 
-  if (pSyncNode->replicaNum > 1) {
-    if (atomic_load_64(&pSyncNode->heartbeatTimerLogicClockUser) <=
-        atomic_load_64(&pSyncNode->heartbeatTimerLogicClock)) {
-      SyncTimeout* pSyncMsg =
-          syncTimeoutBuild2(SYNC_TIMEOUT_HEARTBEAT, atomic_load_64(&pSyncNode->heartbeatTimerLogicClock),
-                            pSyncNode->heartbeatTimerMS, pSyncNode->vgId, pSyncNode);
-      SRpcMsg rpcMsg;
-      syncTimeout2RpcMsg(pSyncMsg, &rpcMsg);
-      sNTrace(pSyncNode, "enqueue heartbeat timer");
-      if (pSyncNode->syncEqMsg != NULL) {
-        int32_t code = pSyncNode->syncEqMsg(pSyncNode->msgcb, &rpcMsg);
-        if (code != 0) {
-          sError("vgId:%d, sync enqueue timer msg error, code:%d", pSyncNode->vgId, code);
-          rpcFreeCont(rpcMsg.pCont);
-          syncTimeoutDestroy(pSyncMsg);
-          return;
-        }
-      } else {
-        sError("vgId:%d, enqueue msg cb ptr (i.e. syncEqMsg) not set.", pSyncNode->vgId);
-      }
-      syncTimeoutDestroy(pSyncMsg);
+  SSyncNode* pNode = param;
+  if (pNode->replicaNum > 1) {
+    if (atomic_load_64(&pNode->heartbeatTimerLogicClockUser) <= atomic_load_64(&pNode->heartbeatTimerLogicClock)) {
+      SRpcMsg rpcMsg = {0};
+      int32_t code = syncTimeoutBuild(&rpcMsg, SYNC_TIMEOUT_HEARTBEAT, atomic_load_64(&pNode->heartbeatTimerLogicClock),
+                                      pNode->heartbeatTimerMS, pNode);
 
-      if (syncIsInit()) {
-        taosTmrReset(syncNodeEqHeartbeatTimer, pSyncNode->heartbeatTimerMS, pSyncNode, syncEnv()->pTimerManager,
-                     &pSyncNode->pHeartbeatTimer);
-      } else {
-        sError("sync env is stop, syncNodeEqHeartbeatTimer");
+      if (code != 0) {
+        sNError(pNode, "failed to build heartbeat msg");
+        return;
       }
+
+      sNTrace(pNode, "enqueue heartbeat timer");
+      code = pNode->syncEqMsg(pNode->msgcb, &rpcMsg);
+      if (code != 0) {
+        sNError(pNode, "failed to enqueue heartbeat msg since %s", terrstr());
+        rpcFreeCont(rpcMsg.pCont);
+        return;
+      }
+
+      taosTmrReset(syncNodeEqHeartbeatTimer, pNode->heartbeatTimerMS, pNode, syncEnv()->pTimerManager,
+                   &pNode->pHeartbeatTimer);
+
     } else {
-      sTrace("==syncNodeEqHeartbeatTimer== heartbeatTimerLogicClock:%" PRId64 ", heartbeatTimerLogicClockUser:%" PRId64
-             "",
-             pSyncNode->heartbeatTimerLogicClock, pSyncNode->heartbeatTimerLogicClockUser);
+      sTrace("==syncNodeEqHeartbeatTimer== heartbeatTimerLogicClock:%" PRId64 ", heartbeatTimerLogicClockUser:%" PRId64,
+             pNode->heartbeatTimerLogicClock, pNode->heartbeatTimerLogicClockUser);
     }
   }
 }
@@ -2059,33 +2023,6 @@ static int32_t syncNodeAppendNoop(SSyncNode* ths) {
     syncEntryDestory(pEntry);
   }
 
-  return ret;
-}
-
-// on message ----
-int32_t syncNodeOnPing(SSyncNode* ths, SyncPing* pMsg) {
-  sTrace("vgId:%d, recv sync-ping", ths->vgId);
-
-  SyncPingReply* pMsgReply = syncPingReplyBuild3(&ths->myRaftId, &pMsg->srcId, ths->vgId);
-  SRpcMsg        rpcMsg;
-  syncPingReply2RpcMsg(pMsgReply, &rpcMsg);
-
-  /*
-    // htonl
-    SMsgHead* pHead = rpcMsg.pCont;
-    pHead->contLen = htonl(pHead->contLen);
-    pHead->vgId = htonl(pHead->vgId);
-  */
-
-  syncNodeSendMsgById(&pMsgReply->destId, ths, &rpcMsg);
-  syncPingReplyDestroy(pMsgReply);
-
-  return 0;
-}
-
-int32_t syncNodeOnPingReply(SSyncNode* ths, SyncPingReply* pMsg) {
-  int32_t ret = 0;
-  sTrace("vgId:%d, recv sync-ping-reply", ths->vgId);
   return ret;
 }
 
@@ -2592,86 +2529,6 @@ const char* syncTimerTypeStr(enum ESyncTimeoutType timerType) {
 void syncLogRecvTimer(SSyncNode* pSyncNode, const SyncTimeout* pMsg, const char* s) {
   sNTrace(pSyncNode, "recv sync-timer {type:%s, lc:%" PRId64 ", ms:%d, data:%p}, %s",
           syncTimerTypeStr(pMsg->timeoutType), pMsg->logicClock, pMsg->timerMS, pMsg->data, s);
-}
-
-void syncLogSendRequestVote(SSyncNode* pSyncNode, const SyncRequestVote* pMsg, const char* s) {
-  char     host[64];
-  uint16_t port;
-  syncUtilU642Addr(pMsg->destId.addr, host, sizeof(host), &port);
-  sNTrace(pSyncNode, "send sync-request-vote to %s:%d {term:%" PRId64 ", lindex:%" PRId64 ", lterm:%" PRId64 "}, %s",
-          host, port, pMsg->term, pMsg->lastLogIndex, pMsg->lastLogTerm, s);
-}
-
-void syncLogRecvRequestVote(SSyncNode* pSyncNode, const SyncRequestVote* pMsg, const char* s) {
-  char     logBuf[256];
-  char     host[64];
-  uint16_t port;
-  syncUtilU642Addr(pMsg->srcId.addr, host, sizeof(host), &port);
-  sNTrace(pSyncNode, "recv sync-request-vote from %s:%d, {term:%" PRId64 ", lindex:%" PRId64 ", lterm:%" PRId64 "}, %s",
-          host, port, pMsg->term, pMsg->lastLogIndex, pMsg->lastLogTerm, s);
-}
-
-void syncLogSendRequestVoteReply(SSyncNode* pSyncNode, const SyncRequestVoteReply* pMsg, const char* s) {
-  char     host[64];
-  uint16_t port;
-  syncUtilU642Addr(pMsg->destId.addr, host, sizeof(host), &port);
-  sNTrace(pSyncNode, "send sync-request-vote-reply to %s:%d {term:%" PRId64 ", grant:%d}, %s", host, port, pMsg->term,
-          pMsg->voteGranted, s);
-}
-
-void syncLogRecvRequestVoteReply(SSyncNode* pSyncNode, const SyncRequestVoteReply* pMsg, const char* s) {
-  char     host[64];
-  uint16_t port;
-  syncUtilU642Addr(pMsg->srcId.addr, host, sizeof(host), &port);
-  sNTrace(pSyncNode, "recv sync-request-vote-reply from %s:%d {term:%" PRId64 ", grant:%d}, %s", host, port, pMsg->term,
-          pMsg->voteGranted, s);
-}
-
-void syncLogSendAppendEntries(SSyncNode* pSyncNode, const SyncAppendEntries* pMsg, const char* s) {
-  char     host[64];
-  uint16_t port;
-  syncUtilU642Addr(pMsg->destId.addr, host, sizeof(host), &port);
-  sNTrace(pSyncNode,
-          "send sync-append-entries to %s:%d, {term:%" PRId64 ", pre-index:%" PRId64 ", pre-term:%" PRId64
-          ", pterm:%" PRId64 ", cmt:%" PRId64 ", datalen:%d}, %s",
-          host, port, pMsg->term, pMsg->prevLogIndex, pMsg->prevLogTerm, pMsg->privateTerm, pMsg->commitIndex,
-          pMsg->dataLen, s);
-}
-
-void syncLogRecvAppendEntries(SSyncNode* pSyncNode, const SyncAppendEntries* pMsg, const char* s) {
-  char     host[64];
-  uint16_t port;
-  syncUtilU642Addr(pMsg->srcId.addr, host, sizeof(host), &port);
-
-  sNTrace(pSyncNode,
-          "recv sync-append-entries from %s:%d {term:%" PRId64 ", pre-index:%" PRId64 ", pre-term:%" PRId64
-          ", cmt:%" PRId64 ", pterm:%" PRId64 ", datalen:%d}, %s",
-          host, port, pMsg->term, pMsg->prevLogIndex, pMsg->prevLogTerm, pMsg->commitIndex, pMsg->privateTerm,
-          pMsg->dataLen, s);
-}
-
-void syncLogSendAppendEntriesBatch(SSyncNode* pSyncNode, const SyncAppendEntriesBatch* pMsg, const char* s) {
-  char     host[64];
-  uint16_t port;
-  syncUtilU642Addr(pMsg->destId.addr, host, sizeof(host), &port);
-
-  sNTrace(pSyncNode,
-          "send sync-append-entries-batch to %s:%d, {term:%" PRId64 ", pre-index:%" PRId64 ", pre-term:%" PRId64
-          ", pterm:%" PRId64 ", cmt:%" PRId64 ", datalen:%d, count:%d}, %s",
-          host, port, pMsg->term, pMsg->prevLogIndex, pMsg->prevLogTerm, pMsg->privateTerm, pMsg->commitIndex,
-          pMsg->dataLen, pMsg->dataCount, s);
-}
-
-void syncLogRecvAppendEntriesBatch(SSyncNode* pSyncNode, const SyncAppendEntriesBatch* pMsg, const char* s) {
-  char     host[64];
-  uint16_t port;
-  syncUtilU642Addr(pMsg->srcId.addr, host, sizeof(host), &port);
-
-  sNTrace(pSyncNode,
-          "recv sync-append-entries-batch from %s:%d, {term:%" PRId64 ", pre-index:%" PRId64 ", pre-term:%" PRId64
-          ", pterm:%" PRId64 ", cmt:%" PRId64 ", datalen:%d, count:%d}, %s",
-          host, port, pMsg->term, pMsg->prevLogIndex, pMsg->prevLogTerm, pMsg->privateTerm, pMsg->commitIndex,
-          pMsg->dataLen, pMsg->dataCount, s);
 }
 
 void syncLogSendAppendEntriesReply(SSyncNode* pSyncNode, const SyncAppendEntriesReply* pMsg, const char* s) {
