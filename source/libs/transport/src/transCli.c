@@ -685,7 +685,12 @@ static void cliDestroyConn(SCliConn* conn, bool clear) {
   tTrace("%s conn %p remove from conn pool", CONN_GET_INST_LABEL(conn), conn);
   QUEUE_REMOVE(&conn->q);
   QUEUE_INIT(&conn->q);
+  int64_t st = taosGetTimestampMs();
   transRemoveExHandle(transGetRefMgt(), conn->refId);
+  int64_t cost = taosGetTimestampMs() - st;
+  if (cost > 10) {
+    tDebug("removeExHandle slow % PRId64", cost);
+  }
   conn->refId = -1;
 
   if (conn->task != NULL) {
@@ -702,7 +707,12 @@ static void cliDestroyConn(SCliConn* conn, bool clear) {
   if (clear) {
     if (!uv_is_closing((uv_handle_t*)conn->stream)) {
       uv_read_stop(conn->stream);
+      int64_t st = taosGetTimestampMs();
       uv_close((uv_handle_t*)conn->stream, cliDestroy);
+      int64_t cost = taosGetTimestampMs() - st;
+      if (cost > 10) {
+        tDebug("uv_close slow % PRId64", cost);
+      }
     }
   }
 }

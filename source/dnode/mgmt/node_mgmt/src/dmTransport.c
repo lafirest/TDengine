@@ -99,6 +99,7 @@ static void dmProcessRpcMsg(SDnode *pDnode, SRpcMsg *pRpc, SEpSet *pEpSet) {
       dmProcessServerStartupStatus(pDnode, pRpc);
       return;
     } else {
+      dGError("dnode not running");
       terrno = TSDB_CODE_APP_NOT_READY;
       goto _OVER;
     }
