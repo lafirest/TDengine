@@ -48,19 +48,20 @@ static int32_t syncNodeMaybeSendAppendEntries(SSyncNode* pNode, const SRaftId* d
 //                mdest          |-> j])
 //    /\ UNCHANGED <<serverVars, candidateVars, leaderVars, logVars>>
 
-int32_t syncNodeReplicateOne(SSyncNode* pSyncNode, SRaftId* pDestId) {
+int32_t syncNodeReplicateOne(SSyncNode* pSyncNode, SRaftId* pDestId, bool snapshot) {
   // next index
   SyncIndex nextIndex = syncIndexMgrGetIndex(pSyncNode->pNextIndex, pDestId);
 
-  // maybe start snapshot
-  SyncIndex logStartIndex = pSyncNode->pLogStore->syncLogBeginIndex(pSyncNode->pLogStore);
-  SyncIndex logEndIndex = pSyncNode->pLogStore->syncLogEndIndex(pSyncNode->pLogStore);
-  if (nextIndex < logStartIndex || nextIndex - 1 > logEndIndex) {
-    sNTrace(pSyncNode, "maybe start snapshot for next-index:%" PRId64 ", start:%" PRId64 ", end:%" PRId64, nextIndex,
-            logStartIndex, logEndIndex);
-    // start snapshot
-    // int32_t code = syncNodeStartSnapshot(pSyncNode, pDestId);
-    return 0;
+  if (snapshot) {
+    // maybe start snapshot
+    SyncIndex logStartIndex = pSyncNode->pLogStore->syncLogBeginIndex(pSyncNode->pLogStore);
+    SyncIndex logEndIndex = pSyncNode->pLogStore->syncLogEndIndex(pSyncNode->pLogStore);
+    if (nextIndex < logStartIndex || nextIndex - 1 > logEndIndex) {
+      sNTrace(pSyncNode, "maybe start snapshot for next-index:%" PRId64 ", start:%" PRId64 ", end:%" PRId64, nextIndex,
+              logStartIndex, logEndIndex);
+      // start snapshot
+      int32_t code = syncNodeStartSnapshot(pSyncNode, pDestId);
+    }
   }
 
   // pre index, pre term
@@ -71,7 +72,7 @@ int32_t syncNodeReplicateOne(SSyncNode* pSyncNode, SRaftId* pDestId) {
   SRpcMsg            rpcMsg = {0};
   SyncAppendEntries* pMsg = NULL;
 
-  SSyncRaftEntry* pEntry;
+  SSyncRaftEntry* pEntry = NULL;
   int32_t         code = pSyncNode->pLogStore->syncLogGetEntry(pSyncNode->pLogStore, nextIndex, &pEntry);
 
   if (code == 0) {
@@ -97,6 +98,8 @@ int32_t syncNodeReplicateOne(SSyncNode* pSyncNode, SRaftId* pDestId) {
       return -1;
     }
   }
+
+  syncEntryDestory(pEntry);
 
   // prepare msg
   ASSERT(pMsg != NULL);
@@ -124,7 +127,7 @@ int32_t syncNodeReplicate(SSyncNode* pSyncNode) {
   int32_t ret = 0;
   for (int i = 0; i < pSyncNode->peersNum; ++i) {
     SRaftId* pDestId = &(pSyncNode->peersId[i]);
-    ret = syncNodeReplicateOne(pSyncNode, pDestId);
+    ret = syncNodeReplicateOne(pSyncNode, pDestId, true);
     if (ret != 0) {
       char    host[64];
       int16_t port;
@@ -136,23 +139,13 @@ int32_t syncNodeReplicate(SSyncNode* pSyncNode) {
   return 0;
 }
 
-static void syncLogSendAppendEntries(SSyncNode* pSyncNode, const SyncAppendEntries* pMsg, const char* s) {
-  char     host[64];
-  uint16_t port;
-  syncUtilU642Addr(pMsg->destId.addr, host, sizeof(host), &port);
-  sNTrace(pSyncNode,
-          "send sync-append-entries to %s:%d, {term:%" PRId64 ", pre-index:%" PRId64 ", pre-term:%" PRId64
-          ", pterm:%" PRId64 ", cmt:%" PRId64 ", datalen:%d}, %s",
-          host, port, pMsg->term, pMsg->prevLogIndex, pMsg->prevLogTerm, pMsg->privateTerm, pMsg->commitIndex,
-          pMsg->dataLen, s);
-}
-
 int32_t syncNodeSendAppendEntries(SSyncNode* pSyncNode, const SRaftId* destRaftId, SRpcMsg* pRpcMsg) {
   int32_t            ret = 0;
   SyncAppendEntries* pMsg = pRpcMsg->pCont;
-
-  syncLogSendAppendEntries(pSyncNode, pMsg, "");
-  syncNodeSendMsgById(destRaftId, pSyncNode, pRpcMsg);
+  if (pMsg == NULL) {
+    sError("vgId:%d, sync-append-entries msg is NULL", pSyncNode->vgId);
+    return 0;
+  }
 
   SPeerState* pState = syncNodeGetPeerState(pSyncNode, destRaftId);
   if (pState == NULL) {
@@ -160,8 +153,19 @@ int32_t syncNodeSendAppendEntries(SSyncNode* pSyncNode, const SRaftId* destRaftI
     return 0;
   }
 
+  // save index, otherwise pMsg will be free by rpc
+  SyncIndex saveLastSendIndex = pState->lastSendIndex;
+  bool      update = false;
   if (pMsg->dataLen > 0) {
-    pState->lastSendIndex = pMsg->prevLogIndex + 1;
+    saveLastSendIndex = pMsg->prevLogIndex + 1;
+    update = true;
+  }
+
+  syncLogSendAppendEntries(pSyncNode, pMsg, "");
+  syncNodeSendMsgById(destRaftId, pSyncNode, pRpcMsg);
+
+  if (update) {
+    pState->lastSendIndex = saveLastSendIndex;
     pState->lastSendTime = taosGetTimestampMs();
   }
 
