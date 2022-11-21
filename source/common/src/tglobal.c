@@ -271,6 +271,7 @@ static int32_t taosAddServerLogCfg(SConfig *pCfg) {
   if (cfgAddInt32(pCfg, "idxDebugFlag", idxDebugFlag, 0, 255, 0) != 0) return -1;
   if (cfgAddInt32(pCfg, "tdbDebugFlag", tdbDebugFlag, 0, 255, 0) != 0) return -1;
   if (cfgAddInt32(pCfg, "metaDebugFlag", metaDebugFlag, 0, 255, 0) != 0) return -1;
+  if (cfgAddInt32(pCfg, "eDebugFlag", eDebugFlag, 0, 255, 0) != 0) return -1;
   return 0;
 }
 
@@ -595,6 +596,7 @@ static void taosSetServerLogCfg(SConfig *pCfg) {
   idxDebugFlag = cfgGetItem(pCfg, "idxDebugFlag")->i32;
   tdbDebugFlag = cfgGetItem(pCfg, "tdbDebugFlag")->i32;
   metaDebugFlag = cfgGetItem(pCfg, "metaDebugFlag")->i32;
+  eDebugFlag = cfgGetItem(pCfg, "eDebugFlag")->i32;
 }
 
 static int32_t taosSetClientCfg(SConfig *pCfg) {
@@ -784,6 +786,8 @@ int32_t taosSetCfg(SConfig *pCfg, char *name) {
         taosSetCoreDump(enableCore);
       } else if (strcasecmp("enableQueryHb", name) == 0) {
         tsEnableQueryHb = cfgGetItem(pCfg, "enableQueryHb")->bval;
+      } else if (strcasecmp("eDebugFlag", name) == 0) {
+        eDebugFlag = cfgGetItem(pCfg, "eDebugFlag")->i32;
       }
       break;
     }
@@ -1252,12 +1256,12 @@ void taosCfgDynamicOptions(const char *option, const char *value) {
   const char *options[] = {
       "dDebugFlag",   "vDebugFlag",   "mDebugFlag",   "wDebugFlag",    "sDebugFlag",   "tsdbDebugFlag", "tqDebugFlag",
       "fsDebugFlag",  "udfDebugFlag", "smaDebugFlag", "idxDebugFlag",  "tdbDebugFlag", "tmrDebugFlag",  "uDebugFlag",
-      "smaDebugFlag", "rpcDebugFlag", "qDebugFlag",   "metaDebugFlag", "jniDebugFlag",
+      "smaDebugFlag", "rpcDebugFlag", "qDebugFlag",   "metaDebugFlag", "jniDebugFlag", "eDebugFlag",
   };
   int32_t *optionVars[] = {
       &dDebugFlag,   &vDebugFlag,   &mDebugFlag,   &wDebugFlag,    &sDebugFlag,   &tsdbDebugFlag, &tqDebugFlag,
       &fsDebugFlag,  &udfDebugFlag, &smaDebugFlag, &idxDebugFlag,  &tdbDebugFlag, &tmrDebugFlag,  &uDebugFlag,
-      &smaDebugFlag, &rpcDebugFlag, &qDebugFlag,   &metaDebugFlag, &jniDebugFlag,
+      &smaDebugFlag, &rpcDebugFlag, &qDebugFlag,   &metaDebugFlag, &jniDebugFlag, &eDebugFlag
   };
 
   int32_t optionSize = tListLen(options);
@@ -1306,5 +1310,6 @@ void taosSetAllDebugFlag(int32_t flag, bool rewrite) {
   taosSetDebugFlag(&tdbDebugFlag, "tdbDebugFlag", flag, rewrite);
   taosSetDebugFlag(&metaDebugFlag, "metaDebugFlag", flag, rewrite);
   taosSetDebugFlag(&metaDebugFlag, "tmrDebugFlag", flag, rewrite);
+  taosSetDebugFlag(&eDebugFlag, "eDebugFlag", flag, rewrite);
   uInfo("all debug flag are set to %d", flag);
 }

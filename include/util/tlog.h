@@ -64,6 +64,7 @@ extern int32_t udfDebugFlag;
 extern int32_t smaDebugFlag;
 extern int32_t idxDebugFlag;
 extern int32_t tdbDebugFlag;
+extern int32_t eDebugFlag;
 
 int32_t taosInitLog(const char *logName, int32_t maxFiles);
 void    taosCloseLog();
@@ -93,6 +94,13 @@ void taosPrintLongString(const char *flags, ELogLevel level, int32_t dflag, cons
 
 #define pError(...) { taosPrintLog("APP ERROR ", DEBUG_ERROR, 255, __VA_ARGS__); }
 #define pPrint(...) { taosPrintLog("APP ", DEBUG_INFO, 255, __VA_ARGS__); }
+
+// p[e]rformance  
+#define eInfo(...)  { if (eDebugFlag & DEBUG_INFO)  { taosPrintLog("PERF INFO", DEBUG_INFO, tsLogEmbedded ? 255 : eDebugFlag, __VA_ARGS__); }}
+#define eDebug(...) { if (eDebugFlag & DEBUG_DEBUG) { taosPrintLog("PERF DEBUG", DEBUG_DEBUG, eDebugFlag, __VA_ARGS__); }}
+#define eDebugL(...){ if (eDebugFlag & DEBUG_DEBUG) { taosPrintLongString("PERF DEBUG ", DEBUG_DEBUG, eDebugFlag, __VA_ARGS__); }}
+#define eTrace(...) { if (eDebugFlag & DEBUG_TRACE) { taosPrintLog("PERF TRACE", DEBUG_TRACE, eDebugFlag, __VA_ARGS__); }}
+
 // clang-format on
 //#define BUF_PAGE_DEBUG
 #ifdef __cplusplus

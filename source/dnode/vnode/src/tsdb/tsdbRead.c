@@ -3911,7 +3911,7 @@ void tsdbReaderClose(STsdbReader* pReader) {
     taosMemoryFree(pLReader);
   }
 
-  tsdbDebug("%p :io-cost summary: head-file:%" PRIu64 ", head-file time:%.2f ms, SMA:%" PRId64
+  eDebug("%p :io-cost summary: head-file:%" PRIu64 ", head-file time:%.2f ms, SMA:%" PRId64
             " SMA-time:%.2f ms, fileBlocks:%" PRId64
             ", fileBlocks-load-time:%.2f ms, "
             "build in-memory-block-time:%.2f ms, lastBlocks:%" PRId64

@@ -234,10 +234,10 @@ static bool uvHandleReq(SSvrConn* pConn) {
   if (pConn->status == ConnNormal && pHead->noResp == 0) {
     transRefSrvHandle(pConn);
 
-    tGDebug("%s conn %p %s received from %s, local info:%s, len:%d", transLabel(pTransInst), pConn,
+    eDebug("%s conn %p %s received from %s, local info:%s, len:%d", transLabel(pTransInst), pConn,
             TMSG_INFO(transMsg.msgType), pConn->dst, pConn->src, msgLen);
   } else {
-    tGDebug("%s conn %p %s received from %s, local info:%s, len:%d, resp:%d, code:%d", transLabel(pTransInst), pConn,
+    eDebug("%s conn %p %s received from %s, local info:%s, len:%d, resp:%d, code:%d", transLabel(pTransInst), pConn,
             TMSG_INFO(transMsg.msgType), pConn->dst, pConn->src, msgLen, pHead->noResp, transMsg.code);
   }
 
@@ -433,7 +433,7 @@ static int uvPrepareSendData(SSvrMsg* smsg, uv_buf_t* wb) {
   }
 
   STraceId* trace = &pMsg->info.traceId;
-  tGDebug("%s conn %p %s is sent to %s, local info:%s, len:%d", transLabel(pTransInst), pConn,
+  eDebug("%s conn %p %s is sent to %s, local info:%s, len:%d", transLabel(pTransInst), pConn,
           TMSG_INFO(pHead->msgType), pConn->dst, pConn->src, len);
 
   wb->base = (char*)pHead;
