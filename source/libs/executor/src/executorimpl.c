@@ -1378,8 +1378,8 @@ void queryCostStatis(SExecTaskInfo* pTaskInfo) {
 
   SFileBlockLoadRecorder* pRecorder = pSummary->pRecoder;
   if (pSummary->pRecoder != NULL) {
-    eDebug(
-        "%s :cost summary: elapsed time:%.2f ms, extract tableList:%.2f ms, createGroupIdMap:%.2f ms, total blocks:%d, "
+    qDebug(
+        "%s :cost summary: elapsed time:%.4f ms, extract tableList:%.4f ms, createGroupIdMap:%.4f ms, total blocks:%d, "
         "load block SMA:%d, load data block:%d, total rows:%" PRId64 ", check rows:%" PRId64,
         GET_TASKID(pTaskInfo), pSummary->elapsedTime / 1000.0, pSummary->extractListTime, pSummary->groupIdMapTime,
         pRecorder->totalBlocks, pRecorder->loadBlockStatis, pRecorder->loadBlocks, pRecorder->totalRows,

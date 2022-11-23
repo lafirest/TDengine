@@ -234,10 +234,10 @@ static bool uvHandleReq(SSvrConn* pConn) {
   if (pConn->status == ConnNormal && pHead->noResp == 0) {
     transRefSrvHandle(pConn);
 
-    eDebug("%s conn %p %s received from %s, local info:%s, len:%d", transLabel(pTransInst), pConn,
+    tDebug("%s conn %p %s received from %s, local info:%s, len:%d", transLabel(pTransInst), pConn,
             TMSG_INFO(transMsg.msgType), pConn->dst, pConn->src, msgLen);
   } else {
-    eDebug("%s conn %p %s received from %s, local info:%s, len:%d, resp:%d, code:%d", transLabel(pTransInst), pConn,
+    tDebug("%s conn %p %s received from %s, local info:%s, len:%d, resp:%d, code:%d", transLabel(pTransInst), pConn,
             TMSG_INFO(transMsg.msgType), pConn->dst, pConn->src, msgLen, pHead->noResp, transMsg.code);
   }
 
@@ -293,7 +293,7 @@ void uvOnRecvCb(uv_stream_t* cli, ssize_t nread, const uv_buf_t* buf) {
       tError("%s conn %p read invalid packet, exceed limit, received from %s, local info:%s", transLabel(pTransInst),
              conn, conn->dst, conn->src);
       destroyConn(conn, true);
-      return;
+      return;q
     }
   }
   if (nread == 0) {
@@ -433,7 +433,7 @@ static int uvPrepareSendData(SSvrMsg* smsg, uv_buf_t* wb) {
   }
 
   STraceId* trace = &pMsg->info.traceId;
-  eDebug("%s conn %p %s is sent to %s, local info:%s, len:%d", transLabel(pTransInst), pConn,
+  tDebug("%s conn %p %s is sent to %s, local info:%s, len:%d", transLabel(pTransInst), pConn,
           TMSG_INFO(pHead->msgType), pConn->dst, pConn->src, len);
 
   wb->base = (char*)pHead;

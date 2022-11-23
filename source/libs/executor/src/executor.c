@@ -569,7 +569,7 @@ int32_t qExecTaskOpt(qTaskInfo_t tinfo, SArray* pResList, uint64_t* useconds, bo
     return pTaskInfo->code;
   }
 
-  eDebug("%s execTask is launched(opt)", GET_TASKID(pTaskInfo));
+  qDebug("%s execTask is launched(opt)", GET_TASKID(pTaskInfo));
 
   int32_t      current = 0;
   SSDataBlock* pRes = NULL;
@@ -637,7 +637,7 @@ int32_t qExecTask(qTaskInfo_t tinfo, SSDataBlock** pRes, uint64_t* useconds) {
     return pTaskInfo->code;
   }
 
-  eDebug("%s execTask is launched", GET_TASKID(pTaskInfo));
+  qDebug("%s execTask is launched", GET_TASKID(pTaskInfo));
 
   int64_t st = taosGetTimestampUs();
 

@@ -3911,12 +3911,12 @@ void tsdbReaderClose(STsdbReader* pReader) {
     taosMemoryFree(pLReader);
   }
 
-  eDebug("%p :io-cost summary: head-file:%" PRIu64 ", head-file time:%.2f ms, SMA:%" PRId64
-            " SMA-time:%.2f ms, fileBlocks:%" PRId64
-            ", fileBlocks-load-time:%.2f ms, "
-            "build in-memory-block-time:%.2f ms, lastBlocks:%" PRId64
-            ", lastBlocks-time:%.2f ms, composed-blocks:%" PRId64
-            ", composed-blocks-time:%.2fms, STableBlockScanInfo size:%.2f Kb, creatTime:%.2f ms, %s",
+  tsdbDebug("%p :io-cost summary: head-file:%" PRIu64 ", head-file time:%.4f ms, SMA:%" PRId64
+            " SMA-time:%.4f ms, fileBlocks:%" PRId64
+            ", fileBlocks-load-time:%.4f ms, "
+            "build in-memory-block-time:%.4f ms, lastBlocks:%" PRId64
+            ", lastBlocks-time:%.4f ms, composed-blocks:%" PRId64
+            ", composed-blocks-time:%.4fms, STableBlockScanInfo size:%.4f Kb, creatTime:%.4f ms, %s",
             pReader, pCost->headFileLoad, pCost->headFileLoadTime, pCost->smaDataLoad, pCost->smaLoadTime,
             pCost->numOfBlocks, pCost->blockLoadTime, pCost->buildmemBlock, pCost->lastBlockLoad,
             pCost->lastBlockLoadTime, pCost->composedBlocks, pCost->buildComposedBlockTime,

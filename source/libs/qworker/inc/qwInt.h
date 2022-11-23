@@ -300,7 +300,7 @@ typedef struct SQWorkerMgmt {
   qWarn("QW:%p SID:0x%" PRIx64 ",QID:0x%" PRIx64 ",TID:0x%" PRIx64 ",EID:%d " param, mgmt, sId, qId, tId, eId, \
         __VA_ARGS__)
 #define QW_SCH_TASK_DLOG(param, ...)                                                                            \
-  eDebug("QW:%p SID:0x%" PRIx64 ",QID:0x%" PRIx64 ",TID:0x%" PRIx64 ",EID:%d " param, mgmt, sId, qId, tId, eId, \
+  qDebug("QW:%p SID:0x%" PRIx64 ",QID:0x%" PRIx64 ",TID:0x%" PRIx64 ",EID:%d " param, mgmt, sId, qId, tId, eId, \
          __VA_ARGS__)
 
 #define QW_LOCK_DEBUG(...)     \
