@@ -69,6 +69,8 @@ typedef struct SCliThrd {
   uv_loop_t*    loop;
   SAsyncPool*   asyncPool;
   uv_prepare_t* prepare;
+  uv_check_t*   check;
+  uv_idle_t*    idle;
   void*         pool;  // conn pool
   // timer handles
   SArray* timerList;
@@ -121,6 +123,7 @@ static void cliConnCb(uv_connect_t* req, int status);
 static void cliAsyncCb(uv_async_t* handle);
 static void cliIdleCb(uv_idle_t* handle);
 static void cliPrepareCb(uv_prepare_t* handle);
+static void cliCheckCb(uv_check_t* handle);
 
 static bool cliRecvReleaseReq(SCliConn* conn, STransMsgHead* pHead);
 
@@ -894,6 +897,7 @@ static void cliHandleQuit(SCliMsg* pMsg, SCliThrd* pThrd) {
   pThrd->quit = true;
   tDebug("cli work thread %p start to quit", pThrd);
   destroyCmsg(pMsg);
+
   destroyConnPool(pThrd->pool);
   uv_walk(pThrd->loop, cliWalkCb, NULL);
 }
@@ -1076,6 +1080,9 @@ static void cliAsyncCb(uv_async_t* handle) {
   taosThreadMutexLock(&item->mtx);
   QUEUE_MOVE(&item->qmsg, &wq);
   taosThreadMutexUnlock(&item->mtx);
+  if (!uv_is_active((uv_handle_t*)pThrd->check)) uv_check_start(pThrd->check, cliCheckCb);
+  // if (!uv_is_active((uv_handle_t*)pThrd->idle)) uv_idle_start(pThrd->idle, cliIdleCb);
+  // if (!uv_is_active((uv_handle_t*)pThrd->prepare)) uv_prepare_start(pThrd->prepare, cliPrepareCb);
 
   int count = 0;
   while (!QUEUE_IS_EMPTY(&wq)) {
@@ -1089,7 +1096,6 @@ static void cliAsyncCb(uv_async_t* handle) {
   if (count >= 2) {
     tTrace("cli process batch size:%d", count);
   }
-  // if (!uv_is_active((uv_handle_t*)pThrd->prepare)) uv_prepare_start(pThrd->prepare, cliPrepareCb);
 
   if (pThrd->stopMsg != NULL) cliHandleQuit(pThrd->stopMsg, pThrd);
 }
@@ -1120,6 +1126,35 @@ static void cliPrepareCb(uv_prepare_t* handle) {
   tTrace("prepare work end");
   if (thrd->stopMsg != NULL) cliHandleQuit(thrd->stopMsg, thrd);
 }
+
+static void cliCheckCb(uv_check_t* handle) {
+  SCliThrd* thrd = handle->data;
+  tTrace("check work start");
+
+  SAsyncPool* pool = thrd->asyncPool;
+  for (int i = 0; i < pool->nAsync; i++) {
+    uv_async_t* async = &(pool->asyncs[i]);
+    SAsyncItem* item = async->data;
+
+    queue wq;
+    taosThreadMutexLock(&item->mtx);
+    QUEUE_MOVE(&item->qmsg, &wq);
+    taosThreadMutexUnlock(&item->mtx);
+
+    int count = 0;
+    while (!QUEUE_IS_EMPTY(&wq)) {
+      queue* h = QUEUE_HEAD(&wq);
+      QUEUE_REMOVE(h);
+
+      SCliMsg* pMsg = QUEUE_DATA(h, SCliMsg, q);
+      (*cliAsyncHandle[pMsg->type])(pMsg, thrd);
+      count++;
+    }
+  }
+  tTrace("check work end");
+  if (thrd->stopMsg != NULL) cliHandleQuit(thrd->stopMsg, thrd);
+}
+static void cliIdleCb(uv_idle_t* handle) { tDebug("test idle"); }
 
 void cliDestroyConnMsgs(SCliConn* conn, bool destroy) {
   transCtxCleanup(&conn->ctx);
@@ -1182,7 +1217,7 @@ bool cliRecvReleaseReq(SCliConn* conn, STransMsgHead* pHead) {
 static void* cliWorkThread(void* arg) {
   SCliThrd* pThrd = (SCliThrd*)arg;
   pThrd->pid = taosGetSelfPthreadId();
-  setThreadName("trans-cli-work");
+  setThreadName("trans-cli-worker");
   uv_run(pThrd->loop, UV_RUN_DEFAULT);
 
   tDebug("thread quit-thread:%08" PRId64, pThrd->pid);
@@ -1260,10 +1295,17 @@ static SCliThrd* createThrdObj(void* trans) {
 
   pThrd->asyncPool = transAsyncPoolCreate(pThrd->loop, 8, pThrd, cliAsyncCb);
 
+  pThrd->check = taosMemoryMalloc(sizeof(uv_check_t));
+  uv_check_init(pThrd->loop, pThrd->check);
+  pThrd->check->data = pThrd;
+
+  pThrd->idle = taosMemoryMalloc(sizeof(uv_idle_t));
+  uv_idle_init(pThrd->loop, pThrd->idle);
+  pThrd->idle->data = pThrd;
+
   pThrd->prepare = taosMemoryCalloc(1, sizeof(uv_prepare_t));
   uv_prepare_init(pThrd->loop, pThrd->prepare);
   pThrd->prepare->data = pThrd;
-  // uv_prepare_start(pThrd->prepare, cliPrepareCb);
 
   int32_t timerSize = 64;
   pThrd->timerList = taosArrayInit(timerSize, sizeof(void*));
@@ -1307,6 +1349,8 @@ static void destroyThrdObj(SCliThrd* pThrd) {
   }
   taosArrayDestroy(pThrd->timerList);
   taosMemoryFree(pThrd->prepare);
+  taosMemoryFree(pThrd->check);
+  taosMemoryFree(pThrd->idle);
   taosMemoryFree(pThrd->loop);
   taosHashCleanup(pThrd->fqdn2ipCache);
   taosMemoryFree(pThrd);
@@ -1326,7 +1370,7 @@ void cliSendQuit(SCliThrd* thrd) {
 }
 void cliWalkCb(uv_handle_t* handle, void* arg) {
   if (!uv_is_closing(handle)) {
-    if (uv_handle_get_type(handle) == UV_TIMER) {
+    if (uv_handle_get_type(handle) == UV_TIMER || uv_handle_get_type(handle) == UV_CHECK) {
       // SCliConn* pConn = handle->data;
       //  if (pConn != NULL && pConn->timer != NULL) {
       //    SCliThrd* pThrd = pConn->hostThrd;

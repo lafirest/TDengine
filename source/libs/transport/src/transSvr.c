@@ -848,7 +848,7 @@ static bool addHandleToAcceptloop(void* arg) {
   return true;
 }
 void* transWorkerThread(void* arg) {
-  setThreadName("trans-worker");
+  setThreadName("trans-svr-worker");
   SWorkThrd* pThrd = (SWorkThrd*)arg;
   uv_run(pThrd->loop, UV_RUN_DEFAULT);
 

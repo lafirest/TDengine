@@ -100,6 +100,14 @@ static SSchedQueue pTaskQueue = {0};
 
 int32_t initTaskQueue() {
   int32_t queueSize = tsMaxShellConns * 2;
+
+  int32_t numOfThreads = tsNumOfTaskQueueThreads;
+  if (numOfThreads <= 1) {
+    numOfThreads = 1;
+  } else if (numOfThreads >= 15) {
+    numOfThreads = 15; 
+  }
+  
   void *p = taosInitScheduler(queueSize, tsNumOfTaskQueueThreads, "tsc", &pTaskQueue);
   if (NULL == p) {
     qError("failed to init task queue");
