@@ -72,6 +72,7 @@ typedef struct SCliThrd {
   uv_check_t*   check;
   uv_idle_t*    idle;
   void*         pool;  // conn pool
+
   // timer handles
   SArray* timerList;
   // msg queue
@@ -342,7 +343,7 @@ void cliHandleResp(SCliConn* conn) {
 
     pCtx = pMsg ? pMsg->ctx : NULL;
     transMsg.info.ahandle = pCtx ? pCtx->ahandle : NULL;
-    tDebug("%s conn %p get ahandle %p, persist: 0", CONN_GET_INST_LABEL(conn), conn, transMsg.info.ahandle);
+    tTrace("%s conn %p get ahandle %p, persist: 0", CONN_GET_INST_LABEL(conn), conn, transMsg.info.ahandle);
   } else {
     uint64_t ahandle = (uint64_t)pHead->ahandle;
     CONN_GET_MSGCTX_BY_AHANDLE(conn, ahandle);
@@ -359,7 +360,7 @@ void cliHandleResp(SCliConn* conn) {
     } else {
       pCtx = pMsg->ctx;
       transMsg.info.ahandle = pCtx ? pCtx->ahandle : NULL;
-      tDebug("%s conn %p get ahandle %p, persist: 1", CONN_GET_INST_LABEL(conn), conn, transMsg.info.ahandle);
+      tTrace("%s conn %p get ahandle %p, persist: 1", CONN_GET_INST_LABEL(conn), conn, transMsg.info.ahandle);
     }
   }
   // buf's mem alread translated to transMsg.pCont
@@ -614,7 +615,6 @@ static int32_t specifyConnRef(SCliConn* conn, bool update, int64_t handle) {
 static void cliAllocRecvBufferCb(uv_handle_t* handle, size_t suggested_size, uv_buf_t* buf) {
   SCliConn*    conn = handle->data;
   SConnBuffer* pBuf = &conn->readBuf;
-  tDebug("%s conn %p alloc read buf", CONN_GET_INST_LABEL(conn), conn);
   transAllocBuffer(pBuf, buf);
 }
 static void cliRecvCb(uv_stream_t* handle, ssize_t nread, const uv_buf_t* buf) {
@@ -627,7 +627,6 @@ static void cliRecvCb(uv_stream_t* handle, ssize_t nread, const uv_buf_t* buf) {
   if (nread > 0) {
     pBuf->len += nread;
     while (transReadComplete(pBuf)) {
-      tDebug("%s conn %p read complete", CONN_GET_INST_LABEL(conn), conn);
       if (pBuf->invalid) {
         cliHandleExcept(conn);
         break;
@@ -1082,7 +1081,7 @@ static void cliAsyncCb(uv_async_t* handle) {
   taosThreadMutexUnlock(&item->mtx);
   if (!uv_is_active((uv_handle_t*)pThrd->check)) uv_check_start(pThrd->check, cliCheckCb);
   // if (!uv_is_active((uv_handle_t*)pThrd->idle)) uv_idle_start(pThrd->idle, cliIdleCb);
-  // if (!uv_is_active((uv_handle_t*)pThrd->prepare)) uv_prepare_start(pThrd->prepare, cliPrepareCb);
+  //  if (!uv_is_active((uv_handle_t*)pThrd->prepare)) uv_prepare_start(pThrd->prepare, cliPrepareCb);
 
   int count = 0;
   while (!QUEUE_IS_EMPTY(&wq)) {
@@ -1128,9 +1127,7 @@ static void cliPrepareCb(uv_prepare_t* handle) {
 }
 
 static void cliCheckCb(uv_check_t* handle) {
-  SCliThrd* thrd = handle->data;
-  tTrace("check work start");
-
+  SCliThrd*   thrd = handle->data;
   SAsyncPool* pool = thrd->asyncPool;
   for (int i = 0; i < pool->nAsync; i++) {
     uv_async_t* async = &(pool->asyncs[i]);
@@ -1151,10 +1148,9 @@ static void cliCheckCb(uv_check_t* handle) {
       count++;
     }
   }
-  tTrace("check work end");
   if (thrd->stopMsg != NULL) cliHandleQuit(thrd->stopMsg, thrd);
 }
-static void cliIdleCb(uv_idle_t* handle) { tDebug("test idle"); }
+static void cliIdleCb(uv_idle_t* handle) { tTrace("idle work end"); }
 
 void cliDestroyConnMsgs(SCliConn* conn, bool destroy) {
   transCtxCleanup(&conn->ctx);
@@ -1370,7 +1366,8 @@ void cliSendQuit(SCliThrd* thrd) {
 }
 void cliWalkCb(uv_handle_t* handle, void* arg) {
   if (!uv_is_closing(handle)) {
-    if (uv_handle_get_type(handle) == UV_TIMER || uv_handle_get_type(handle) == UV_CHECK) {
+    if (uv_handle_get_type(handle) == UV_TIMER || uv_handle_get_type(handle) == UV_CHECK ||
+        uv_handle_get_type(handle) == UV_IDLE) {
       // SCliConn* pConn = handle->data;
       //  if (pConn != NULL && pConn->timer != NULL) {
       //    SCliThrd* pThrd = pConn->hostThrd;
@@ -1742,7 +1739,7 @@ int transSetDefaultAddr(void* shandle, const char* ip, const char* fqdn) {
     cliMsg->refId = (int64_t)shandle;
 
     SCliThrd* thrd = ((SCliObj*)pTransInst->tcphandle)->pThreadObj[i];
-    tDebug("%s update epset at thread:%08" PRId64, pTransInst->label, thrd->pid);
+    tTrace("%s update epset at thread:%08" PRId64, pTransInst->label, thrd->pid);
 
     if (transAsyncSend(thrd->asyncPool, &(cliMsg->q)) != 0) {
       destroyCmsg(cliMsg);
@@ -1757,7 +1754,7 @@ int transSetDefaultAddr(void* shandle, const char* ip, const char* fqdn) {
 int64_t transAllocHandle() {
   SExHandle* exh = taosMemoryCalloc(1, sizeof(SExHandle));
   exh->refId = transAddExHandle(transGetRefMgt(), exh);
-  tDebug("pre alloc refId %" PRId64 "", exh->refId);
+  tTrace("pre alloc refId %" PRId64 "", exh->refId);
 
   return exh->refId;
 }
