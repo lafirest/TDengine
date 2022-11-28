@@ -512,6 +512,7 @@ static bool needToFetchNewBlock(SSqlObj* pSql) {
           pCmd->command == TSDB_SQL_SELECT ||
           pCmd->command == TSDB_SQL_DESCRIBE_TABLE ||
           pCmd->command == TSDB_SQL_SERV_STATUS ||
+          pCmd->command == TSDB_SQL_CLUSTER_STATUS ||
           pCmd->command == TSDB_SQL_CURRENT_DB ||
           pCmd->command == TSDB_SQL_SERV_VERSION ||
           pCmd->command == TSDB_SQL_CLI_VERSION ||

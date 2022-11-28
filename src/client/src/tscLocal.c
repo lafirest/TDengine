@@ -890,7 +890,7 @@ static int32_t tscProcessClientVer(SSqlObj *pSql) {
 }
 
 // TODO add test cases.
-static int32_t checkForOnlineNode(SSqlObj* pSql) {
+static int32_t checkForOnlineNode(SSqlObj* pSql, bool bCluster) {
   int32_t* data = pSql->res.length;
   if (data == NULL) {
     return TSDB_CODE_SUCCESS;
@@ -898,10 +898,15 @@ static int32_t checkForOnlineNode(SSqlObj* pSql) {
 
   int32_t total  = data[0];
   int32_t online = data[1];
-  return (online < total)? TSDB_CODE_RPC_NETWORK_UNAVAIL:TSDB_CODE_SUCCESS;
+  if(bCluster) {
+    // if half nodes online , then cluster is online
+    return (online <= total/2)? TSDB_CODE_RPC_NETWORK_UNAVAIL:TSDB_CODE_SUCCESS;
+  } else {
+    return (online < total)? TSDB_CODE_RPC_NETWORK_UNAVAIL:TSDB_CODE_SUCCESS;
+  }  
 }
 
-static int32_t tscProcessServStatus(SSqlObj *pSql) {
+static int32_t tscProcessServStatus(SSqlObj *pSql, bool bCluster) {
   STscObj* pObj = pSql->pTscObj;
 
   SSqlObj* pHb = (SSqlObj*)taosAcquireRef(tscObjRef, pObj->hbrid);
@@ -915,7 +920,7 @@ static int32_t tscProcessServStatus(SSqlObj *pSql) {
   }
 
   if (pHb != NULL) {
-    pSql->res.code = checkForOnlineNode(pHb);
+    pSql->res.code = checkForOnlineNode(pHb, bCluster);
     taosReleaseRef(tscObjRef, pObj->hbrid);
   }
 
@@ -992,7 +997,9 @@ int tscProcessLocalCmd(SSqlObj *pSql) {
   } else if (pCmd->command == TSDB_SQL_CURRENT_DB) {
     pRes->code = tscProcessCurrentDB(pSql);
   } else if (pCmd->command == TSDB_SQL_SERV_STATUS) {
-    pRes->code = tscProcessServStatus(pSql);
+    pRes->code = tscProcessServStatus(pSql, false);
+  } else if (pCmd->command == TSDB_SQL_CLUSTER_STATUS) {
+    pRes->code = tscProcessServStatus(pSql, true);
   } else {
     pRes->code = TSDB_CODE_TSC_INVALID_OPERATION;
     tscError("0x%"PRIx64" not support command:%d", pSql->self, pCmd->command);

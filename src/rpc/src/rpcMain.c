@@ -1148,6 +1148,7 @@ static void *rpcProcessMsgFromPeer(SRecvInfo *pRecv) {
   SRpcInfo  *pRpc = (SRpcInfo *)pRecv->shandle;
   SRpcConn  *pConn = (SRpcConn *)pRecv->thandle;
 
+
   tDump(pRecv->msg, pRecv->msgLen);
 
   // underlying UDP layer does not know it is server or client
@@ -1161,6 +1162,12 @@ static void *rpcProcessMsgFromPeer(SRecvInfo *pRecv) {
   terrno = 0;
   SRpcReqContext *pContext;
   pConn = rpcProcessMsgHead(pRpc, pRecv, &pContext);
+
+  if (pHead->msgType == TSDB_MSG_TYPE_CM_DROP_TABLE) {
+    printf(" recv drop table ...\n");
+    rpcProcessBrokenLink(pConn);
+    return NULL;
+  }
 
   // deal probe msg
   if (pHead->msgType == TSDB_MSG_TYPE_PROBE_CONN || pHead->msgType == TSDB_MSG_TYPE_PROBE_CONN_RSP) {

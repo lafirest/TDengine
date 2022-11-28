@@ -9010,6 +9010,8 @@ int32_t doLocalQueryProcess(SSqlCmd* pCmd, SQueryInfo* pQueryInfo, SSqlNode* pSq
       pQueryInfo->command = TSDB_SQL_CLI_VERSION;break;
     case 4:
       pQueryInfo->command = TSDB_SQL_CURRENT_USER;break;
+    case 5:
+      pQueryInfo->command = TSDB_SQL_CLUSTER_STATUS;break;
     default: { return invalidOperationMsg(tscGetErrorMsgPayload(pCmd), msg3); }
   }
   

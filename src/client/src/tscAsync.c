@@ -596,7 +596,10 @@ void taos_fetch_rows_a(TAOS_RES *tres, __async_cb_func_t fp, void *param) {
   if (pCmd->command == TSDB_SQL_TABLE_JOIN_RETRIEVE) {
     tscFetchDatablockForSubquery(pSql);
   } else if (pRes->completed) {
-    if(pCmd->command == TSDB_SQL_FETCH || (pCmd->command >= TSDB_SQL_SERV_STATUS && pCmd->command <= TSDB_SQL_CURRENT_USER)) {
+    if (pCmd->command == TSDB_SQL_FETCH ||
+        (pCmd->command >= TSDB_SQL_SERV_STATUS && pCmd->command <= TSDB_SQL_CURRENT_USER) ||
+        pCmd->command == TSDB_SQL_CLUSTER_STATUS) {
+
       if (hasMoreVnodesToTry(pSql)) {  // sequentially retrieve data from remain vnodes.
         tscTryQueryNextVnode(pSql, tscAsyncQueryRowsForNextVnode);
       } else {
