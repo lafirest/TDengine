@@ -8980,10 +8980,11 @@ int32_t doLocalQueryProcess(SSqlCmd* pCmd, SQueryInfo* pQueryInfo, SSqlNode* pSq
     } 
   } 
   // TODO redefine the function
-   SDNodeDynConfOption functionsInfo[5] = {{"database()", 10},
+   SDNodeDynConfOption functionsInfo[6] = {{"database()", 10},
                                             {"server_version()", 16},
                                             {"server_status()", 15},
-                                            {"client_version()", 16},
+                                            {"server_status()", 15},
+                                            {"cluster_status()", 17},
                                             {"current_user()", 14}};
 
   int32_t idx = -1;

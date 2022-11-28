@@ -105,6 +105,7 @@ SWords shellCommands[] = {
   {"select cluster_status();", 0, 0, NULL},
   {"select current_user();", 0, 0, NULL},
   {"select database;", 0, 0, NULL},
+  {"select server_status();", 0, 0, NULL},
   {"select server_version();", 0, 0, NULL},
   {"set max_binary_display_width ", 0, 0, NULL},
   {"show create database <db_name> \\G;", 0, 0, NULL},
@@ -400,9 +401,10 @@ void showHelp() {
     select _block_dist() from <all_table>;\n\
     select client_version();\n\
     select current_user();\n\
-    select cluster_version();\n\
+    select cluster_status();\n\
     select database;\n\
     select server_version();\n\
+    select server_status();\n\
     set max_binary_display_width <width>;  \n\
     show create database <db_name>;\n\
     show create stable <stb_name>;\n\
