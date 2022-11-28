@@ -102,6 +102,7 @@ SWords shellCommands[] = {
   {"select * from <all_table> where ", 0, 0, NULL},
   {"select _block_dist() from <all_table> \\G;", 0, 0, NULL},
   {"select client_version();", 0, 0, NULL},
+  {"select cluster_status();", 0, 0, NULL},
   {"select current_user();", 0, 0, NULL},
   {"select database;", 0, 0, NULL},
   {"select server_version();", 0, 0, NULL},
@@ -399,6 +400,7 @@ void showHelp() {
     select _block_dist() from <all_table>;\n\
     select client_version();\n\
     select current_user();\n\
+    select cluster_version();\n\
     select database;\n\
     select server_version();\n\
     set max_binary_display_width <width>;  \n\
