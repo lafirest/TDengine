@@ -8983,9 +8983,9 @@ int32_t doLocalQueryProcess(SSqlCmd* pCmd, SQueryInfo* pQueryInfo, SSqlNode* pSq
    SDNodeDynConfOption functionsInfo[6] = {{"database()", 10},
                                             {"server_version()", 16},
                                             {"server_status()", 15},
-                                            {"server_status()", 15},
-                                            {"cluster_status()", 17},
-                                            {"current_user()", 14}};
+                                            {"client_version()", 16},
+                                            {"current_user()", 14},
+                                            {"cluster_status()", 16}};
 
   int32_t idx = -1;
   if (server_status == true) {
