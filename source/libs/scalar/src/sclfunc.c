@@ -6,7 +6,6 @@
 #include "tdatablock.h"
 #include "tjson.h"
 #include "ttime.h"
-#include "vnode.h"
 
 typedef float (*_float_fn)(float);
 typedef double (*_double_fn)(double);
@@ -25,6 +24,8 @@ static double tlog2(double v, double base) {
     return a;
   } else if (isnan(b) || isinf(b)) {
     return b;
+  } else if (b == 0) {
+    return INFINITY;
   } else {
     return a / b;
   }
@@ -1029,11 +1030,11 @@ int32_t toISO8601Function(SScalarParam *pInput, int32_t inputNum, SScalarParam *
   int32_t type = GET_PARAM_TYPE(pInput);
 
   bool    tzPresent = (inputNum == 2) ? true : false;
-  char   *tz;
-  int32_t tzLen;
+  char    tz[20] = {0};
+  int32_t tzLen = 0;
   if (tzPresent) {
-    tz = varDataVal(pInput[1].columnData->pData);
     tzLen = varDataLen(pInput[1].columnData->pData);
+    memcpy(tz, varDataVal(pInput[1].columnData->pData), tzLen);
   }
 
   for (int32_t i = 0; i < pInput[0].numOfRows; ++i) {
@@ -1072,8 +1073,10 @@ int32_t toISO8601Function(SScalarParam *pInput, int32_t inputNum, SScalarParam *
     int32_t len = (int32_t)strlen(buf);
 
     // add timezone string
-    snprintf(buf + len, tzLen + 1, "%s", tz);
-    len += tzLen;
+    if (tzLen > 0) {
+      snprintf(buf + len, tzLen + 1, "%s", tz);
+      len += tzLen;
+    }
 
     if (hasFraction) {
       int32_t fracLen = (int32_t)strlen(fraction) + 1;
@@ -1718,12 +1721,9 @@ int32_t winEndTsFunction(SScalarParam *pInput, int32_t inputNum, SScalarParam *p
 
 int32_t qTbnameFunction(SScalarParam *pInput, int32_t inputNum, SScalarParam *pOutput) {
   ASSERT(inputNum == 1);
+  char* p = colDataGetVarData(pInput->columnData, 0);
 
-  uint64_t uid = *(uint64_t *)colDataGetData(pInput->columnData, 0);
-
-  char str[TSDB_TABLE_FNAME_LEN + VARSTR_HEADER_SIZE] = {0};
-  metaGetTableNameByUid(pInput->param, uid, str);
-  colDataAppendNItems(pOutput->columnData, pOutput->numOfRows, str, pInput->numOfRows);
+  colDataAppendNItems(pOutput->columnData, pOutput->numOfRows, p, pInput->numOfRows);
   pOutput->numOfRows += pInput->numOfRows;
   return TSDB_CODE_SUCCESS;
 }
@@ -1758,18 +1758,45 @@ int32_t sumScalarFunction(SScalarParam *pInput, int32_t inputNum, SScalarParam *
       break;
     }
 
-    if (IS_SIGNED_NUMERIC_TYPE(type)) {
-      int64_t *in = (int64_t *)pInputData->pData;
+    if (IS_SIGNED_NUMERIC_TYPE(type) || type == TSDB_DATA_TYPE_BOOL) {
       int64_t *out = (int64_t *)pOutputData->pData;
-      *out += in[i];
+      if (type == TSDB_DATA_TYPE_TINYINT || type == TSDB_DATA_TYPE_BOOL) {
+        int8_t *in = (int8_t *)pInputData->pData;
+        *out += in[i];
+      } else if (type == TSDB_DATA_TYPE_SMALLINT) {
+        int16_t *in = (int16_t *)pInputData->pData;
+        *out += in[i];
+      } else if (type == TSDB_DATA_TYPE_INT) {
+        int32_t *in = (int32_t *)pInputData->pData;
+        *out += in[i];
+      } else if (type == TSDB_DATA_TYPE_BIGINT) {
+        int64_t *in = (int64_t *)pInputData->pData;
+        *out += in[i];
+      }
     } else if (IS_UNSIGNED_NUMERIC_TYPE(type)) {
-      uint64_t *in = (uint64_t *)pInputData->pData;
       uint64_t *out = (uint64_t *)pOutputData->pData;
-      *out += in[i];
+      if (type == TSDB_DATA_TYPE_UTINYINT) {
+        uint8_t *in = (uint8_t *)pInputData->pData;
+        *out += in[i];
+      } else if (type == TSDB_DATA_TYPE_USMALLINT) {
+        uint16_t *in = (uint16_t *)pInputData->pData;
+        *out += in[i];
+      } else if (type == TSDB_DATA_TYPE_UINT) {
+        uint32_t *in = (uint32_t *)pInputData->pData;
+        *out += in[i];
+      } else if (type == TSDB_DATA_TYPE_UBIGINT) {
+        uint64_t *in = (uint64_t *)pInputData->pData;
+        *out += in[i];
+      }
     } else if (IS_FLOAT_TYPE(type)) {
-      double *in = (double *)pInputData->pData;
       double *out = (double *)pOutputData->pData;
-      *out += in[i];
+      if (type == TSDB_DATA_TYPE_FLOAT) {
+        float *in = (float *)pInputData->pData;
+        *out += in[i];
+      } else if (type == TSDB_DATA_TYPE_DOUBLE) {
+        double *in = (double *)pInputData->pData;
+        *out += in[i];
+      }
     }
   }
 
@@ -2622,6 +2649,7 @@ static bool getHistogramBinDesc(SHistoFuncBin **bins, int32_t *binNum, char *bin
     int32_t numOfParams = cJSON_GetArraySize(binDesc);
     int32_t startIndex;
     if (numOfParams != 4) {
+      cJSON_Delete(binDesc);
       return false;
     }
 
@@ -2632,15 +2660,18 @@ static bool getHistogramBinDesc(SHistoFuncBin **bins, int32_t *binNum, char *bin
     cJSON *infinity = cJSON_GetObjectItem(binDesc, "infinity");
 
     if (!cJSON_IsNumber(start) || !cJSON_IsNumber(count) || !cJSON_IsBool(infinity)) {
+      cJSON_Delete(binDesc);
       return false;
     }
 
     if (count->valueint <= 0 || count->valueint > 1000) {  // limit count to 1000
+      cJSON_Delete(binDesc);
       return false;
     }
 
     if (isinf(start->valuedouble) || (width != NULL && isinf(width->valuedouble)) ||
         (factor != NULL && isinf(factor->valuedouble)) || (count != NULL && isinf(count->valuedouble))) {
+      cJSON_Delete(binDesc);
       return false;
     }
 
@@ -2658,12 +2689,14 @@ static bool getHistogramBinDesc(SHistoFuncBin **bins, int32_t *binNum, char *bin
       // linear bin process
       if (width->valuedouble == 0) {
         taosMemoryFree(intervals);
+        cJSON_Delete(binDesc);
         return false;
       }
       for (int i = 0; i < counter + 1; ++i) {
         intervals[startIndex] = start->valuedouble + i * width->valuedouble;
         if (isinf(intervals[startIndex])) {
           taosMemoryFree(intervals);
+          cJSON_Delete(binDesc);
           return false;
         }
         startIndex++;
@@ -2672,22 +2705,26 @@ static bool getHistogramBinDesc(SHistoFuncBin **bins, int32_t *binNum, char *bin
       // log bin process
       if (start->valuedouble == 0) {
         taosMemoryFree(intervals);
+        cJSON_Delete(binDesc);
         return false;
       }
       if (factor->valuedouble < 0 || factor->valuedouble == 0 || factor->valuedouble == 1) {
         taosMemoryFree(intervals);
+        cJSON_Delete(binDesc);
         return false;
       }
       for (int i = 0; i < counter + 1; ++i) {
         intervals[startIndex] = start->valuedouble * pow(factor->valuedouble, i * 1.0);
         if (isinf(intervals[startIndex])) {
           taosMemoryFree(intervals);
+          cJSON_Delete(binDesc);
           return false;
         }
         startIndex++;
       }
     } else {
       taosMemoryFree(intervals);
+      cJSON_Delete(binDesc);
       return false;
     }
 
@@ -2702,6 +2739,7 @@ static bool getHistogramBinDesc(SHistoFuncBin **bins, int32_t *binNum, char *bin
     }
   } else if (cJSON_IsArray(binDesc)) { /* user input bins */
     if (binType != USER_INPUT_BIN) {
+      cJSON_Delete(binDesc);
       return false;
     }
     numOfBins = cJSON_GetArraySize(binDesc);
@@ -2709,6 +2747,7 @@ static bool getHistogramBinDesc(SHistoFuncBin **bins, int32_t *binNum, char *bin
     cJSON *bin = binDesc->child;
     if (bin == NULL) {
       taosMemoryFree(intervals);
+      cJSON_Delete(binDesc);
       return false;
     }
     int i = 0;
@@ -2716,16 +2755,19 @@ static bool getHistogramBinDesc(SHistoFuncBin **bins, int32_t *binNum, char *bin
       intervals[i] = bin->valuedouble;
       if (!cJSON_IsNumber(bin)) {
         taosMemoryFree(intervals);
+        cJSON_Delete(binDesc);
         return false;
       }
       if (i != 0 && intervals[i] <= intervals[i - 1]) {
         taosMemoryFree(intervals);
+        cJSON_Delete(binDesc);
         return false;
       }
       bin = bin->next;
       i++;
     }
   } else {
+    cJSON_Delete(binDesc);
     return false;
   }
 
@@ -2737,8 +2779,9 @@ static bool getHistogramBinDesc(SHistoFuncBin **bins, int32_t *binNum, char *bin
     (*bins)[i].count = 0;
   }
 
-  cJSON_Delete(binDesc);
   taosMemoryFree(intervals);
+  cJSON_Delete(binDesc);
+
   return true;
 }
 
@@ -2750,14 +2793,19 @@ int32_t histogramScalarFunction(SScalarParam *pInput, int32_t inputNum, SScalarP
   int32_t        numOfBins = 0;
   int32_t        totalCount = 0;
 
-  int8_t  binType = getHistogramBinType(varDataVal(pInput[1].columnData->pData));
-  char   *binDesc = varDataVal(pInput[2].columnData->pData);
+  char *binTypeStr = strndup(varDataVal(pInput[1].columnData->pData), varDataLen(pInput[1].columnData->pData));
+  int8_t binType = getHistogramBinType(binTypeStr);
+  taosMemoryFree(binTypeStr);
+
+  char   *binDesc = strndup(varDataVal(pInput[2].columnData->pData), varDataLen(pInput[2].columnData->pData));
   int64_t normalized = *(int64_t *)(pInput[3].columnData->pData);
 
   int32_t type = GET_PARAM_TYPE(pInput);
   if (!getHistogramBinDesc(&bins, &numOfBins, binDesc, binType, (bool)normalized)) {
+    taosMemoryFree(binDesc);
     return TSDB_CODE_FAILED;
   }
+  taosMemoryFree(binDesc);
 
   for (int32_t i = 0; i < pInput->numOfRows; ++i) {
     if (colDataIsNull_s(pInputData, i)) {
@@ -2786,6 +2834,8 @@ int32_t histogramScalarFunction(SScalarParam *pInput, int32_t inputNum, SScalarP
       }
     }
   }
+
+  colInfoDataEnsureCapacity(pOutputData, numOfBins, false);
 
   for (int32_t k = 0; k < numOfBins; ++k) {
     int32_t len;

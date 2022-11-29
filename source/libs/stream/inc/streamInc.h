@@ -32,8 +32,6 @@ typedef struct {
 
 static SStreamGlobalEnv streamEnv;
 
-// int32_t streamPipelineExec(SStreamTask* pTask, int32_t batchNum, bool dispatch);
-
 int32_t streamDispatch(SStreamTask* pTask);
 int32_t streamDispatchReqToData(const SStreamDispatchReq* pReq, SStreamDataBlock* pData);
 int32_t streamRetrieveReqToData(const SStreamRetrieveReq* pReq, SStreamDataBlock* pData);
@@ -43,8 +41,12 @@ int32_t streamBroadcastToChildren(SStreamTask* pTask, const SSDataBlock* pBlock)
 
 int32_t tEncodeStreamRetrieveReq(SEncoder* pEncoder, const SStreamRetrieveReq* pReq);
 
+int32_t streamDispatchOneCheckReq(SStreamTask* pTask, const SStreamTaskCheckReq* pReq, int32_t nodeId, SEpSet* pEpSet);
+
+int32_t streamDispatchOneRecoverFinishReq(SStreamTask* pTask, const SStreamRecoverFinishReq* pReq, int32_t vgId,
+                                          SEpSet* pEpSet);
+
 SStreamQueueItem* streamMergeQueueItem(SStreamQueueItem* dst, SStreamQueueItem* elem);
-void              streamFreeQitem(SStreamQueueItem* data);
 
 #ifdef __cplusplus
 }

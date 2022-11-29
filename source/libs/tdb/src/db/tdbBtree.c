@@ -140,6 +140,7 @@ int tdbBtreeOpen(int keyLen, int valLen, SPager *pPager, char const *tbname, SPg
     // tdbUnrefPage(pPage);
     tdbPCacheRelease(pPager->pCache, pPage, &txn);
     tdbCommit(pPager->pEnv, &txn);
+    tdbPostCommit(pPager->pEnv, &txn);
     tdbTxnClose(&txn);
   }
 
@@ -740,14 +741,12 @@ static int tdbBtreeBalanceNonRoot(SBTree *pBt, SPage *pParent, int idx, TXN *pTx
       tdbPageCreate(pOlds[0]->pageSize, &pOldsCopy[i], tdbDefaultMalloc, NULL);
       tdbBtreeInitPage(pOldsCopy[i], &iarg, 0);
       tdbPageCopy(pOlds[i], pOldsCopy[i], 0);
-    }
-
-    for (iNew = 0; iNew < nNews; ++iNew) {
-      tdbBtreeInitPage(pNews[iNew], &iarg, 0);
+      pOlds[i]->nOverflow = 0;
     }
 
     iNew = 0;
     nNewCells = 0;
+    tdbBtreeInitPage(pNews[iNew], &iarg, 0);
 
     for (int iOld = 0; iOld < nOlds; iOld++) {
       SPage *pPage;
@@ -1715,16 +1714,20 @@ int tdbBtreeNext(SBTC *pBtc, void **ppKey, int *kLen, void **ppVal, int *vLen) {
   memcpy(pKey, cd.pKey, cd.kLen);
 
   if (ppVal) {
-    // TODO: vLen may be zero
-    pVal = tdbRealloc(*ppVal, cd.vLen);
-    if (pVal == NULL) {
-      tdbFree(pKey);
-      return -1;
+    if (cd.vLen > 0) {
+      pVal = tdbRealloc(*ppVal, cd.vLen);
+      if (pVal == NULL) {
+        tdbFree(pKey);
+        return -1;
+      }
+
+      memcpy(pVal, cd.pVal, cd.vLen);
+    } else {
+      pVal = NULL;
     }
 
     *ppVal = pVal;
     *vLen = cd.vLen;
-    memcpy(pVal, cd.pVal, cd.vLen);
   }
 
   ret = tdbBtcMoveToNext(pBtc);

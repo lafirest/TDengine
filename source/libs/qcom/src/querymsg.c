@@ -41,8 +41,9 @@ int32_t queryBuildUseDbOutput(SUseDbOutput *pOut, SUseDbRsp *usedbRsp) {
   pOut->dbVgroup->hashMethod = usedbRsp->hashMethod;
   pOut->dbVgroup->hashPrefix = usedbRsp->hashPrefix;
   pOut->dbVgroup->hashSuffix = usedbRsp->hashSuffix;
+  pOut->dbVgroup->stateTs = usedbRsp->stateTs;
 
-  qDebug("Got %d vgroup for db %s", usedbRsp->vgNum, usedbRsp->db);
+  qDebug("Got %d vgroup for db %s, vgVersion:%d, stateTs:%" PRId64, usedbRsp->vgNum, usedbRsp->db, usedbRsp->vgVersion, usedbRsp->stateTs);
 
   if (usedbRsp->vgNum <= 0) {
     return TSDB_CODE_SUCCESS;
@@ -103,6 +104,7 @@ int32_t queryBuildUseDbMsg(void *input, char **msg, int32_t msgSize, int32_t *ms
   usedbReq.vgVersion = pInput->vgVersion;
   usedbReq.dbId = pInput->dbId;
   usedbReq.numOfTable = pInput->numOfTable;
+  usedbReq.stateTs = pInput->stateTs;
 
   int32_t bufLen = tSerializeSUseDbReq(NULL, 0, &usedbReq);
   void   *pBuf = (*mallcFp)(bufLen);
@@ -284,6 +286,53 @@ int32_t queryBuildGetTbCfgMsg(void *input, char **msg, int32_t msgSize, int32_t 
   return TSDB_CODE_SUCCESS;
 }
 
+int32_t queryProcessUseDBRsp(void *output, char *msg, int32_t msgSize) {
+  SUseDbOutput *pOut = output;
+  SUseDbRsp     usedbRsp = {0};
+  int32_t       code = -1;
+
+  if (NULL == output || NULL == msg || msgSize <= 0) {
+    code = TSDB_CODE_TSC_INVALID_INPUT;
+    goto PROCESS_USEDB_OVER;
+  }
+
+  if (tDeserializeSUseDbRsp(msg, msgSize, &usedbRsp) != 0) {
+    qError("invalid use db rsp msg, msgSize:%d", msgSize);
+    code = TSDB_CODE_INVALID_MSG;
+    goto PROCESS_USEDB_OVER;
+  }
+
+  if (usedbRsp.vgNum < 0) {
+    qError("invalid db[%s] vgroup number[%d]", usedbRsp.db, usedbRsp.vgNum);
+    code = TSDB_CODE_TSC_INVALID_VALUE;
+    goto PROCESS_USEDB_OVER;
+  }
+
+  qTrace("db:%s, usedbRsp received, numOfVgroups:%d", usedbRsp.db, usedbRsp.vgNum);
+  for (int32_t i = 0; i < usedbRsp.vgNum; ++i) {
+    SVgroupInfo *pInfo = taosArrayGet(usedbRsp.pVgroupInfos, i);
+    qTrace("vgId:%d, numOfEps:%d inUse:%d ", pInfo->vgId, pInfo->epSet.numOfEps, pInfo->epSet.inUse);
+    for (int32_t j = 0; j < pInfo->epSet.numOfEps; ++j) {
+      qTrace("vgId:%d, index:%d epset:%s:%u", pInfo->vgId, j, pInfo->epSet.eps[j].fqdn, pInfo->epSet.eps[j].port);
+    }
+  }
+
+  code = queryBuildUseDbOutput(pOut, &usedbRsp);
+
+PROCESS_USEDB_OVER:
+
+  if (code != 0) {
+    if (pOut) {
+      if (pOut->dbVgroup) taosHashCleanup(pOut->dbVgroup->vgHash);
+      taosMemoryFreeClear(pOut->dbVgroup);
+    }
+    qError("failed to process usedb rsp since %s", terrstr());
+  }
+
+  tFreeSUsedbRsp(&usedbRsp);
+  return code;
+}
+
 static int32_t queryConvertTableMetaMsg(STableMetaRsp *pMetaMsg) {
   if (pMetaMsg->numOfTags < 0 || pMetaMsg->numOfTags > TSDB_MAX_TAGS) {
     qError("invalid numOfTags[%d] in table meta rsp msg", pMetaMsg->numOfTags);
@@ -367,45 +416,6 @@ int32_t queryCreateTableMetaFromMsg(STableMetaRsp *msg, bool isStb, STableMeta *
   *pMeta = pTableMeta;
   return TSDB_CODE_SUCCESS;
 }
-
-int32_t queryProcessUseDBRsp(void *output, char *msg, int32_t msgSize) {
-  SUseDbOutput *pOut = output;
-  SUseDbRsp     usedbRsp = {0};
-  int32_t       code = -1;
-
-  if (NULL == output || NULL == msg || msgSize <= 0) {
-    code = TSDB_CODE_TSC_INVALID_INPUT;
-    goto PROCESS_USEDB_OVER;
-  }
-
-  if (tDeserializeSUseDbRsp(msg, msgSize, &usedbRsp) != 0) {
-    qError("invalid use db rsp msg, msgSize:%d", msgSize);
-    code = TSDB_CODE_INVALID_MSG;
-    goto PROCESS_USEDB_OVER;
-  }
-
-  if (usedbRsp.vgNum < 0) {
-    qError("invalid db[%s] vgroup number[%d]", usedbRsp.db, usedbRsp.vgNum);
-    code = TSDB_CODE_TSC_INVALID_VALUE;
-    goto PROCESS_USEDB_OVER;
-  }
-
-  code = queryBuildUseDbOutput(pOut, &usedbRsp);
-
-PROCESS_USEDB_OVER:
-
-  if (code != 0) {
-    if (pOut) {
-      if (pOut->dbVgroup) taosHashCleanup(pOut->dbVgroup->vgHash);
-      taosMemoryFreeClear(pOut->dbVgroup);
-    }
-    qError("failed to process usedb rsp since %s", terrstr());
-  }
-
-  tFreeSUsedbRsp(&usedbRsp);
-  return code;
-}
-
 
 int32_t queryProcessTableMetaRsp(void *output, char *msg, int32_t msgSize) {
   int32_t       code = 0;

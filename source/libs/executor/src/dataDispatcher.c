@@ -76,7 +76,7 @@ static void toDataCacheEntry(SDataDispatchHandle* pHandle, const SInputData* pIn
   pEntry->dataLen = 0;
 
   pBuf->useSize = sizeof(SDataCacheEntry);
-  blockEncode(pInput->pData, pEntry->data, &pEntry->dataLen, numOfCols, pEntry->compressed);
+  pEntry->dataLen = blockEncode(pInput->pData, pEntry->data, numOfCols);
   ASSERT(pEntry->numOfRows == *(int32_t*)(pEntry->data + 8));
   ASSERT(pEntry->numOfCols == *(int32_t*)(pEntry->data + 8 + 4));
 
@@ -138,7 +138,9 @@ static int32_t putDataBlock(SDataSinkHandle* pHandle, const SInputData* pInput, 
   
   toDataCacheEntry(pDispatcher, pInput, pBuf);
   taosWriteQitem(pDispatcher->pDataBlocks, pBuf);
-  *pContinue = (DS_BUF_LOW == updateStatus(pDispatcher) ? true : false);
+
+  int32_t status = updateStatus(pDispatcher);
+  *pContinue = (status == DS_BUF_LOW || status == DS_BUF_EMPTY);
   return TSDB_CODE_SUCCESS;
 }
 

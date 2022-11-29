@@ -466,7 +466,7 @@ static void *mndBuildVCreateStbReq(SMnode *pMnode, SVgObj *pVgroup, SStbObj *pSt
 
   contLen += sizeof(SMsgHead);
 
-  SMsgHead *pHead = taosMemoryMalloc(contLen);
+  SMsgHead *pHead = taosMemoryCalloc(1, contLen);
   if (pHead == NULL) {
     terrno = TSDB_CODE_OUT_OF_MEMORY;
     goto _err;
@@ -1187,11 +1187,11 @@ static int32_t mndCheckAlterColForTopic(SMnode *pMnode, const char *stbFullName,
         goto NEXT;
       }
       if (pCol->colId > 0 && pCol->colId == colId) {
-        sdbRelease(pSdb, pTopic);
-        nodesDestroyNode(pAst);
-        nodesDestroyList(pNodeList);
         terrno = TSDB_CODE_MND_FIELD_CONFLICT_WITH_TOPIC;
         mError("topic:%s, check colId:%d conflicted", pTopic->name, pCol->colId);
+        nodesDestroyNode(pAst);
+        nodesDestroyList(pNodeList);
+        sdbRelease(pSdb, pTopic);
         return -1;
       }
       mInfo("topic:%s, check colId:%d passed", pTopic->name, pCol->colId);
@@ -1230,11 +1230,11 @@ static int32_t mndCheckAlterColForStream(SMnode *pMnode, const char *stbFullName
         goto NEXT;
       }
       if (pCol->colId > 0 && pCol->colId == colId) {
-        sdbRelease(pSdb, pStream);
-        nodesDestroyNode(pAst);
-        nodesDestroyList(pNodeList);
         terrno = TSDB_CODE_MND_STREAM_MUST_BE_DELETED;
         mError("stream:%s, check colId:%d conflicted", pStream->name, pCol->colId);
+        nodesDestroyNode(pAst);
+        nodesDestroyList(pNodeList);
+        sdbRelease(pSdb, pStream);
         return -1;
       }
       mInfo("stream:%s, check colId:%d passed", pStream->name, pCol->colId);
@@ -1279,11 +1279,11 @@ static int32_t mndCheckAlterColForTSma(SMnode *pMnode, const char *stbFullName, 
         goto NEXT;
       }
       if ((pCol->colId) > 0 && (pCol->colId == colId)) {
-        sdbRelease(pSdb, pSma);
-        nodesDestroyNode(pAst);
-        nodesDestroyList(pNodeList);
         terrno = TSDB_CODE_MND_FIELD_CONFLICT_WITH_TSMA;
         mError("tsma:%s, check colId:%d conflicted", pSma->name, pCol->colId);
+        nodesDestroyNode(pAst);
+        nodesDestroyList(pNodeList);
+        sdbRelease(pSdb, pSma);
         return -1;
       }
       mInfo("tsma:%s, check colId:%d passed", pSma->name, pCol->colId);
@@ -1684,7 +1684,7 @@ static int32_t mndBuildStbCfgImp(SDbObj *pDb, SStbObj *pStb, const char *tbName,
   }
 
   if (pStb->numOfFuncs > 0) {
-    pRsp->pFuncs = taosArrayDup(pStb->pFuncs);
+    pRsp->pFuncs = taosArrayDup(pStb->pFuncs, NULL);
   }
 
   taosRUnLockLatch(&pStb->lock);
@@ -2029,7 +2029,7 @@ static int32_t mndSetDropStbRedoActions(SMnode *pMnode, STrans *pTrans, SDbObj *
     action.pCont = pReq;
     action.contLen = contLen;
     action.msgType = TDMT_VND_DROP_STB;
-    action.acceptableCode = TSDB_CODE_VND_TB_NOT_EXIST;
+    action.acceptableCode = TSDB_CODE_TDB_STB_NOT_EXIST;
     if (mndTransAppendRedoAction(pTrans, &action) != 0) {
       taosMemoryFree(pReq);
       sdbCancelFetch(pSdb, pIter);

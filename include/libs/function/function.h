@@ -115,7 +115,7 @@ typedef struct SInputColumnInfoData {
   int32_t           startRowIndex;    // handle started row index
   int32_t           numOfRows;        // the number of rows needs to be handled
   int32_t           numOfInputCols;   // PTS is not included
-  bool              colDataAggIsSet;  // if agg is set or not
+  bool              colDataSMAIsSet;  // if agg is set or not
   SColumnInfoData  *pPTS;             // primary timestamp column
   SColumnInfoData **pData;
   SColumnDataAgg  **pColumnDataAgg;
@@ -182,7 +182,7 @@ struct SScalarParam {
 };
 
 void    cleanupResultRowEntry(struct SResultRowEntryInfo *pCell);
-int32_t getNumOfResult(SqlFunctionCtx *pCtx, int32_t num, SSDataBlock *pResBlock);
+//int32_t getNumOfResult(SqlFunctionCtx *pCtx, int32_t num, SSDataBlock *pResBlock);
 bool    isRowEntryCompleted(struct SResultRowEntryInfo *pEntry);
 bool    isRowEntryInitialized(struct SResultRowEntryInfo *pEntry);
 

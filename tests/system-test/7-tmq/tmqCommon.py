@@ -37,7 +37,8 @@ from util.common import *
 #     INSERT_DATA     = 3
 
 class TMQCom:
-    def init(self, conn, logSql):
+    def init(self, conn, logSql, replicaVar=1):
+        self.replicaVar = int(replicaVar)
         tdSql.init(conn.cursor())
         # tdSql.init(conn.cursor(), logSql)  # output sql.txt file
 
@@ -127,12 +128,12 @@ class TMQCom:
         os.system(shellCmd)
 
     def stopTmqSimProcess(self, processorName):
-        psCmd = "ps -ef|grep -w %s|grep -v grep | awk '{print $2}'"%(processorName)
+        psCmd = "unset LD_PRELOAD; ps -ef|grep -w %s|grep -v grep | awk '{print $2}'"%(processorName)
         processID = subprocess.check_output(psCmd, shell=True).decode("utf-8")
         onlyKillOnceWindows = 0
         while(processID):
             if not platform.system().lower() == 'windows' or (onlyKillOnceWindows == 0 and platform.system().lower() == 'windows'):
-                killCmd = "kill -INT %s > /dev/null 2>&1" % processID
+                killCmd = "unset LD_PRELOAD; kill -INT %s > /dev/null 2>&1" % processID
                 os.system(killCmd)
                 onlyKillOnceWindows = 1
             time.sleep(0.2)

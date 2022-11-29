@@ -61,7 +61,8 @@ static int32_t hbProcessDBInfoRsp(void *value, int32_t valueLen, struct SCatalog
   int32_t numOfBatchs = taosArrayGetSize(batchUseRsp.pArray);
   for (int32_t i = 0; i < numOfBatchs; ++i) {
     SUseDbRsp *rsp = taosArrayGet(batchUseRsp.pArray, i);
-    tscDebug("hb db rsp, db:%s, vgVersion:%d, uid:%" PRIx64, rsp->db, rsp->vgVersion, rsp->uid);
+    tscDebug("hb db rsp, db:%s, vgVersion:%d, stateTs:%" PRId64 ", uid:%" PRIx64, rsp->db, rsp->vgVersion, rsp->stateTs,
+             rsp->uid);
 
     if (rsp->vgVersion < 0 || rsp->cfgVersion < 0) {
       code = catalogRemoveDB(pCatalog, rsp->db, rsp->uid);
@@ -73,10 +74,12 @@ static int32_t hbProcessDBInfoRsp(void *value, int32_t valueLen, struct SCatalog
       if (rsp->vgVersion > 0) {
         SDBVgInfo *vgInfo = taosMemoryCalloc(1, sizeof(SDBVgInfo));
         if (NULL == vgInfo) {
-          return TSDB_CODE_TSC_OUT_OF_MEMORY;
+          code = TSDB_CODE_TSC_OUT_OF_MEMORY;
+          goto _return;
         }
 
         vgInfo->vgVersion = rsp->vgVersion;
+        vgInfo->stateTs = rsp->stateTs;
         vgInfo->hashMethod = rsp->hashMethod;
         vgInfo->hashPrefix = rsp->hashPrefix;
         vgInfo->hashSuffix = rsp->hashSuffix;
@@ -84,7 +87,8 @@ static int32_t hbProcessDBInfoRsp(void *value, int32_t valueLen, struct SCatalog
         if (NULL == vgInfo->vgHash) {
           taosMemoryFree(vgInfo);
           tscError("hash init[%d] failed", rsp->vgNum);
-          return TSDB_CODE_TSC_OUT_OF_MEMORY;
+          code = TSDB_CODE_TSC_OUT_OF_MEMORY;
+          goto _return;
         }
 
         for (int32_t j = 0; j < rsp->vgNum; ++j) {
@@ -102,12 +106,14 @@ static int32_t hbProcessDBInfoRsp(void *value, int32_t valueLen, struct SCatalog
     }
 
     if (code) {
-      return code;
+      goto _return;
     }
   }
 
+_return:
+
   tFreeSUseDbBatchRsp(&batchUseRsp);
-  return TSDB_CODE_SUCCESS;
+  return code;
 }
 
 static int32_t hbProcessStbInfoRsp(void *value, int32_t valueLen, struct SCatalog *pCatalog) {
@@ -298,6 +304,7 @@ static int32_t hbAsyncCallBack(void *param, SDataBuf *pMsg, int32_t code) {
     taosThreadMutexUnlock(&appInfo.mutex);
     tscError("cluster not exist, key:%s", key);
     taosMemoryFree(pMsg->pData);
+    taosMemoryFree(pMsg->pEpSet);
     tFreeClientHbBatchRsp(&pRsp);
     return -1;
   }
@@ -327,6 +334,7 @@ static int32_t hbAsyncCallBack(void *param, SDataBuf *pMsg, int32_t code) {
 
   tFreeClientHbBatchRsp(&pRsp);
   taosMemoryFree(pMsg->pData);
+  taosMemoryFree(pMsg->pEpSet);
   return code;
 }
 
@@ -496,6 +504,7 @@ int32_t hbGetExpiredDBInfo(SClientHbKey *connKey, struct SCatalog *pCatalog, SCl
     db->vgVersion = htonl(db->vgVersion);
     db->cfgVersion = htonl(db->cfgVersion);
     db->numOfTable = htonl(db->numOfTable);
+    db->stateTs = htobe64(db->stateTs);
   }
 
   SKv kv = {

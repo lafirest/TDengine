@@ -41,13 +41,14 @@
 namespace {
 
 extern "C" int32_t ctgdGetClusterCacheNum(struct SCatalog *pCatalog, int32_t type);
-extern "C" int32_t ctgdEnableDebug(char *option);
 extern "C" int32_t ctgdGetStatNum(char *option, void *res);
 
 void ctgTestSetRspTableMeta();
 void ctgTestSetRspCTableMeta();
 void ctgTestSetRspSTableMeta();
 void ctgTestSetRspMultiSTableMeta();
+
+extern int32_t  clientConnRefPool;
 
 enum {
   CTGT_RSP_VGINFO = 1,
@@ -63,6 +64,7 @@ enum {
   CTGT_RSP_QNODELIST,
   CTGT_RSP_UDF,
   CTGT_RSP_SVRVER,
+  CTGT_RSP_DNODElIST,
   CTGT_RSP_TBMETA_NOT_EXIST,
 };
 
@@ -150,10 +152,10 @@ void ctgTestInitLogFile() {
   qDebugFlag = 159;
   strcpy(tsLogDir, TD_LOG_DIR_PATH);
 
-  ctgdEnableDebug("api");
-  ctgdEnableDebug("meta");
-  ctgdEnableDebug("cache");
-  ctgdEnableDebug("lock");
+  ctgdEnableDebug("api", true);
+  ctgdEnableDebug("meta", true);
+  ctgdEnableDebug("cache", true);
+  ctgdEnableDebug("lock", true);
 
   if (taosInitLog(defaultLogFileNamePrefix, maxLogFileNum) < 0) {
     printf("failed to open log file in directory:%s\n", tsLogDir);
@@ -703,6 +705,30 @@ void ctgTestRspSvrVer(void *shandle, SEpSet *pEpSet, SRpcMsg *pMsg, SRpcMsg *pRs
   pRsp->pCont = pReq;
 }
 
+void ctgTestRspDndeList(void *shandle, SEpSet *pEpSet, SRpcMsg *pMsg, SRpcMsg *pRsp) {
+  rpcFreeCont(pMsg->pCont);
+
+  SDnodeListRsp dRsp = {0};
+  dRsp.dnodeList = taosArrayInit(1, sizeof(SEpSet));
+  SEpSet epSet = {0};
+  epSet.numOfEps = 1;
+  tstrncpy(epSet.eps[0].fqdn, "localhost", TSDB_FQDN_LEN);
+  epSet.eps[0].port = 6030;
+  
+  (void)taosArrayPush(dRsp.dnodeList, &epSet);
+  
+  int32_t rspLen = tSerializeSDnodeListRsp(NULL, 0, &dRsp);
+  void   *pReq = rpcMallocCont(rspLen);
+  tSerializeSDnodeListRsp(pReq, rspLen, &dRsp);
+
+  pRsp->code = 0;
+  pRsp->contLen = rspLen;
+  pRsp->pCont = pReq;
+
+  tFreeSDnodeListRsp(&dRsp);
+}
+
+
 
 void ctgTestRspAuto(void *shandle, SEpSet *pEpSet, SRpcMsg *pMsg, SRpcMsg *pRsp) {
   switch (pMsg->msgType) {
@@ -727,6 +753,9 @@ void ctgTestRspAuto(void *shandle, SEpSet *pEpSet, SRpcMsg *pMsg, SRpcMsg *pRsp)
       break;
     case TDMT_MND_SERVER_VERSION:
       ctgTestRspSvrVer(shandle, pEpSet, pMsg, pRsp);
+      break;
+    case TDMT_MND_DNODE_LIST:
+      ctgTestRspDndeList(shandle, pEpSet, pMsg, pRsp);
       break;
     default:
       break;
@@ -779,6 +808,9 @@ void ctgTestRspByIdx(void *shandle, SEpSet *pEpSet, SRpcMsg *pMsg, SRpcMsg *pRsp
       break;
     case CTGT_RSP_SVRVER:
       ctgTestRspSvrVer(shandle, pEpSet, pMsg, pRsp);
+      break;
+    case CTGT_RSP_DNODElIST:
+      ctgTestRspDndeList(shandle, pEpSet, pMsg, pRsp);
       break;
     default:
       ctgTestRspAuto(shandle, pEpSet, pMsg, pRsp);
@@ -1174,6 +1206,34 @@ void *ctgTestSetCtableMetaThread(void *param) {
 }
 
 
+void ctgTestFetchRows(TAOS_RES *result, int32_t *rows) {
+  TAOS_ROW    row;
+  int         num_fields = taos_num_fields(result);
+  TAOS_FIELD *fields = taos_fetch_fields(result);
+  char        temp[256];
+
+  // fetch the records row by row
+  while ((row = taos_fetch_row(result))) {
+    (*rows)++;
+    memset(temp, 0, sizeof(temp));
+    taos_print_row(temp, row, fields, num_fields);
+    printf("\t[%s]\n", temp);
+  }
+}
+
+void ctgTestExecQuery(TAOS    * taos, char* sql, bool fetch, int32_t *rows) {
+  TAOS_RES *result = taos_query(taos, sql);
+  int code = taos_errno(result);
+  ASSERT_EQ(code, 0);
+
+  if (fetch) {
+    ctgTestFetchRows(result, rows);
+  }
+  
+  taos_free_result(result);
+}
+
+
 TEST(tableMeta, normalTable) {
   struct SCatalog  *pCtg = NULL;
   SVgroupInfo       vgInfo = {0};
@@ -1215,7 +1275,7 @@ TEST(tableMeta, normalTable) {
 
   memset(&vgInfo, 0, sizeof(vgInfo));
   bool exists = false;
-  code = catalogGetCachedTableHashVgroup(pCtg, mockPointer, &n, &vgInfo, &exists);
+  code = catalogGetCachedTableHashVgroup(pCtg, &n, &vgInfo, &exists);
   ASSERT_EQ(code, 0);
   ASSERT_EQ(vgInfo.vgId, 8);
   ASSERT_EQ(vgInfo.epSet.numOfEps, 3);
@@ -1262,7 +1322,7 @@ TEST(tableMeta, normalTable) {
   taosMemoryFree(tableMeta);
 
   tableMeta = NULL;
-  catalogGetCachedTableMeta(pCtg, mockPointer, &n, &tableMeta);
+  catalogGetCachedTableMeta(pCtg, &n, &tableMeta);
   ASSERT_EQ(code, 0);
   ASSERT_EQ(tableMeta->vgId, 8);
   ASSERT_EQ(tableMeta->tableType, TSDB_NORMAL_TABLE);
@@ -1470,7 +1530,7 @@ TEST(tableMeta, superTableCase) {
   }
 
   tableMeta = NULL;
-  code = catalogGetCachedSTableMeta(pCtg, mockPointer, &n, &tableMeta);
+  code = catalogGetCachedSTableMeta(pCtg, &n, &tableMeta);
   ASSERT_EQ(code, 0);
   ASSERT_EQ(tableMeta->vgId, 0);
   ASSERT_EQ(tableMeta->tableType, TSDB_SUPER_TABLE);
@@ -2427,7 +2487,8 @@ TEST(dbVgroup, getSetDbVgroupCase) {
   int32_t dbVer = 0;
   int64_t dbId = 0;
   int32_t tbNum = 0;
-  code = catalogGetDBVgVersion(pCtg, ctgTestDbname, &dbVer, &dbId, &tbNum);
+  int64_t stateTs = 0;
+  code = catalogGetDBVgVersion(pCtg, ctgTestDbname, &dbVer, &dbId, &tbNum, &stateTs);
   ASSERT_EQ(code, 0);
   ASSERT_EQ(dbVer, ctgTestVgVersion);
   ASSERT_EQ(dbId, ctgTestDbId);
@@ -2741,9 +2802,29 @@ TEST(apiTest, catalogChkAuth_test) {
   ASSERT_EQ(code, 0);
 
   bool pass = false;
+  bool exists = false;
+  code = catalogChkAuthFromCache(pCtg, ctgTestUsername, ctgTestDbname, AUTH_TYPE_READ, &pass, &exists);
+  ASSERT_EQ(code, 0);
+  ASSERT_EQ(exists, false);
+  
   code = catalogChkAuth(pCtg, mockPointer, ctgTestUsername, ctgTestDbname, AUTH_TYPE_READ, &pass);
   ASSERT_EQ(code, 0);
   ASSERT_EQ(pass, true);
+
+  while (true) {
+    uint64_t n = 0;
+    ctgdGetStatNum("runtime.numOfOpDequeue", (void *)&n);
+    if (n != 1) {
+      taosMsleep(50);
+    } else {
+      break;
+    }
+  }
+
+  code = catalogChkAuthFromCache(pCtg, ctgTestUsername, ctgTestDbname, AUTH_TYPE_READ, &pass, &exists);
+  ASSERT_EQ(code, 0);
+  ASSERT_EQ(pass, true);
+  ASSERT_EQ(exists, true);
 
   catalogDestroy();
 }
@@ -2951,7 +3032,7 @@ TEST(apiTest, catalogGetServerVersion_test) {
 
 TEST(apiTest, catalogUpdateDBCfgInfo_test) {
   struct SCatalog  *pCtg = NULL;
-  SRequestConnInfo connInfo = {0};  
+  SRequestConnInfo connInfo = {0};
   SRequestConnInfo *mockPointer = (SRequestConnInfo *)&connInfo;
 
   ctgTestInitLogFile();
@@ -2975,7 +3056,7 @@ TEST(apiTest, catalogUpdateDBCfgInfo_test) {
   rsp->info.cfgVersion = 2;
   code = catalogUpdateDBCfgInfo(pCtg, ctgTestDbname, rsp);
   ASSERT_EQ(code, 0);
-  
+
   while (true) {
     uint64_t n = 0;
     ctgdGetStatNum("runtime.numOfOpDequeue", (void *)&n);
@@ -2994,7 +3075,121 @@ TEST(apiTest, catalogUpdateDBCfgInfo_test) {
   catalogDestroy();
 }
 
+TEST(apiTest, catalogUpdateTableIndex_test) {
+  struct SCatalog  *pCtg = NULL;
+  SRequestConnInfo connInfo = {0};  
+  SRequestConnInfo *mockPointer = (SRequestConnInfo *)&connInfo;
 
+  ctgTestInitLogFile();
+
+  memset(ctgTestRspFunc, 0, sizeof(ctgTestRspFunc));
+  ctgTestRspIdx = 0;
+  ctgTestRspFunc[0] = CTGT_RSP_SVRVER;
+
+  ctgTestSetRspByIdx();
+
+  initQueryModuleMsgHandle();
+
+  int32_t code = catalogInit(NULL);
+  ASSERT_EQ(code, 0);
+
+  code = catalogGetHandle(ctgTestClusterId, &pCtg);
+  ASSERT_EQ(code, 0);
+
+  STableIndexRsp rsp = {0};
+  strcpy(rsp.dbFName, ctgTestDbname);
+  strcpy(rsp.tbName, ctgTestSTablename);
+  rsp.suid = ctgTestSuid;
+  rsp.version = 1;
+  code = catalogUpdateTableIndex(pCtg, &rsp);
+  ASSERT_EQ(code, 0);
+
+  catalogDestroy();
+}
+
+
+TEST(apiTest, catalogGetDnodeList_test) {
+  struct SCatalog  *pCtg = NULL;
+  SRequestConnInfo connInfo = {0};  
+  SRequestConnInfo *mockPointer = (SRequestConnInfo *)&connInfo;
+
+  ctgTestInitLogFile();
+
+  memset(ctgTestRspFunc, 0, sizeof(ctgTestRspFunc));
+  ctgTestRspIdx = 0;
+  ctgTestRspFunc[0] = CTGT_RSP_DNODElIST;
+
+  ctgTestSetRspByIdx();
+
+  initQueryModuleMsgHandle();
+
+  int32_t code = catalogInit(NULL);
+  ASSERT_EQ(code, 0);
+
+  code = catalogGetHandle(ctgTestClusterId, &pCtg);
+  ASSERT_EQ(code, 0);
+
+  SArray* pList = NULL;
+  code = catalogGetDnodeList(pCtg, mockPointer, &pList);
+  ASSERT_EQ(code, 0);
+  ASSERT_EQ(taosArrayGetSize(pList), 1);
+
+  taosArrayDestroy(pList);
+
+  catalogDestroy();
+}
+
+#ifdef INTEGRATION_TEST
+TEST(intTest, autoCreateTableTest) {
+  struct SCatalog  *pCtg = NULL;
+
+  TAOS     *taos = taos_connect("localhost", "root", "taosdata", NULL, 0);
+  ASSERT_TRUE(NULL != taos);   
+
+  ctgdEnableDebug("api", true);
+  ctgdEnableDebug("meta", true);
+  ctgdEnableDebug("cache", true);
+  ctgdEnableDebug("lock", true);
+  
+  ctgTestExecQuery(taos, "drop database if exists db1", false, NULL);
+  ctgTestExecQuery(taos, "create database db1", false, NULL);
+  ctgTestExecQuery(taos, "create stable db1.st1 (ts timestamp, f1 int) tags(tg1 int)", false, NULL);
+  ctgTestExecQuery(taos, "insert into db1.tb1 using db1.st1 tags(1) values(now, 1)", false, NULL);
+
+  ctgdGetOneHandle(&pCtg);
+  
+  while (true) {
+    uint32_t n = ctgdGetClusterCacheNum(pCtg, CTG_DBG_META_NUM);
+    if (2 != n) {
+      taosMsleep(50);
+    } else {
+      break;
+    }
+  }
+
+  uint64_t n = 0, m = 0;
+  ctgdGetStatNum("runtime.numOfOpDequeue", (void *)&n);
+
+  ctgTestExecQuery(taos, "insert into db1.tb1 using db1.st1 tags(1) values(now, 2)", false, NULL);
+
+  ctgTestExecQuery(taos, "insert into db1.tb1 values(now, 3)", false, NULL);
+
+  taosMsleep(1000);
+  ctgdGetStatNum("runtime.numOfOpDequeue", (void *)&m);
+
+  ASSERT_EQ(n, m);
+
+  ctgdEnableDebug("stopUpdate", true);
+  ctgTestExecQuery(taos, "alter table db1.st1 add column f2 double", false, NULL);
+
+  ctgdEnableDebug("stopUpdate", false);
+  
+  ctgTestExecQuery(taos, "insert into db1.tb1 (ts, f1) values(now, 4)", false, NULL);
+  
+  taos_close(taos);
+}
+
+#endif
 
 
 int main(int argc, char **argv) {

@@ -26,7 +26,7 @@ extern "C" {
 
 #define TSKEY             int64_t
 #define TSKEY_MIN         INT64_MIN
-#define TSKEY_MAX         (INT64_MAX - 1)
+#define TSKEY_MAX         INT64_MAX
 #define TSKEY_INITIAL_VAL TSKEY_MIN
 
 #define TD_VER_MAX UINT64_MAX  // TODO: use the real max version from query handle
@@ -290,7 +290,7 @@ typedef enum ELogicConditionType {
 #define TSDB_DEFAULT_VN_PER_DB          2
 #define TSDB_MIN_BUFFER_PER_VNODE       3      // unit MB
 #define TSDB_MAX_BUFFER_PER_VNODE       16384  // unit MB
-#define TSDB_DEFAULT_BUFFER_PER_VNODE   96
+#define TSDB_DEFAULT_BUFFER_PER_VNODE   256
 #define TSDB_MIN_PAGES_PER_VNODE        64
 #define TSDB_MAX_PAGES_PER_VNODE        (INT32_MAX - 1)
 #define TSDB_DEFAULT_PAGES_PER_VNODE    256
@@ -360,7 +360,7 @@ typedef enum ELogicConditionType {
 #define TSDB_DEFAULT_DB_SCHEMALESS      TSDB_DB_SCHEMALESS_OFF
 #define TSDB_MIN_STT_TRIGGER            1
 #define TSDB_MAX_STT_TRIGGER            16
-#define TSDB_DEFAULT_SST_TRIGGER        8
+#define TSDB_DEFAULT_SST_TRIGGER        1
 #define TSDB_MIN_HASH_PREFIX            0
 #define TSDB_MAX_HASH_PREFIX            128
 #define TSDB_DEFAULT_HASH_PREFIX        0
@@ -406,7 +406,7 @@ typedef enum ELogicConditionType {
 #ifdef WINDOWS
 #define TSDB_MAX_RPC_THREADS 4  // windows pipe only support 4 connections.
 #else
-#define TSDB_MAX_RPC_THREADS 10
+#define TSDB_MAX_RPC_THREADS 20
 #endif
 
 #define TSDB_QUERY_TYPE_NON_TYPE 0x00u  // none type
@@ -488,6 +488,9 @@ enum {
 
 #define MAX_META_MSG_IN_BATCH   1048576
 #define MAX_META_BATCH_RSP_SIZE (1 * 1048576 * 1024)
+
+// sort page size by default
+#define DEFAULT_PAGESIZE 4096
 
 #ifdef __cplusplus
 }

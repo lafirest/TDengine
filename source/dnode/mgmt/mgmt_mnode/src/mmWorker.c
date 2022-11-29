@@ -56,6 +56,9 @@ static void mmProcessRpcMsg(SQueueInfo *pInfo, SRpcMsg *pMsg) {
   if (IsReq(pMsg) && pMsg->info.handle != NULL && code != TSDB_CODE_ACTION_IN_PROGRESS) {
     if (code != 0 && terrno != 0) code = terrno;
     mmSendRsp(pMsg, code);
+  } else {
+    rpcFreeCont(pMsg->info.rsp);
+    pMsg->info.rsp = NULL;
   }
 
   if (code == TSDB_CODE_RPC_REDIRECT) {
@@ -63,24 +66,6 @@ static void mmProcessRpcMsg(SQueueInfo *pInfo, SRpcMsg *pMsg) {
   }
 
   dGTrace("msg:%p is freed, code:%s", pMsg, tstrerror(code));
-  rpcFreeCont(pMsg->pCont);
-  taosFreeQitem(pMsg);
-}
-
-static void mmProcessSyncCtrlMsg(SQueueInfo *pInfo, SRpcMsg *pMsg) {
-  SMnodeMgmt *pMgmt = pInfo->ahandle;
-  pMsg->info.node = pMgmt->pMnode;
-
-  const STraceId *trace = &pMsg->info.traceId;
-  dGTrace("msg:%p, get from mnode-sync-ctrl queue", pMsg);
-
-  SMsgHead *pHead = pMsg->pCont;
-  pHead->contLen = ntohl(pHead->contLen);
-  pHead->vgId = ntohl(pHead->vgId);
-
-  int32_t code = mndProcessSyncCtrlMsg(pMsg);
-
-  dGTrace("msg:%p, is freed, code:0x%x", pMsg, code);
   rpcFreeCont(pMsg->pCont);
   taosFreeQitem(pMsg);
 }
@@ -252,7 +237,7 @@ int32_t mmStartWorker(SMnodeMgmt *pMgmt) {
       .min = 1,
       .max = 1,
       .name = "mnode-sync-ctrl",
-      .fp = (FItem)mmProcessSyncCtrlMsg,
+      .fp = (FItem)mmProcessSyncMsg,
       .param = pMgmt,
   };
   if (tSingleWorkerInit(&pMgmt->syncCtrlWorker, &scCfg) != 0) {

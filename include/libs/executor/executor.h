@@ -79,6 +79,7 @@ qTaskInfo_t qCreateStreamExecTaskInfo(void* msg, SReadHandle* readers);
  */
 qTaskInfo_t qCreateQueueExecTaskInfo(void* msg, SReadHandle* readers, int32_t* numOfCols, SSchemaWrapper** pSchema);
 
+int32_t qSetStreamOpOpen(qTaskInfo_t tinfo);
 /**
  * Set multiple input data blocks for the stream scan.
  * @param tinfo
@@ -141,7 +142,10 @@ int32_t qGetQueryTableSchemaVersion(qTaskInfo_t tinfo, char* dbName, char* table
  */
 
 int32_t qExecTaskOpt(qTaskInfo_t tinfo, SArray* pResList, uint64_t* useconds, bool* hasMore, SLocalFetch* pLocal);
+
 int32_t qExecTask(qTaskInfo_t tinfo, SSDataBlock** pBlock, uint64_t* useconds);
+
+void qCleanExecTaskBlockBuf(qTaskInfo_t tinfo);
 
 /**
  * kill the ongoing query asynchronously

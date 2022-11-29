@@ -410,7 +410,7 @@ static char* processAlterTable(SMqMetaRsp* metaRsp) {
   SDecoder     decoder = {0};
   SVAlterTbReq vAlterTbReq = {0};
   char*        string = NULL;
-  cJSON*       json   = NULL;
+  cJSON*       json = NULL;
 
   // decode
   void*   data = POINTER_SHIFT(metaRsp->metaRsp, sizeof(SMsgHead));
@@ -525,7 +525,7 @@ static char* processDropSTable(SMqMetaRsp* metaRsp) {
   SDecoder     decoder = {0};
   SVDropStbReq req = {0};
   char*        string = NULL;
-  cJSON*       json   = NULL;
+  cJSON*       json = NULL;
 
   // decode
   void*   data = POINTER_SHIFT(metaRsp->metaRsp, sizeof(SMsgHead));
@@ -558,7 +558,7 @@ static char* processDropTable(SMqMetaRsp* metaRsp) {
   SDecoder         decoder = {0};
   SVDropTbBatchReq req = {0};
   char*            string = NULL;
-  cJSON*           json   = NULL;
+  cJSON*           json = NULL;
 
   // decode
   void*   data = POINTER_SHIFT(metaRsp->metaRsp, sizeof(SMsgHead));
@@ -603,7 +603,7 @@ static int32_t taosCreateStb(TAOS* taos, void* meta, int32_t metaLen) {
   int32_t        code = TSDB_CODE_SUCCESS;
   SRequestObj*   pRequest = NULL;
 
-  code = buildRequest(*(int64_t*)taos, "", 0, NULL, false, &pRequest);
+  code = buildRequest(*(int64_t*)taos, "", 0, NULL, false, &pRequest, 0);
   if (code != TSDB_CODE_SUCCESS) {
     goto end;
   }
@@ -692,7 +692,7 @@ static int32_t taosDropStb(TAOS* taos, void* meta, int32_t metaLen) {
   int32_t      code = TSDB_CODE_SUCCESS;
   SRequestObj* pRequest = NULL;
 
-  code = buildRequest(*(int64_t*)taos, "", 0, NULL, false, &pRequest);
+  code = buildRequest(*(int64_t*)taos, "", 0, NULL, false, &pRequest, 0);
   if (code != TSDB_CODE_SUCCESS) {
     goto end;
   }
@@ -773,7 +773,7 @@ static int32_t taosCreateTable(TAOS* taos, void* meta, int32_t metaLen) {
   SQuery*            pQuery = NULL;
   SHashObj*          pVgroupHashmap = NULL;
 
-  code = buildRequest(*(int64_t*)taos, "", 0, NULL, false, &pRequest);
+  code = buildRequest(*(int64_t*)taos, "", 0, NULL, false, &pRequest, 0);
   if (code != TSDB_CODE_SUCCESS) {
     goto end;
   }
@@ -926,7 +926,7 @@ static int32_t taosDropTable(TAOS* taos, void* meta, int32_t metaLen) {
   SQuery*          pQuery = NULL;
   SHashObj*        pVgroupHashmap = NULL;
 
-  code = buildRequest(*(int64_t*)taos, "", 0, NULL, false, &pRequest);
+  code = buildRequest(*(int64_t*)taos, "", 0, NULL, false, &pRequest, 0);
   if (code != TSDB_CODE_SUCCESS) {
     goto end;
   }
@@ -1097,7 +1097,7 @@ static int32_t taosAlterTable(TAOS* taos, void* meta, int32_t metaLen) {
   SArray*        pArray = NULL;
   SVgDataBlocks* pVgData = NULL;
 
-  code = buildRequest(*(int64_t*)taos, "", 0, NULL, false, &pRequest);
+  code = buildRequest(*(int64_t*)taos, "", 0, NULL, false, &pRequest, 0);
 
   if (code != TSDB_CODE_SUCCESS) {
     goto end;
@@ -1181,7 +1181,7 @@ static int32_t taosAlterTable(TAOS* taos, void* meta, int32_t metaLen) {
   pVgData = NULL;
   pArray = NULL;
   code = pRequest->code;
-  if (code == TSDB_CODE_VND_TABLE_NOT_EXIST) {
+  if (code == TSDB_CODE_TDB_TABLE_NOT_EXIST) {
     code = TSDB_CODE_SUCCESS;
   }
 
@@ -1217,7 +1217,7 @@ int taos_write_raw_block(TAOS* taos, int rows, char* pData, const char* tbname) 
   SQuery*     pQuery = NULL;
   SSubmitReq* subReq = NULL;
 
-  SRequestObj* pRequest = (SRequestObj*)createRequest(*(int64_t*)taos, TSDB_SQL_INSERT);
+  SRequestObj* pRequest = (SRequestObj*)createRequest(*(int64_t*)taos, TSDB_SQL_INSERT, 0);
   if (!pRequest) {
     uError("WriteRaw:createRequest error request is null");
     code = terrno;
@@ -1275,13 +1275,14 @@ int taos_write_raw_block(TAOS* taos, int rows, char* pData, const char* tbname) 
       nVar++;
     }
   }
+  fLen -= sizeof(TSKEY);
 
   int32_t extendedRowSize = rowSize + TD_ROW_HEAD_LEN - sizeof(TSKEY) + nVar * sizeof(VarDataOffsetT) +
                             (int32_t)TD_BITMAP_BYTES(numOfCols - 1);
   int32_t schemaLen = 0;
   int32_t submitLen = sizeof(SSubmitBlk) + schemaLen + rows * extendedRowSize;
 
-  int32_t     totalLen = sizeof(SSubmitReq) + submitLen;
+  int32_t totalLen = sizeof(SSubmitReq) + submitLen;
   subReq = taosMemoryCalloc(1, totalLen);
   SSubmitBlk* blk = POINTER_SHIFT(subReq, sizeof(SSubmitReq));
   void*       blkSchema = POINTER_SHIFT(blk, sizeof(SSubmitBlk));
@@ -1333,7 +1334,9 @@ int taos_write_raw_block(TAOS* taos, int rows, char* pData, const char* tbname) 
         }
       }
 
-      offset += TYPE_BYTES[pColumn->type];
+      if (pColumn->colId != PRIMARYKEY_TIMESTAMP_COL_ID) {
+        offset += TYPE_BYTES[pColumn->type];
+      }
     }
     tdSRowEnd(&rb);
     int32_t rowLen = TD_ROW_LEN(rowData);
@@ -1407,7 +1410,7 @@ static int32_t tmqWriteRawDataImpl(TAOS* taos, void* data, int32_t dataLen) {
   STableMeta* pTableMeta = NULL;
 
   terrno = TSDB_CODE_SUCCESS;
-  SRequestObj* pRequest = (SRequestObj*)createRequest(*(int64_t*)taos, TSDB_SQL_INSERT);
+  SRequestObj* pRequest = (SRequestObj*)createRequest(*(int64_t*)taos, TSDB_SQL_INSERT, 0);
   if (!pRequest) {
     uError("WriteRaw:createRequest error request is null");
     return terrno;
@@ -1503,6 +1506,7 @@ static int32_t tmqWriteRawDataImpl(TAOS* taos, void* data, int32_t dataLen) {
         nVar++;
       }
     }
+    fLen -= sizeof(TSKEY);
 
     int32_t rows = rspObj.resInfo.numOfRows;
     int32_t extendedRowSize = rowSize + TD_ROW_HEAD_LEN - sizeof(TSKEY) + nVar * sizeof(VarDataOffsetT) +
@@ -1585,8 +1589,9 @@ static int32_t tmqWriteRawDataImpl(TAOS* taos, void* data, int32_t dataLen) {
             tdAppendColValToRow(&rb, pColumn->colId, pColumn->type, TD_VTYPE_NORM, colData, true, offset, k);
           }
         }
-
-        offset += TYPE_BYTES[pColumn->type];
+        if (pColumn->colId != PRIMARYKEY_TIMESTAMP_COL_ID) {
+          offset += TYPE_BYTES[pColumn->type];
+        }
       }
       tdSRowEnd(&rb);
       int32_t rowLen = TD_ROW_LEN(rowData);
@@ -1674,7 +1679,7 @@ static int32_t tmqWriteRawMetaDataImpl(TAOS* taos, void* data, int32_t dataLen) 
   STableMeta*    pTableMeta = NULL;
 
   terrno = TSDB_CODE_SUCCESS;
-  SRequestObj* pRequest = (SRequestObj*)createRequest(*(int64_t*)taos, TSDB_SQL_INSERT);
+  SRequestObj* pRequest = (SRequestObj*)createRequest(*(int64_t*)taos, TSDB_SQL_INSERT, 0);
   if (!pRequest) {
     uError("WriteRaw:createRequest error request is null");
     return terrno;
@@ -1803,6 +1808,7 @@ static int32_t tmqWriteRawMetaDataImpl(TAOS* taos, void* data, int32_t dataLen) 
         nVar++;
       }
     }
+    fLen -= sizeof(TSKEY);
 
     int32_t rows = rspObj.resInfo.numOfRows;
     int32_t extendedRowSize = rowSize + TD_ROW_HEAD_LEN - sizeof(TSKEY) + nVar * sizeof(VarDataOffsetT) +
@@ -1888,8 +1894,9 @@ static int32_t tmqWriteRawMetaDataImpl(TAOS* taos, void* data, int32_t dataLen) 
             tdAppendColValToRow(&rb, pColumn->colId, pColumn->type, TD_VTYPE_NORM, colData, true, offset, k);
           }
         }
-
-        offset += TYPE_BYTES[pColumn->type];
+        if (pColumn->colId != PRIMARYKEY_TIMESTAMP_COL_ID) {
+          offset += TYPE_BYTES[pColumn->type];
+        }
       }
       tdSRowEnd(&rb);
       int32_t rowLen = TD_ROW_LEN(rowData);

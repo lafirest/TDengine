@@ -28,12 +28,12 @@
 #define QUOTE '"'
 #define SLASH '\\'
 
-#define JUMP_SPACE(sql, sqlEnd)  \
-  while (sql < sqlEnd) { \
-    if (*sql == SPACE)   \
-      sql++;             \
-    else                 \
-      break;             \
+#define JUMP_SPACE(sql, sqlEnd) \
+  while (sql < sqlEnd) {        \
+    if (*sql == SPACE)          \
+      sql++;                    \
+    else                        \
+      break;                    \
   }
 // comma ,
 #define IS_SLASH_COMMA(sql) (*(sql) == COMMA && *((sql)-1) == SLASH)
@@ -179,6 +179,8 @@ typedef struct {
   SSmlMsgBuf   msgBuf;
   SHashObj    *dumplicateKey;  // for dumplicate key
   SArray      *colsContainer;  // for cols parse, if dataFormat == false
+
+  cJSON       *root;  // for parse json
 } SSmlHandle;
 //=================================================================================================
 
@@ -353,7 +355,7 @@ static int32_t smlSendMetaMsg(SSmlHandle *info, SName *pName, SArray *pColumns, 
   pReq.numOfTags = taosArrayGetSize(pTags);
   pReq.pTags = pTags;
 
-  code = buildRequest(info->taos->id, "", 0, NULL, false, &pRequest);
+  code = buildRequest(info->taos->id, "", 0, NULL, false, &pRequest, 0);
   if (code != TSDB_CODE_SUCCESS) {
     goto end;
   }
@@ -1010,9 +1012,9 @@ static void smlParseTelnetElement(const char **sql, const char *sqlEnd, const ch
   }
 }
 
-static int32_t smlParseTelnetTags(const char *data, const char *sqlEnd, SArray *cols, char *childTableName, SHashObj *dumplicateKey,
-                                  SSmlMsgBuf *msg) {
-  if(!cols) return TSDB_CODE_OUT_OF_MEMORY;
+static int32_t smlParseTelnetTags(const char *data, const char *sqlEnd, SArray *cols, char *childTableName,
+                                  SHashObj *dumplicateKey, SSmlMsgBuf *msg) {
+  if (!cols) return TSDB_CODE_OUT_OF_MEMORY;
   const char *sql = data;
   size_t      childTableNameLen = strlen(tsSmlChildTableName);
   while (sql < sqlEnd) {
@@ -1093,7 +1095,8 @@ static int32_t smlParseTelnetTags(const char *data, const char *sqlEnd, SArray *
 }
 
 // format: <metric> <timestamp> <value> <tagk_1>=<tagv_1>[ <tagk_n>=<tagv_n>]
-static int32_t smlParseTelnetString(SSmlHandle *info, const char *sql, const char *sqlEnd, SSmlTableInfo *tinfo, SArray *cols) {
+static int32_t smlParseTelnetString(SSmlHandle *info, const char *sql, const char *sqlEnd, SSmlTableInfo *tinfo,
+                                    SArray *cols) {
   if (!sql) return TSDB_CODE_SML_INVALID_DATA;
 
   // parse metric
@@ -1316,10 +1319,6 @@ static void smlDestroyTableInfo(SSmlHandle *info, SSmlTableInfo *tag) {
       SArray *kvArray = (SArray *)taosArrayGetP(tag->cols, i);
       for (int j = 0; j < taosArrayGetSize(kvArray); ++j) {
         SSmlKv *p = (SSmlKv *)taosArrayGetP(kvArray, j);
-        if (info->protocol == TSDB_SML_JSON_PROTOCOL &&
-            (p->type == TSDB_DATA_TYPE_NCHAR || p->type == TSDB_DATA_TYPE_BINARY)) {
-          taosMemoryFree((void *)p->value);
-        }
         taosMemoryFree(p);
       }
       taosArrayDestroy(kvArray);
@@ -1337,16 +1336,7 @@ static void smlDestroyTableInfo(SSmlHandle *info, SSmlTableInfo *tag) {
   }
   for (size_t i = 0; i < taosArrayGetSize(tag->tags); i++) {
     SSmlKv *p = (SSmlKv *)taosArrayGetP(tag->tags, i);
-    if (info->protocol == TSDB_SML_JSON_PROTOCOL) {
-      taosMemoryFree((void *)p->key);
-      if (p->type == TSDB_DATA_TYPE_NCHAR || p->type == TSDB_DATA_TYPE_BINARY) {
-        taosMemoryFree((void *)p->value);
-      }
-    }
     taosMemoryFree(p);
-  }
-  if (info->protocol == TSDB_SML_JSON_PROTOCOL && tag->sTableName) {
-    taosMemoryFree((void *)tag->sTableName);
   }
   taosArrayDestroy(tag->cols);
   taosArrayDestroy(tag->tags);
@@ -1372,19 +1362,19 @@ static int32_t smlKvTimeArrayCompare(const void *key1, const void *key2) {
 static int32_t smlKvTimeHashCompare(const void *key1, const void *key2) {
   SHashObj *s1 = *(SHashObj **)key1;
   SHashObj *s2 = *(SHashObj **)key2;
-  SSmlKv   **kv1pp = (SSmlKv **)taosHashGet(s1, TS, TS_LEN);
-  SSmlKv   **kv2pp = (SSmlKv **)taosHashGet(s2, TS, TS_LEN);
-  if(!kv1pp || !kv2pp){
+  SSmlKv  **kv1pp = (SSmlKv **)taosHashGet(s1, TS, TS_LEN);
+  SSmlKv  **kv2pp = (SSmlKv **)taosHashGet(s2, TS, TS_LEN);
+  if (!kv1pp || !kv2pp) {
     uError("smlKvTimeHashCompare kv is null");
     return -1;
   }
-  SSmlKv   *kv1 = *kv1pp;
-  SSmlKv   *kv2 = *kv2pp;
-  if(!kv1 || kv1->type != TSDB_DATA_TYPE_TIMESTAMP){
+  SSmlKv *kv1 = *kv1pp;
+  SSmlKv *kv2 = *kv2pp;
+  if (!kv1 || kv1->type != TSDB_DATA_TYPE_TIMESTAMP) {
     uError("smlKvTimeHashCompare kv1");
     return -1;
   }
-  if(!kv2 || kv2->type != TSDB_DATA_TYPE_TIMESTAMP){
+  if (!kv2 || kv2->type != TSDB_DATA_TYPE_TIMESTAMP) {
     uError("smlKvTimeHashCompare kv2");
     return -1;
   }
@@ -1507,6 +1497,8 @@ static void smlDestroyInfo(SSmlHandle *info) {
     taosArrayDestroy(info->colsContainer);
   }
   destroyRequest(info->pRequest);
+
+  cJSON_Delete(info->root);
   taosMemoryFreeClear(info);
 }
 
@@ -1582,16 +1574,6 @@ cleanup:
 }
 
 /************* TSDB_SML_JSON_PROTOCOL function start **************/
-static int32_t smlJsonCreateSring(const char **output, char *input, int32_t inputLen) {
-  *output = (const char *)taosMemoryCalloc(1, inputLen);
-  if (*output == NULL) {
-    return TSDB_CODE_TSC_OUT_OF_MEMORY;
-  }
-
-  memcpy((void *)(*output), input, inputLen);
-  return TSDB_CODE_SUCCESS;
-}
-
 static int32_t smlParseMetricFromJSON(SSmlHandle *info, cJSON *root, SSmlTableInfo *tinfo) {
   cJSON *metric = cJSON_GetObjectItem(root, "metric");
   if (!cJSON_IsString(metric)) {
@@ -1604,7 +1586,8 @@ static int32_t smlParseMetricFromJSON(SSmlHandle *info, cJSON *root, SSmlTableIn
     return TSDB_CODE_TSC_INVALID_TABLE_ID_LENGTH;
   }
 
-  return smlJsonCreateSring(&tinfo->sTableName, metric->valuestring, tinfo->sTableNameLen);
+  tinfo->sTableName = metric->valuestring;
+  return TSDB_CODE_SUCCESS;
 }
 
 static int32_t smlParseTSFromJSONObj(SSmlHandle *info, cJSON *root, int64_t *tsVal) {
@@ -1856,7 +1839,8 @@ static int32_t smlConvertJSONString(SSmlKv *pVal, char *typeStr, cJSON *value) {
     return TSDB_CODE_PAR_INVALID_VAR_COLUMN_LEN;
   }
 
-  return smlJsonCreateSring(&pVal->value, value->valuestring, pVal->length);
+  pVal->value = value->valuestring;
+  return TSDB_CODE_SUCCESS;
 }
 
 static int32_t smlParseValueFromJSONObj(cJSON *root, SSmlKv *kv) {
@@ -1947,7 +1931,7 @@ static int32_t smlParseValueFromJSON(cJSON *root, SSmlKv *kv) {
 }
 
 static int32_t smlParseColsFromJSON(cJSON *root, SArray *cols) {
-  if(!cols) return TSDB_CODE_OUT_OF_MEMORY;
+  if (!cols) return TSDB_CODE_OUT_OF_MEMORY;
   cJSON *metricVal = cJSON_GetObjectItem(root, "value");
   if (metricVal == NULL) {
     return TSDB_CODE_TSC_INVALID_JSON;
@@ -1971,7 +1955,7 @@ static int32_t smlParseColsFromJSON(cJSON *root, SArray *cols) {
 static int32_t smlParseTagsFromJSON(cJSON *root, SArray *pKVs, char *childTableName, SHashObj *dumplicateKey,
                                     SSmlMsgBuf *msg) {
   int32_t ret = TSDB_CODE_SUCCESS;
-  if (!pKVs){
+  if (!pKVs) {
     return TSDB_CODE_OUT_OF_MEMORY;
   }
   cJSON *tags = cJSON_GetObjectItem(root, "tags");
@@ -2014,10 +1998,8 @@ static int32_t smlParseTagsFromJSON(cJSON *root, SArray *pKVs, char *childTableN
 
     // key
     kv->keyLen = keyLen;
-    ret = smlJsonCreateSring(&kv->key, tag->string, kv->keyLen);
-    if (ret != TSDB_CODE_SUCCESS) {
-      return ret;
-    }
+    kv->key = tag->string;
+
     // value
     ret = smlParseValueFromJSON(tag, kv);
     if (ret != TSDB_CODE_SUCCESS) {
@@ -2081,7 +2063,7 @@ static int32_t smlParseJSONString(SSmlHandle *info, cJSON *root, SSmlTableInfo *
 
 static int32_t smlParseInfluxLine(SSmlHandle *info, const char *sql, const int len) {
   SSmlLineInfo elements = {0};
-  uDebug("SML:0x%" PRIx64 " smlParseInfluxLine sql:%s, hello", info->id, sql);
+  uDebug("SML:0x%" PRIx64 " smlParseInfluxLine sql", info->id);
 
   int ret = smlParseInfluxString(sql, sql + len, &elements, &info->msgBuf);
   if (ret != TSDB_CODE_SUCCESS) {
@@ -2204,7 +2186,7 @@ static int32_t smlParseTelnetLine(SSmlHandle *info, void *data, const int len) {
   }
 
   if (info->protocol == TSDB_SML_TELNET_PROTOCOL) {
-    ret = smlParseTelnetString(info, (const char *)data, (char*)data + len, tinfo, cols);
+    ret = smlParseTelnetString(info, (const char *)data, (char *)data + len, tinfo, cols);
   } else if (info->protocol == TSDB_SML_JSON_PROTOCOL) {
     ret = smlParseJSONString(info, (cJSON *)data, tinfo, cols);
   } else {
@@ -2277,16 +2259,16 @@ static int32_t smlParseJSON(SSmlHandle *info, char *payload) {
     return TSDB_CODE_TSC_INVALID_JSON;
   }
 
-  cJSON *root = cJSON_Parse(payload);
-  if (root == NULL) {
+  info->root = cJSON_Parse(payload);
+  if (info->root == NULL) {
     uError("SML:0x%" PRIx64 " parse json failed:%s", info->id, payload);
     return TSDB_CODE_TSC_INVALID_JSON;
   }
   // multiple data points must be sent in JSON array
-  if (cJSON_IsObject(root)) {
+  if (cJSON_IsObject(info->root)) {
     payloadNum = 1;
-  } else if (cJSON_IsArray(root)) {
-    payloadNum = cJSON_GetArraySize(root);
+  } else if (cJSON_IsArray(info->root)) {
+    payloadNum = cJSON_GetArraySize(info->root);
   } else {
     uError("SML:0x%" PRIx64 " Invalid JSON Payload", info->id);
     ret = TSDB_CODE_TSC_INVALID_JSON;
@@ -2294,7 +2276,7 @@ static int32_t smlParseJSON(SSmlHandle *info, char *payload) {
   }
 
   for (int32_t i = 0; i < payloadNum; ++i) {
-    cJSON *dataPoint = (payloadNum == 1 && cJSON_IsObject(root)) ? root : cJSON_GetArrayItem(root, i);
+    cJSON *dataPoint = (payloadNum == 1 && cJSON_IsObject(info->root)) ? info->root : cJSON_GetArrayItem(info->root, i);
     ret = smlParseTelnetLine(info, dataPoint, -1);
     if (ret != TSDB_CODE_SUCCESS) {
       uError("SML:0x%" PRIx64 " Invalid JSON Payload", info->id);
@@ -2303,7 +2285,6 @@ static int32_t smlParseJSON(SSmlHandle *info, char *payload) {
   }
 
 end:
-  cJSON_Delete(root);
   return ret;
 }
 
@@ -2384,16 +2365,16 @@ static void smlPrintStatisticInfo(SSmlHandle *info) {
          info->cost.endTime - info->cost.insertRpcTime, info->cost.endTime - info->cost.parseTime);
 }
 
-static int32_t smlParseLine(SSmlHandle *info, char *lines[], char* rawLine, char* rawLineEnd, int numLines) {
+static int32_t smlParseLine(SSmlHandle *info, char *lines[], char *rawLine, char *rawLineEnd, int numLines) {
   int32_t code = TSDB_CODE_SUCCESS;
   if (info->protocol == TSDB_SML_JSON_PROTOCOL) {
-    if(lines){
+    if (lines) {
       code = smlParseJSON(info, *lines);
-    }else if(rawLine){
+    } else if (rawLine) {
       code = smlParseJSON(info, rawLine);
     }
     if (code != TSDB_CODE_SUCCESS) {
-      uError("SML:0x%" PRIx64 " smlParseJSON failed:%s", info->id, lines?*lines:rawLine);
+      uError("SML:0x%" PRIx64 " smlParseJSON failed:%s", info->id, lines ? *lines : rawLine);
       return code;
     }
     return code;
@@ -2401,19 +2382,19 @@ static int32_t smlParseLine(SSmlHandle *info, char *lines[], char* rawLine, char
 
   for (int32_t i = 0; i < numLines; ++i) {
     char *tmp = NULL;
-    int  len  = 0;
-    if(lines){
+    int   len = 0;
+    if (lines) {
       tmp = lines[i];
       len = strlen(tmp);
-    }else if(rawLine){
+    } else if (rawLine) {
       tmp = rawLine;
-      while(rawLine < rawLineEnd){
-        if(*(rawLine++) == '\n'){
+      while (rawLine < rawLineEnd) {
+        if (*(rawLine++) == '\n') {
           break;
         }
         len++;
       }
-      if(info->protocol == TSDB_SML_LINE_PROTOCOL && tmp[0] == '#'){ // this line is comment
+      if (info->protocol == TSDB_SML_LINE_PROTOCOL && tmp[0] == '#') {  // this line is comment
         continue;
       }
     }
@@ -2433,7 +2414,7 @@ static int32_t smlParseLine(SSmlHandle *info, char *lines[], char* rawLine, char
   return code;
 }
 
-static int smlProcess(SSmlHandle *info, char *lines[], char* rawLine, char* rawLineEnd, int numLines) {
+static int smlProcess(SSmlHandle *info, char *lines[], char *rawLine, char *rawLineEnd, int numLines) {
   int32_t code = TSDB_CODE_SUCCESS;
   int32_t retryNum = 0;
 
@@ -2532,8 +2513,8 @@ static void smlInsertCallback(void *param, void *res, int32_t code) {
   smlDestroyInfo(info);
 }
 
-
-TAOS_RES *taos_schemaless_insert_inner(SRequestObj *request, char *lines[], char *rawLine, char *rawLineEnd, int numLines, int protocol, int precision) {
+TAOS_RES *taos_schemaless_insert_inner(SRequestObj *request, char *lines[], char *rawLine, char *rawLineEnd,
+                                       int numLines, int protocol, int precision) {
   int      batchs = 0;
   STscObj *pTscObj = request->pTscObj;
 
@@ -2581,7 +2562,7 @@ TAOS_RES *taos_schemaless_insert_inner(SRequestObj *request, char *lines[], char
   batchs = ceil(((double)numLines) / LINE_BATCH);
   params.total = batchs;
   for (int i = 0; i < batchs; ++i) {
-    SRequestObj *req = (SRequestObj *)createRequest(pTscObj->id, TSDB_SQL_INSERT);
+    SRequestObj *req = (SRequestObj *)createRequest(pTscObj->id, TSDB_SQL_INSERT, 0);
     if (!req) {
       request->code = TSDB_CODE_OUT_OF_MEMORY;
       uError("SML:taos_schemaless_insert error request is null");
@@ -2608,16 +2589,16 @@ TAOS_RES *taos_schemaless_insert_inner(SRequestObj *request, char *lines[], char
     info->pRequest->body.queryFp = smlInsertCallback;
     info->pRequest->body.param = info;
     int32_t code = smlProcess(info, lines, rawLine, rawLineEnd, perBatch);
-    if(lines){
+    if (lines) {
       lines += perBatch;
     }
-    if(rawLine){
+    if (rawLine) {
       int num = 0;
-      while(rawLine < rawLineEnd){
-        if(*(rawLine++) == '\n'){
+      while (rawLine < rawLineEnd) {
+        if (*(rawLine++) == '\n') {
           num++;
         }
-        if(num == perBatch){
+        if (num == perBatch) {
           break;
         }
       }
@@ -2628,7 +2609,7 @@ TAOS_RES *taos_schemaless_insert_inner(SRequestObj *request, char *lines[], char
   }
   tsem_wait(&params.sem);
 
-  end:
+end:
   taosThreadSpinDestroy(&params.lock);
   tsem_destroy(&params.sem);
   //  ((STscObj *)taos)->schemalessType = 0;
@@ -2653,9 +2634,7 @@ TAOS_RES *taos_schemaless_insert_inner(SRequestObj *request, char *lines[], char
  *                  0 - influxDB line protocol
  *                  1 - OpenTSDB telnet line protocol
  *                  2 - OpenTSDB JSON format protocol
- * @return return zero for successful insertion. Otherwise return none-zero error code of
- *         failure reason.
- *
+ * @return TAOS_RES
  */
 
 TAOS_RES *taos_schemaless_insert(TAOS *taos, char *lines[], int numLines, int protocol, int precision) {
@@ -2664,7 +2643,7 @@ TAOS_RES *taos_schemaless_insert(TAOS *taos, char *lines[], int numLines, int pr
     return NULL;
   }
 
-  SRequestObj *request = (SRequestObj *)createRequest(*(int64_t *)taos, TSDB_SQL_INSERT);
+  SRequestObj *request = (SRequestObj *)createRequest(*(int64_t *)taos, TSDB_SQL_INSERT, 0);
   if (!request) {
     uError("SML:taos_schemaless_insert error request is null");
     return NULL;
@@ -2680,13 +2659,37 @@ TAOS_RES *taos_schemaless_insert(TAOS *taos, char *lines[], int numLines, int pr
   return taos_schemaless_insert_inner(request, lines, NULL, NULL, numLines, protocol, precision);
 }
 
-TAOS_RES *taos_schemaless_insert_raw(TAOS* taos, char* lines, int len, int32_t *totalRows, int protocol, int precision){
+TAOS_RES *taos_schemaless_insert_with_reqid(TAOS *taos, char *lines[], int numLines, int protocol, int precision,
+                                            int64_t reqid) {
   if (NULL == taos) {
     terrno = TSDB_CODE_TSC_DISCONNECTED;
     return NULL;
   }
 
-  SRequestObj *request = (SRequestObj *)createRequest(*(int64_t *)taos, TSDB_SQL_INSERT);
+  SRequestObj *request = (SRequestObj *)createRequest(*(int64_t *)taos, TSDB_SQL_INSERT, reqid);
+  if (!request) {
+    uError("SML:taos_schemaless_insert error request is null");
+    return NULL;
+  }
+
+  if (!lines) {
+    SSmlMsgBuf msg = {ERROR_MSG_BUF_DEFAULT_SIZE, request->msgBuf};
+    request->code = TSDB_CODE_SML_INVALID_DATA;
+    smlBuildInvalidDataMsg(&msg, "lines is null", NULL);
+    return (TAOS_RES *)request;
+  }
+
+  return taos_schemaless_insert_inner(request, lines, NULL, NULL, numLines, protocol, precision);
+}
+
+TAOS_RES *taos_schemaless_insert_raw(TAOS *taos, char *lines, int len, int32_t *totalRows, int protocol,
+                                     int precision) {
+  if (NULL == taos) {
+    terrno = TSDB_CODE_TSC_DISCONNECTED;
+    return NULL;
+  }
+
+  SRequestObj *request = (SRequestObj *)createRequest(*(int64_t *)taos, TSDB_SQL_INSERT, 0);
   if (!request) {
     uError("SML:taos_schemaless_insert error request is null");
     return NULL;
@@ -2702,10 +2705,45 @@ TAOS_RES *taos_schemaless_insert_raw(TAOS* taos, char* lines, int len, int32_t *
   int numLines = 0;
   *totalRows = 0;
   char *tmp = lines;
-  for(int i = 0; i < len; i++){
-    if(lines[i] == '\n' || i == len - 1){
+  for (int i = 0; i < len; i++) {
+    if (lines[i] == '\n' || i == len - 1) {
       numLines++;
-      if(tmp[0] != '#' || protocol != TSDB_SML_LINE_PROTOCOL){    //ignore comment
+      if (tmp[0] != '#' || protocol != TSDB_SML_LINE_PROTOCOL) {  // ignore comment
+        (*totalRows)++;
+      }
+      tmp = lines + i + 1;
+    }
+  }
+  return taos_schemaless_insert_inner(request, NULL, lines, lines + len, numLines, protocol, precision);
+}
+
+TAOS_RES *taos_schemaless_insert_raw_with_reqid(TAOS *taos, char *lines, int len, int32_t *totalRows, int protocol,
+                                                int precision, int64_t reqid) {
+  if (NULL == taos) {
+    terrno = TSDB_CODE_TSC_DISCONNECTED;
+    return NULL;
+  }
+
+  SRequestObj *request = (SRequestObj *)createRequest(*(int64_t *)taos, TSDB_SQL_INSERT, reqid);
+  if (!request) {
+    uError("SML:taos_schemaless_insert error request is null");
+    return NULL;
+  }
+
+  if (!lines || len <= 0) {
+    SSmlMsgBuf msg = {ERROR_MSG_BUF_DEFAULT_SIZE, request->msgBuf};
+    request->code = TSDB_CODE_SML_INVALID_DATA;
+    smlBuildInvalidDataMsg(&msg, "lines is null", NULL);
+    return (TAOS_RES *)request;
+  }
+
+  int numLines = 0;
+  *totalRows = 0;
+  char *tmp = lines;
+  for (int i = 0; i < len; i++) {
+    if (lines[i] == '\n' || i == len - 1) {
+      numLines++;
+      if (tmp[0] != '#' || protocol != TSDB_SML_LINE_PROTOCOL) {  // ignore comment
         (*totalRows)++;
       }
       tmp = lines + i + 1;

@@ -275,15 +275,17 @@ void qwFreeTaskHandle(qTaskInfo_t *taskHandle) {
   qTaskInfo_t otaskHandle = atomic_load_ptr(taskHandle);
   if (otaskHandle && atomic_val_compare_exchange_ptr(taskHandle, otaskHandle, NULL)) {
     qDestroyTask(otaskHandle);
-    qDebug("task handle destryed");
+    qDebug("task handle destroyed");
   }
 }
 
 int32_t qwKillTaskHandle(SQWTaskCtx *ctx) {
   int32_t code = 0;
+  
   // Note: free/kill may in RC
   qTaskInfo_t taskHandle = atomic_load_ptr(&ctx->taskHandle);
   if (taskHandle && atomic_val_compare_exchange_ptr(&ctx->taskHandle, taskHandle, NULL)) {
+    qDebug("start to kill task");
     code = qAsyncKillTask(taskHandle);
     atomic_store_ptr(&ctx->taskHandle, taskHandle);
   }
@@ -306,7 +308,7 @@ void qwFreeTaskCtx(SQWTaskCtx *ctx) {
   if (ctx->sinkHandle) {
     dsDestroyDataSinker(ctx->sinkHandle);
     ctx->sinkHandle = NULL;
-    qDebug("sink handle destryed");
+    qDebug("sink handle destroyed");
   }
 }
 

@@ -30,29 +30,24 @@ typedef struct SKvParam {
 } SKvParam;
 
 int32_t qBuildStmtOutput(SQuery* pQuery, SHashObj* pVgHash, SHashObj* pBlockHash) {
-  SVnodeModifOpStmt*  modifyNode = (SVnodeModifOpStmt*)pQuery->pRoot;
-  int32_t             code = 0;
-  SInsertParseContext insertCtx = {
-      .pVgroupsHashObj = pVgHash,
-      .pTableBlockHashObj = pBlockHash,
-      .pOutput = (SVnodeModifOpStmt*)pQuery->pRoot,
-  };
-
+  int32_t code = TSDB_CODE_SUCCESS;
+  SArray* pVgDataBlocks = NULL;
   // merge according to vgId
-  if (taosHashGetSize(insertCtx.pTableBlockHashObj) > 0) {
-    CHECK_CODE(insMergeTableDataBlocks(insertCtx.pTableBlockHashObj, &insertCtx.pVgDataBlocks));
+  if (taosHashGetSize(pBlockHash) > 0) {
+    code = insMergeTableDataBlocks(pBlockHash, &pVgDataBlocks);
   }
-
-  CHECK_CODE(insBuildOutput(&insertCtx));
-
-  insDestroyBlockArrayList(insertCtx.pVgDataBlocks);
-  return TSDB_CODE_SUCCESS;
+  if (TSDB_CODE_SUCCESS == code) {
+    code = insBuildOutput(pVgHash, pVgDataBlocks, &((SVnodeModifOpStmt*)pQuery->pRoot)->pDataBlocks);
+  }
+  insDestroyBlockArrayList(pVgDataBlocks);
+  return code;
 }
 
 int32_t qBindStmtTagsValue(void* pBlock, void* boundTags, int64_t suid, const char* sTableName, char* tName,
                            TAOS_MULTI_BIND* bind, char* msgBuf, int32_t msgBufLen) {
   STableDataBlocks*   pDataBlock = (STableDataBlocks*)pBlock;
   SMsgBuf             pBuf = {.buf = msgBuf, .len = msgBufLen};
+  int32_t  code = TSDB_CODE_SUCCESS;
   SParsedDataColInfo* tags = (SParsedDataColInfo*)boundTags;
   if (NULL == tags) {
     return TSDB_CODE_QRY_APP_ERROR;
@@ -65,10 +60,10 @@ int32_t qBindStmtTagsValue(void* pBlock, void* boundTags, int64_t suid, const ch
 
   SArray* tagName = taosArrayInit(8, TSDB_COL_NAME_LEN);
   if (!tagName) {
-    return buildInvalidOperationMsg(&pBuf, "out of memory");
+    code = buildInvalidOperationMsg(&pBuf, "out of memory");
+    goto end;
   }
 
-  int32_t  code = TSDB_CODE_SUCCESS;
   SSchema* pSchema = getTableTagSchema(pDataBlock->pTableMeta);
 
   bool  isJson = false;
@@ -83,6 +78,10 @@ int32_t qBindStmtTagsValue(void* pBlock, void* boundTags, int64_t suid, const ch
     int32_t  colLen = pTagSchema->bytes;
     if (IS_VAR_DATA_TYPE(pTagSchema->type)) {
       colLen = bind[c].length[0];
+      if ((colLen + VARSTR_HEADER_SIZE) > pTagSchema->bytes) {
+        code = buildInvalidOperationMsg(&pBuf, "tag length is too big");
+        goto end;
+      }
     }
     taosArrayPush(tagName, pTagSchema->name);
     if (pTagSchema->type == TSDB_DATA_TYPE_JSON) {
@@ -222,11 +221,7 @@ int32_t qBindStmtColsValue(void* pBlock, TAOS_MULTI_BIND* bind, char* msgBuf, in
   }
 
   SSubmitBlk* pBlocks = (SSubmitBlk*)(pDataBlock->pData);
-  if (TSDB_CODE_SUCCESS != insSetBlockInfo(pBlocks, pDataBlock, bind->num)) {
-    return buildInvalidOperationMsg(&pBuf, "too many rows in sql, total number of rows should be less than INT32_MAX");
-  }
-
-  return TSDB_CODE_SUCCESS;
+  return insSetBlockInfo(pBlocks, pDataBlock, bind->num, &pBuf);
 }
 
 int32_t qBindStmtSingleColValue(void* pBlock, TAOS_MULTI_BIND* bind, char* msgBuf, int32_t msgBufLen, int32_t colIdx,
@@ -308,10 +303,7 @@ int32_t qBindStmtSingleColValue(void* pBlock, TAOS_MULTI_BIND* bind, char* msgBu
     pDataBlock->size += extendedRowSize * bind->num;
 
     SSubmitBlk* pBlocks = (SSubmitBlk*)(pDataBlock->pData);
-    if (TSDB_CODE_SUCCESS != insSetBlockInfo(pBlocks, pDataBlock, bind->num)) {
-      return buildInvalidOperationMsg(&pBuf,
-                                      "too many rows in sql, total number of rows should be less than INT32_MAX");
-    }
+    CHECK_CODE(insSetBlockInfo(pBlocks, pDataBlock, bind->num, &pBuf));
   }
 
   return TSDB_CODE_SUCCESS;
