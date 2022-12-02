@@ -252,66 +252,8 @@ int32_t tsdbCacheInsertLastrow(SLRUCache *pCache, STsdb *pTsdb, tb_uid_t uid, ST
   _invalidate:
     taosMemoryFreeClear(pTSchema);
 
-    taosLRUCacheRelease(pCache, h, invalidate);
-    /*
-    cacheRow = (STSRow *)taosLRUCacheValue(pCache, h);
-    if (row->ts >= cacheRow->ts) {
-      if (row->ts == cacheRow->ts) {
-        STSRow    *mergedRow = NULL;
-        SRowMerger merger = {0};
-        STSchema  *pTSchema = metaGetTbTSchema(pTsdb->pVnode->pMeta, uid, -1, 1);
-
-        tRowMergerInit(&merger, &tsdbRowFromTSRow(0, cacheRow), pTSchema);
-
-        tRowMerge(&merger, &tsdbRowFromTSRow(1, row));
-
-        tRowMergerGetRow(&merger, &mergedRow);
-        tRowMergerClear(&merger);
-
-        taosMemoryFreeClear(pTSchema);
-
-        row = mergedRow;
-        dup = false;
-      }
-
-      if (TD_ROW_LEN(row) <= TD_ROW_LEN(cacheRow)) {
-        tdRowCpy(cacheRow, row);
-        if (!dup) {
-          taosMemoryFree(row);
-        }
-
-        taosLRUCacheRelease(pCache, h, false);
-      } else {
-        taosLRUCacheRelease(pCache, h, true);
-        // tsdbCacheDeleteLastrow(pCache, uid, TSKEY_MAX);
-        if (dup) {
-          cacheRow = tdRowDup(row);
-        } else {
-          cacheRow = row;
-        }
-        _taos_lru_deleter_t deleter = deleteTableCacheLastrow;
-        LRUStatus status = taosLRUCacheInsert(pCache, key, keyLen, cacheRow, TD_ROW_LEN(cacheRow), deleter, NULL,
-                                              TAOS_LRU_PRIORITY_LOW);
-        if (status != TAOS_LRU_STATUS_OK) {
-          code = -1;
-        }
-        // tsdbCacheInsertLastrow(pCache, uid, row, dup);
-      }
-    }*/
-  } /*else {
-    if (dup) {
-      cacheRow = tdRowDup(row);
-    } else {
-      cacheRow = row;
-    }
-
-    _taos_lru_deleter_t deleter = deleteTableCacheLastrow;
-    LRUStatus           status =
-        taosLRUCacheInsert(pCache, key, keyLen, cacheRow, TD_ROW_LEN(cacheRow), deleter, NULL, TAOS_LRU_PRIORITY_LOW);
-    if (status != TAOS_LRU_STATUS_OK) {
-      code = -1;
-    }
-    }*/
+    taosLRUCacheErase(pCache, key, keyLen);
+  }
 
   return code;
 }
@@ -378,10 +320,7 @@ int32_t tsdbCacheInsertLast(SLRUCache *pCache, tb_uid_t uid, STSRow *row, STsdb 
   _invalidate:
     taosMemoryFreeClear(pTSchema);
 
-    taosLRUCacheRelease(pCache, h, invalidate);
-
-    // clear last cache anyway, lazy load when get last lookup
-    // taosLRUCacheRelease(pCache, h, true);
+    taosLRUCacheErase(pCache, key, keyLen);
   }
 
   return code;
