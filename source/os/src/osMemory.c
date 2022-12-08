@@ -228,60 +228,60 @@ void taosPrintBackTrace() {
 void taosPrintBackTrace() { return; }
 #endif
 
-void *taosMemoryMalloc(int64_t size) {
-#ifdef USE_TD_MEMORY
-  void *tmp = malloc(size + sizeof(TdMemoryInfo));
-  if (tmp == NULL) return NULL;
+// void *taosMemoryMalloc(int64_t size) {
+//#ifdef USE_TD_MEMORY
+//   void *tmp = malloc(size + sizeof(TdMemoryInfo));
+//   if (tmp == NULL) return NULL;
+//
+//   TdMemoryInfoPtr pTdMemoryInfo = (TdMemoryInfoPtr)tmp;
+//   pTdMemoryInfo->memorySize = size;
+//   pTdMemoryInfo->symbol = TD_MEMORY_SYMBOL;
+//   taosBackTrace(pTdMemoryInfo->stackTrace, TD_MEMORY_STACK_TRACE_DEPTH);
+//
+//   return (char *)tmp + sizeof(TdMemoryInfo);
+//#else
+//   return malloc(size);
+//#endif
+// }
 
-  TdMemoryInfoPtr pTdMemoryInfo = (TdMemoryInfoPtr)tmp;
-  pTdMemoryInfo->memorySize = size;
-  pTdMemoryInfo->symbol = TD_MEMORY_SYMBOL;
-  taosBackTrace(pTdMemoryInfo->stackTrace, TD_MEMORY_STACK_TRACE_DEPTH);
+// void *taosMemoryCalloc(int64_t num, int64_t size) {
+//#ifdef USE_TD_MEMORY
+//   int32_t memorySize = num * size;
+//   char   *tmp = calloc(memorySize + sizeof(TdMemoryInfo), 1);
+//   if (tmp == NULL) return NULL;
+//
+//   TdMemoryInfoPtr pTdMemoryInfo = (TdMemoryInfoPtr)tmp;
+//   pTdMemoryInfo->memorySize = memorySize;
+//   pTdMemoryInfo->symbol = TD_MEMORY_SYMBOL;
+//   taosBackTrace(pTdMemoryInfo->stackTrace, TD_MEMORY_STACK_TRACE_DEPTH);
+//
+//   return (char *)tmp + sizeof(TdMemoryInfo);
+//#else
+//   return calloc(num, size);
+//#endif
+// }
 
-  return (char *)tmp + sizeof(TdMemoryInfo);
-#else
-  return malloc(size);
-#endif
-}
-
-void *taosMemoryCalloc(int64_t num, int64_t size) {
-#ifdef USE_TD_MEMORY
-  int32_t memorySize = num * size;
-  char   *tmp = calloc(memorySize + sizeof(TdMemoryInfo), 1);
-  if (tmp == NULL) return NULL;
-
-  TdMemoryInfoPtr pTdMemoryInfo = (TdMemoryInfoPtr)tmp;
-  pTdMemoryInfo->memorySize = memorySize;
-  pTdMemoryInfo->symbol = TD_MEMORY_SYMBOL;
-  taosBackTrace(pTdMemoryInfo->stackTrace, TD_MEMORY_STACK_TRACE_DEPTH);
-
-  return (char *)tmp + sizeof(TdMemoryInfo);
-#else
-  return calloc(num, size);
-#endif
-}
-
-void *taosMemoryRealloc(void *ptr, int64_t size) {
-#ifdef USE_TD_MEMORY
-  if (ptr == NULL) return taosMemoryMalloc(size);
-
-  TdMemoryInfoPtr pTdMemoryInfo = (TdMemoryInfoPtr)((char *)ptr - sizeof(TdMemoryInfo));
-  assert(pTdMemoryInfo->symbol == TD_MEMORY_SYMBOL);
-
-  TdMemoryInfo tdMemoryInfo;
-  memcpy(&tdMemoryInfo, pTdMemoryInfo, sizeof(TdMemoryInfo));
-
-  void *tmp = realloc(pTdMemoryInfo, size + sizeof(TdMemoryInfo));
-  if (tmp == NULL) return NULL;
-
-  memcpy(tmp, &tdMemoryInfo, sizeof(TdMemoryInfo));
-  ((TdMemoryInfoPtr)tmp)->memorySize = size;
-
-  return (char *)tmp + sizeof(TdMemoryInfo);
-#else
-  return realloc(ptr, size);
-#endif
-}
+// void *taosMemoryRealloc(void *ptr, int64_t size) {
+//#ifdef USE_TD_MEMORY
+//   if (ptr == NULL) return taosMemoryMalloc(size);
+//
+//   TdMemoryInfoPtr pTdMemoryInfo = (TdMemoryInfoPtr)((char *)ptr - sizeof(TdMemoryInfo));
+//   assert(pTdMemoryInfo->symbol == TD_MEMORY_SYMBOL);
+//
+//   TdMemoryInfo tdMemoryInfo;
+//   memcpy(&tdMemoryInfo, pTdMemoryInfo, sizeof(TdMemoryInfo));
+//
+//   void *tmp = realloc(pTdMemoryInfo, size + sizeof(TdMemoryInfo));
+//   if (tmp == NULL) return NULL;
+//
+//   memcpy(tmp, &tdMemoryInfo, sizeof(TdMemoryInfo));
+//   ((TdMemoryInfoPtr)tmp)->memorySize = size;
+//
+//   return (char *)tmp + sizeof(TdMemoryInfo);
+//#else
+//   return realloc(ptr, size);
+//#endif
+// }
 
 void *taosMemoryStrDup(const char *ptr) {
 #ifdef USE_TD_MEMORY
@@ -346,12 +346,12 @@ void taosMemoryTrim(int32_t size) {
 #endif
 }
 
-void* taosMemoryMallocAlign(uint32_t alignment, int64_t size) {
+void *taosMemoryMallocAlign(uint32_t alignment, int64_t size) {
 #ifdef USE_TD_MEMORY
   ASSERT(0);
 #else
 #if defined(LINUX)
-  void* p = memalign(alignment, size);
+  void *p = memalign(alignment, size);
   return p;
 #else
   return taosMemoryMalloc(size);
