@@ -100,8 +100,15 @@ int32_t mndProcessWriteMsg(const SSyncFSM *pFsm, SRpcMsg *pMsg, const SFsmCbMeta
       mInfo("trans:%d, is proposed and post sem", transId);
     }
     pMgmt->transId = 0;
+
+    mInfo("trans:%d, before post sem", transId);
     tsem_post(&pMgmt->syncSem);
+    mInfo("trans:%d, after post sem", transId);
+
+    mInfo("trans:%d, before lock", transId);
     taosWUnLockLatch(&pMgmt->lock);
+    mInfo("trans:%d, after lock", transId);
+
   } else {
     taosWUnLockLatch(&pMgmt->lock);
     STrans *pTrans = mndAcquireTrans(pMnode, transId);
@@ -339,6 +346,7 @@ int32_t mndSyncPropose(SMnode *pMnode, SSdbRaw *pRaw, int32_t transId) {
   if (code == 0) {
     mInfo("trans:%d, is proposing and wait sem", pMgmt->transId);
     tsem_wait(&pMgmt->syncSem);
+    mInfo("trans:%d, is after wait sem", pMgmt->transId);
   } else if (code > 0) {
     mInfo("trans:%d, confirm at once since replica is 1, continue execute", transId);
     taosWLockLatch(&pMgmt->lock);
