@@ -47,6 +47,9 @@ typedef struct SSumRes {
     uint64_t usum;
     double   dsum;
   };
+  int16_t over;
+  int64_t overNum;
+  
   int16_t type;
   int64_t prevTs;       // used for csum only
   bool    isPrevTsSet;  // used for csum only
@@ -846,14 +849,51 @@ int32_t avgFunction(SqlFunctionCtx* pCtx) {
 
       case TSDB_DATA_TYPE_BIGINT: {
         int64_t* plist = (int64_t*)pCol->pData;
-        for (int32_t i = start; i < numOfRows + pInput->startRowIndex; ++i) {
-          if (pCol->hasNull && colDataIsNull_f(pCol->nullbitmap, i)) {
-            continue;
+        int64_t  tsum = 0;
+        int32_t  i = 0;
+        if (pAvgRes->sum.over) {
+          for (i = start; i < numOfRows + pInput->startRowIndex; ++i) {
+            if (pCol->hasNull && colDataIsNull_f(pCol->nullbitmap, i)) {
+              continue;
+            }
+
+            numOfElem += 1;
+            pAvgRes->count += 1;
+            pAvgRes->sum.dsum += plist[i];
+          }
+          pAvgRes->sum.overNum += numOfRows + pInput->startRowIndex - start;
+        } else {
+          for (i = start; i < numOfRows + pInput->startRowIndex; ++i) {
+            if (pCol->hasNull && colDataIsNull_f(pCol->nullbitmap, i)) {
+              continue;
+            }
+
+            numOfElem += 1;
+            pAvgRes->count += 1;
+            pAvgRes->sum.isum += plist[i];
+            if (pAvgRes->sum.isum < tsum) {
+              pAvgRes->sum.dsum = tsum + plist[i];
+              pAvgRes->sum.over = 1;
+              ++i;
+              break;
+            }
+            tsum = pAvgRes->sum.isum;
           }
 
-          numOfElem += 1;
-          pAvgRes->count += 1;
-          pAvgRes->sum.isum += plist[i];
+          if (pAvgRes->sum.over) {
+            int32_t startup = i;
+            for (; i < numOfRows + pInput->startRowIndex; ++i) {
+              if (pCol->hasNull && colDataIsNull_f(pCol->nullbitmap, i)) {
+                continue;
+              }
+
+              numOfElem += 1;
+              pAvgRes->count += 1;
+              pAvgRes->sum.dsum += plist[i];
+            }
+            
+            pAvgRes->sum.overNum += numOfRows + pInput->startRowIndex - startup;
+          }
         }
         break;
       }
@@ -1086,6 +1126,8 @@ int32_t avgFinalize(SqlFunctionCtx* pCtx, SSDataBlock* pBlock) {
   if (pAvgRes->count == 0) {
     // [ASAN] runtime error: division by zero
     GET_RES_INFO(pCtx)->numOfRes = 0;
+  } else if (pAvgRes->sum.over) {
+    pAvgRes->result = pAvgRes->sum.dsum / ((double)pAvgRes->count);
   } else if (IS_SIGNED_NUMERIC_TYPE(type)) {
     pAvgRes->result = pAvgRes->sum.isum / ((double)pAvgRes->count);
   } else if (IS_UNSIGNED_NUMERIC_TYPE(type)) {
@@ -1093,6 +1135,8 @@ int32_t avgFinalize(SqlFunctionCtx* pCtx, SSDataBlock* pBlock) {
   } else {
     pAvgRes->result = pAvgRes->sum.dsum / ((double)pAvgRes->count);
   }
+
+  qFatal("avg finalize, total:%" PRId64 ", over:%d, overNum:%" PRId64, pAvgRes->count, pAvgRes->sum.over, pAvgRes->sum.overNum);
 
   // check for overflow
   if (isinf(pAvgRes->result) || isnan(pAvgRes->result)) {
