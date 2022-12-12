@@ -66,6 +66,15 @@ extern int32_t tMsgDict[];
 
 typedef uint16_t tmsg_t;
 
+static inline bool vnodeIsMsgBlock(tmsg_t type) {
+  return (type == TDMT_VND_CREATE_TABLE) || (type == TDMT_VND_ALTER_TABLE) || (type == TDMT_VND_DROP_TABLE) ||
+         (type == TDMT_VND_UPDATE_TAG_VAL);
+}
+
+static inline bool syncUtilUserCommit(tmsg_t msgType) {
+  return msgType != TDMT_SYNC_NOOP && msgType != TDMT_SYNC_LEADER_TRANSFER;
+}
+
 /* ------------------------ OTHER DEFINITIONS ------------------------ */
 // IE type
 #define TSDB_IE_TYPE_SEC         1
@@ -120,6 +129,7 @@ typedef enum _mgmt_table {
   TSDB_MGMT_TABLE_VNODES,
   TSDB_MGMT_TABLE_APPS,
   TSDB_MGMT_TABLE_STREAM_TASKS,
+  TSDB_MGMT_TABLE_PRIVILEGES,
   TSDB_MGMT_TABLE_MAX,
 } EShowType;
 
@@ -141,16 +151,18 @@ typedef enum _mgmt_table {
 #define TSDB_FILL_PREV      4
 #define TSDB_FILL_NEXT      5
 
-#define TSDB_ALTER_USER_PASSWD          0x1
-#define TSDB_ALTER_USER_SUPERUSER       0x2
-#define TSDB_ALTER_USER_ADD_READ_DB     0x3
-#define TSDB_ALTER_USER_REMOVE_READ_DB  0x4
-#define TSDB_ALTER_USER_ADD_WRITE_DB    0x5
-#define TSDB_ALTER_USER_REMOVE_WRITE_DB 0x6
-#define TSDB_ALTER_USER_ADD_ALL_DB      0x7
-#define TSDB_ALTER_USER_REMOVE_ALL_DB   0x8
-#define TSDB_ALTER_USER_ENABLE          0x9
-#define TSDB_ALTER_USER_SYSINFO         0xA
+#define TSDB_ALTER_USER_PASSWD                 0x1
+#define TSDB_ALTER_USER_SUPERUSER              0x2
+#define TSDB_ALTER_USER_ADD_READ_DB            0x3
+#define TSDB_ALTER_USER_REMOVE_READ_DB         0x4
+#define TSDB_ALTER_USER_ADD_WRITE_DB           0x5
+#define TSDB_ALTER_USER_REMOVE_WRITE_DB        0x6
+#define TSDB_ALTER_USER_ADD_ALL_DB             0x7
+#define TSDB_ALTER_USER_REMOVE_ALL_DB          0x8
+#define TSDB_ALTER_USER_ENABLE                 0x9
+#define TSDB_ALTER_USER_SYSINFO                0xA
+#define TSDB_ALTER_USER_ADD_SUBSCRIBE_TOPIC    0xB
+#define TSDB_ALTER_USER_REMOVE_SUBSCRIBE_TOPIC 0xC
 
 #define TSDB_ALTER_USER_PRIVILEGES 0x2
 
@@ -497,6 +509,8 @@ typedef struct {
   char*    pComment;
   char*    pAst1;
   char*    pAst2;
+  int64_t  deleteMark1;
+  int64_t  deleteMark2;
 } SMCreateStbReq;
 
 int32_t tSerializeSMCreateStbReq(void* buf, int32_t bufLen, SMCreateStbReq* pReq);
@@ -620,7 +634,7 @@ typedef struct {
   int8_t enable;
   char   user[TSDB_USER_LEN];
   char   pass[TSDB_USET_PASSWORD_LEN];
-  char   dbname[TSDB_DB_FNAME_LEN];
+  char   objname[TSDB_DB_FNAME_LEN];  // db or topic
 } SAlterUserReq;
 
 int32_t tSerializeSAlterUserReq(void* buf, int32_t bufLen, SAlterUserReq* pReq);
@@ -1059,6 +1073,7 @@ typedef struct {
   int32_t vgId;
   int8_t  syncState;
   int8_t  syncRestore;
+  int8_t  syncCanRead;
   int64_t cacheUsage;
   int64_t numOfTables;
   int64_t numOfTimeSeries;
@@ -1143,6 +1158,13 @@ typedef struct {
 
 int32_t tSerializeSMTimerMsg(void* buf, int32_t bufLen, SMTimerReq* pReq);
 int32_t tDeserializeSMTimerMsg(void* buf, int32_t bufLen, SMTimerReq* pReq);
+
+typedef struct {
+  int64_t tick;
+} SMStreamTickReq;
+
+int32_t tSerializeSMStreamTickMsg(void* buf, int32_t bufLen, SMStreamTickReq* pReq);
+int32_t tDeserializeSMStreamTickMsg(void* buf, int32_t bufLen, SMStreamTickReq* pReq);
 
 typedef struct {
   int32_t  id;
@@ -1392,8 +1414,8 @@ typedef struct {
   int8_t  streamBlockType;
   int32_t compLen;
   int32_t numOfBlocks;
-  int32_t numOfRows;
-  int32_t numOfCols;
+  int64_t numOfRows;  // from int32_t change to int64_t
+  int64_t numOfCols;
   int64_t skey;
   int64_t ekey;
   int64_t version;                         // for stream
@@ -1744,6 +1766,8 @@ typedef struct {
   int64_t watermark;
   int32_t numOfTags;
   SArray* pTags;  // array of SField
+  // 3.0.20
+  int64_t checkpointFreq;  // ms
 } SCMCreateStreamReq;
 
 typedef struct {
@@ -1944,6 +1968,12 @@ typedef struct {
 } SMqDoRebalanceMsg;
 
 typedef struct {
+  int64_t streamId;
+  int64_t checkpointId;
+  char    streamName[TSDB_STREAM_FNAME_LEN];
+} SMStreamDoCheckpointMsg;
+
+typedef struct {
   int64_t status;
 } SMVSubscribeRsp;
 
@@ -1994,6 +2024,7 @@ typedef struct {
 typedef struct {
   int64_t maxdelay[2];
   int64_t watermark[2];
+  int64_t deleteMark[2];
   int32_t qmsgLen[2];
   char*   qmsg[2];  // pAst:qmsg:SRetention => trigger aggr task1/2
 } SRSmaParam;
@@ -2715,6 +2746,7 @@ typedef struct {
   char*   tagsFilter;
   char*   sql;
   char*   ast;
+  int64_t deleteMark;
 } SMCreateSmaReq;
 
 int32_t tSerializeSMCreateSmaReq(void* buf, int32_t bufLen, SMCreateSmaReq* pReq);
