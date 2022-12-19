@@ -455,6 +455,10 @@ static int32_t tmqSendCommitReq(tmq_t* tmq, SMqClientVg* pVg, SMqClientTopic* pT
   }
   pOffset->val = pVg->currentOffset;
 
+  char buf1[80];
+  tFormatOffset(buf1, 80, &pOffset->val);
+  tscError("consumerVal 7:%" PRId64 ", offset is %s", tmq->consumerId, buf1);
+
   int32_t groupLen = strlen(tmq->groupId);
   memcpy(pOffset->subKey, tmq->groupId, groupLen);
   pOffset->subKey[groupLen] = TMQ_SEPARATOR;
@@ -1290,7 +1294,7 @@ bool tmqUpdateEp(tmq_t* tmq, int32_t epoch, const SMqAskEpRsp* pRsp) {
         sprintf(vgKey, "%s:%d", pTopicCur->topicName, pVgCur->vgId);
         char buf[80];
         tFormatOffset(buf, 80, &pVgCur->currentOffset);
-        tscDebug("consumer:%" PRId64 ", epoch %d vgId:%d vgKey is %s, offset is %s", tmq->consumerId, epoch,
+        tscError("consumerVal 6:%" PRId64 ", epoch %d vgId:%d vgKey is %s, offset is %s", tmq->consumerId, epoch,
                  pVgCur->vgId, vgKey, buf);
         taosHashPut(pHash, vgKey, strlen(vgKey), &pVgCur->currentOffset, sizeof(STqOffsetVal));
       }
@@ -1515,6 +1519,10 @@ void tmqBuildConsumeReqImpl(SMqPollReq* pReq, tmq_t* tmq, int64_t timeout, SMqCl
   pReq->epoch = tmq->epoch;
   /*pReq->currentOffset = reqOffset;*/
   pReq->reqOffset = pVg->currentOffset;
+  char buf[80];
+  tFormatOffset(buf, 80, &pVg->currentOffset);
+  tscError("consumerVal 5:%" PRId64 ", offset is %s", tmq->consumerId, buf);
+
   pReq->reqId = generateRequestId();
 
   pReq->useSnapshot = tmq->useSnapshot;
@@ -1653,7 +1661,7 @@ int32_t tmqPollImpl(tmq_t* tmq, int64_t timeout) {
 
       char offsetFormatBuf[80];
       tFormatOffset(offsetFormatBuf, 80, &pVg->currentOffset);
-      tscDebug("consumer:%" PRId64 ", send poll to %s vgId:%d, epoch %d, req offset:%s, reqId:%" PRIu64,
+      tscError("consumerVal 4:%" PRId64 ", send poll to %s vgId:%d, epoch %d, req offset:%s, reqId:%" PRIu64,
                tmq->consumerId, pTopic->topicName, pVg->vgId, tmq->epoch, offsetFormatBuf, req.reqId);
       /*printf("send vgId:%d %" PRId64 "\n", pVg->vgId, pVg->currentOffset);*/
       asyncSendMsgToServer(tmq->pTscObj->pAppInfo->pTransporter, &pVg->epSet, &transporterId, sendInfo);
@@ -1714,6 +1722,9 @@ void* tmqHandleAllRsp(tmq_t* tmq, int64_t timeout, bool pollIfReset) {
         /*printf("vgId:%d, offset %" PRId64 " up to %" PRId64 "\n", pVg->vgId, pVg->currentOffset,
          * rspMsg->msg.rspOffset);*/
         pVg->currentOffset = pollRspWrapper->dataRsp.rspOffset;
+        char buf[80];
+        tFormatOffset(buf, 80, &pVg->currentOffset);
+        tscError("consumerVal 3:%" PRId64 ", offset is %s", tmq->consumerId, buf);
         atomic_store_32(&pVg->vgStatus, TMQ_VG_STATUS__IDLE);
         if (pollRspWrapper->dataRsp.blockNum == 0) {
           taosFreeQitem(pollRspWrapper);
@@ -1738,6 +1749,9 @@ void* tmqHandleAllRsp(tmq_t* tmq, int64_t timeout, bool pollIfReset) {
         /*printf("vgId:%d, offset %" PRId64 " up to %" PRId64 "\n", pVg->vgId, pVg->currentOffset,
          * rspMsg->msg.rspOffset);*/
         pVg->currentOffset = pollRspWrapper->metaRsp.rspOffset;
+        char buf[80];
+        tFormatOffset(buf, 80, &pVg->currentOffset);
+        tscError("consumerVal 2:%" PRId64 ", offset is %s", tmq->consumerId, buf);
         atomic_store_32(&pVg->vgStatus, TMQ_VG_STATUS__IDLE);
         // build rsp
         SMqMetaRspObj* pRsp = tmqBuildMetaRspFromWrapper(pollRspWrapper);
@@ -1758,6 +1772,11 @@ void* tmqHandleAllRsp(tmq_t* tmq, int64_t timeout, bool pollIfReset) {
         /*printf("vgId:%d, offset %" PRId64 " up to %" PRId64 "\n", pVg->vgId, pVg->currentOffset,
          * rspMsg->msg.rspOffset);*/
         pVg->currentOffset = pollRspWrapper->taosxRsp.rspOffset;
+
+        char buf[80];
+        tFormatOffset(buf, 80, &pVg->currentOffset);
+        tscError("consumerVal 1:%" PRId64 ", offset is %s", tmq->consumerId, buf);
+
         atomic_store_32(&pVg->vgStatus, TMQ_VG_STATUS__IDLE);
         if (pollRspWrapper->taosxRsp.blockNum == 0) {
           taosFreeQitem(pollRspWrapper);

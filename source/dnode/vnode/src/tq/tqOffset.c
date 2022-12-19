@@ -57,6 +57,11 @@ int32_t tqOffsetRestoreFromFile(STqOffsetStore* pStore, const char* fname) {
         ASSERT(0);
       }
       tDecoderClear(&decoder);
+
+      char buf[80];
+      tFormatOffset(buf, 80, &offset.val);
+      tqError("consumerVal 1, offset is %s", buf);
+
       if (taosHashPut(pStore->pHash, offset.subKey, strlen(offset.subKey), &offset, sizeof(STqOffset)) < 0) {
         ASSERT(0);
         // TODO
