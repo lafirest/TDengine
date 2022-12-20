@@ -138,6 +138,11 @@ int32_t tqOffsetCommitFile(STqOffsetStore* pStore) {
     pIter = taosHashIterate(pStore->pHash, pIter);
     if (pIter == NULL) break;
     STqOffset* pOffset = (STqOffset*)pIter;
+
+    char formatBuf[80];
+    tFormatOffset(formatBuf, 80, &pOffset->val);
+    tqError("consumerVal 6: consumer offset reset to %s", formatBuf);
+
     int32_t    bodyLen;
     int32_t    code;
     tEncodeSize(tEncodeSTqOffset, pOffset, bodyLen, code);

@@ -354,10 +354,10 @@ int32_t tqProcessOffsetCommitReq(STQ* pTq, int64_t version, char* msg, int32_t m
   tDecoderClear(&decoder);
 
   if (offset.val.type == TMQ_OFFSET__SNAPSHOT_DATA || offset.val.type == TMQ_OFFSET__SNAPSHOT_META) {
-    tqDebug("receive offset commit msg to %s on vgId:%d, offset(type:snapshot) uid:%" PRId64 ", ts:%" PRId64,
+    tqError("consumerVal 2 receive offset commit msg to %s on vgId:%d, offset(type:snapshot) uid:%" PRId64 ", ts:%" PRId64,
             offset.subKey, TD_VID(pTq->pVnode), offset.val.uid, offset.val.ts);
   } else if (offset.val.type == TMQ_OFFSET__LOG) {
-    tqDebug("receive offset commit msg to %s on vgId:%d, offset(type:log) version:%" PRId64, offset.subKey,
+    tqError("consumerVal 3 receive offset commit msg to %s on vgId:%d, offset(type:log) version:%" PRId64, offset.subKey,
             TD_VID(pTq->pVnode), offset.val.version);
     if (offset.val.version + 1 == version) {
       offset.val.version += 1;
@@ -369,6 +369,11 @@ int32_t tqProcessOffsetCommitReq(STQ* pTq, int64_t version, char* msg, int32_t m
   if (pOffset != NULL && tqOffsetLessOrEqual(&offset, pOffset)) {
     return 0;
   }
+
+  char formatBuf[80];
+  tFormatOffset(formatBuf, 80, &pOffset->val);
+  tqError("consumerVal 4: consumer subkey %s, vg %d, offset reset to %s", offset.subKey,
+          TD_VID(pTq->pVnode), formatBuf);
 
   if (tqOffsetWrite(pTq->pOffsetStore, &offset) < 0) {
     ASSERT(0);
@@ -509,7 +514,7 @@ int32_t tqProcessPollReq(STQ* pTq, SRpcMsg* pMsg) {
       fetchOffsetNew = pOffset->val;
       char formatBuf[80];
       tFormatOffset(formatBuf, 80, &fetchOffsetNew);
-      tqDebug("tmq poll: consumer %" PRId64 ", subkey %s, vg %d, offset reset to %s", consumerId, pHandle->subKey,
+      tqDebug("consumerVal 5: consumer %" PRId64 ", subkey %s, vg %d, offset reset to %s", consumerId, pHandle->subKey,
               TD_VID(pTq->pVnode), formatBuf);
     } else {
       if (reqOffset.type == TMQ_OFFSET__RESET_EARLIEAST) {
