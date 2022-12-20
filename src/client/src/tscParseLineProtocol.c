@@ -1059,7 +1059,10 @@ static int32_t applyDataPointsWithSqlInsert(TAOS* taos, TAOS_SML_DATA_POINT* poi
   }
   batch->sql[usedBytes] = '\0';
   info->numBatches++;
-  tscDebug("SML:0x%"PRIx64" sql: %s" , info->id, batch->sql);
+
+  if(info->needPrint){
+    tscError("SML:0x%"PRIx64" sql: %s" , info->id, batch->sql);
+  }
   if (info->numBatches >= MAX_SML_SQL_INSERT_BATCHES) {
     tscError("SML:0x%"PRIx64" Apply points failed. exceeds max sql insert batches", info->id);
     code = TSDB_CODE_TSC_TOO_MANY_SML_LINES;
@@ -2529,7 +2532,9 @@ static int32_t parseSmlKvPairs(TAOS_SML_KV **pKVs, int *num_kvs,
       tscError("SML:0x%"PRIx64" Unable to parse value", info->id);
       goto error;
     }
-
+    if(info->needPrint){
+      tscError("SML:0x%"PRIx64" key:%s. value:%s", info->id, pkv->key, pkv->value);
+    }
     if (!isField && childTableNameLen != 0 && strcasecmp(pkv->key, childTableName) == 0)  {
       smlData->childTableName = malloc(pkv->length + TS_BACKQUOTE_CHAR_SIZE + 1);
       memcpy(smlData->childTableName, pkv->value, pkv->length);
@@ -2677,6 +2682,12 @@ void destroySmlDataPoint(TAOS_SML_DATA_POINT* point) {
 
 static int32_t tscParseLinesInner(char* line, int32_t len, SArray* points, SSmlLinesInfo* info){
   TAOS_SML_DATA_POINT point = {0};
+  if(strstr(line, "dwzt_32960$i") != NULL || strstr(line, "jdzt_32960$i") != NULL || strstr(line, "wdzt_32960$i") != NULL){
+    info->needPrint = true;
+    tscError("SML:0x%"PRIx64" line:%s.", info->id, line);
+  }else{
+    info->needPrint = false;
+  }
   int32_t code = tscParseLine(line, len, &point, info);
   if (code != TSDB_CODE_SUCCESS) {
     tscError("SML:0x%"PRIx64" data point line parse failed.", info->id);

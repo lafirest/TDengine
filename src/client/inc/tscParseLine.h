@@ -86,6 +86,7 @@ typedef struct {
   pthread_cond_t batchCond;
   int32_t numBatches;
   SSmlSqlInsertBatch batches[MAX_SML_SQL_INSERT_BATCHES];
+  bool needPrint;
 } SSmlLinesInfo;
 
 char* addEscapeCharToString(char *str, int32_t len);
