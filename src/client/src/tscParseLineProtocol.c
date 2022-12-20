@@ -1060,9 +1060,6 @@ static int32_t applyDataPointsWithSqlInsert(TAOS* taos, TAOS_SML_DATA_POINT* poi
   batch->sql[usedBytes] = '\0';
   info->numBatches++;
 
-  if(info->needPrint){
-    tscError("SML:0x%"PRIx64" sql: %s" , info->id, batch->sql);
-  }
   if (info->numBatches >= MAX_SML_SQL_INSERT_BATCHES) {
     tscError("SML:0x%"PRIx64" Apply points failed. exceeds max sql insert batches", info->id);
     code = TSDB_CODE_TSC_TOO_MANY_SML_LINES;
@@ -1073,6 +1070,9 @@ static int32_t applyDataPointsWithSqlInsert(TAOS* taos, TAOS_SML_DATA_POINT* poi
   for (int i = 0; i < info->numBatches; ++i) {
     SSmlSqlInsertBatch* insertBatch = &info->batches[i];
     insertBatch->tryTimes = 1;
+    if(info->needPrint){
+      tscError("SML:0x%"PRIx64",i:%d, sql: %s" , info->id, i, insertBatch->sql);
+    }
     taos_query_a(taos, insertBatch->sql, insertCallback, insertBatch);
     batchesExecuted[i] = true;
   }
