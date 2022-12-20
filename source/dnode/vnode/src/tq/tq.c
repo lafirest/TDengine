@@ -370,10 +370,12 @@ int32_t tqProcessOffsetCommitReq(STQ* pTq, int64_t version, char* msg, int32_t m
     return 0;
   }
 
-  char formatBuf[80];
-  tFormatOffset(formatBuf, 80, &pOffset->val);
-  tqError("consumerVal 4: consumer subkey %s, vg %d, offset reset to %s", offset.subKey,
-          TD_VID(pTq->pVnode), formatBuf);
+  if (pOffset != NULL) {
+    char formatBuf[80];
+    tFormatOffset(formatBuf, 80, &pOffset->val);
+    tqError("consumerVal 4: consumer subkey %s, vg %d, offset reset to %s", offset.subKey, TD_VID(pTq->pVnode),
+            formatBuf);
+  }
 
   if (tqOffsetWrite(pTq->pOffsetStore, &offset) < 0) {
     ASSERT(0);
