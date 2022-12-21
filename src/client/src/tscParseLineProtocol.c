@@ -952,6 +952,9 @@ _cleanup:
   }
   *nextIndex = r;
 
+  if(info->needPrint && strcasecmp(sTableName, "type_634771f8eb512f37bb8f47e9_1egKidUavmw") == 0){
+    tscError("SML:0x%"PRIx64 "stable rows:%zu, f:%d, n:%d, sql:%s", info->id, rows, fromIndex, *nextIndex, sql);
+  }
   return 0;
 }
 
@@ -1036,7 +1039,7 @@ static int32_t applyDataPointsWithSqlInsert(TAOS* taos, TAOS_SML_DATA_POINT* poi
                info->id, point->childTableName, point->stableName, fromIndex, nextIndex);
       usedBytes += cTableSqlLen;
       freeBytes -= cTableSqlLen;
-//      if (nextIndex != taosArrayGetSize(cTablePoints)) {
+      if (nextIndex != taosArrayGetSize(cTablePoints)) {
         batch->sql[usedBytes] = '\0';
         info->numBatches++;
         tscDebug("SML:0x%"PRIx64" sql: %s" , info->id, batch->sql);
@@ -1052,19 +1055,19 @@ static int32_t applyDataPointsWithSqlInsert(TAOS* taos, TAOS_SML_DATA_POINT* poi
         freeBytes = tsMaxSQLStringLen;
         usedBytes = sprintf(batch->sql, "insert into");
         freeBytes -= usedBytes;
-//      }
+      }
     }
 
     pCTablePoints = taosHashIterate(cname2points, pCTablePoints);
   }
-//  batch->sql[usedBytes] = '\0';
-//  info->numBatches++;
+  batch->sql[usedBytes] = '\0';
+  info->numBatches++;
 
-//  if (info->numBatches >= MAX_SML_SQL_INSERT_BATCHES) {
-//    tscError("SML:0x%"PRIx64" Apply points failed. exceeds max sql insert batches", info->id);
-//    code = TSDB_CODE_TSC_TOO_MANY_SML_LINES;
-//    goto cleanup;
-//  }
+  if (info->numBatches >= MAX_SML_SQL_INSERT_BATCHES) {
+    tscError("SML:0x%"PRIx64" Apply points failed. exceeds max sql insert batches", info->id);
+    code = TSDB_CODE_TSC_TOO_MANY_SML_LINES;
+    goto cleanup;
+  }
   bool batchesExecuted[MAX_SML_SQL_INSERT_BATCHES] = {false};
 
   for (int i = 0; i < info->numBatches; ++i) {
@@ -2685,8 +2688,6 @@ static int32_t tscParseLinesInner(char* line, int32_t len, SArray* points, SSmlL
   if(strstr(line, "dwzt_32960$i") != NULL || strstr(line, "jdzt_32960$i") != NULL || strstr(line, "wdzt_32960$i") != NULL){
     info->needPrint = true;
     tscError("SML:0x%"PRIx64" line:%s.", info->id, line);
-  }else{
-    info->needPrint = false;
   }
   int32_t code = tscParseLine(line, len, &point, info);
   if (code != TSDB_CODE_SUCCESS) {
@@ -2703,6 +2704,7 @@ static int32_t tscParseLinesInner(char* line, int32_t len, SArray* points, SSmlL
 
 int32_t tscParseLines(char* data, int32_t len, char* lines[], int numLines, SArray* points, SArray* failedLines, SSmlLinesInfo* info) {
   int32_t code = TSDB_CODE_SUCCESS;
+  info->needPrint = false;
   if(!data && lines){
     for (int32_t i = 0; i < numLines; ++i) {
       code = tscParseLinesInner(lines[i], strlen(lines[i]), points, info);
