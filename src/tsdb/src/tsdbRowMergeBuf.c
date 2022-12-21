@@ -17,7 +17,7 @@
 #include "tdataformat.h"
 
 // row1 has higher priority
-SMemRow tsdbMergeTwoRows(SMergeBuf *pBuf, SMemRow row1, SMemRow row2, STSchema *pSchema1, STSchema *pSchema2) {
+SMemRow tsdbMergeTwoRows(SMergeBuf *pBuf, SMemRow row1, SMemRow row2, STSchema *pSchema1, STSchema *pSchema2, char* tbname) {
   if(row2 == NULL) return row1;
   if(row1 == NULL) return row2;
   ASSERT(pSchema1->version == memRowVersion(row1)); 
@@ -26,5 +26,5 @@ SMemRow tsdbMergeTwoRows(SMergeBuf *pBuf, SMemRow row1, SMemRow row2, STSchema *
   if(tsdbMergeBufMakeSureRoom(pBuf, pSchema1, pSchema2) < 0) {
     return NULL;
   }
-  return mergeTwoMemRows(*pBuf, row1, row2, pSchema1, pSchema2);
+  return mergeTwoMemRows(*pBuf, row1, row2, pSchema1, pSchema2, tbname);
 }

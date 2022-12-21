@@ -805,7 +805,13 @@ SKVRow tdGetKVRowFromBuilder(SKVRowBuilder *pBuilder) {
   return row;
 }
 
-SMemRow mergeTwoMemRows(void *buffer, SMemRow row1, SMemRow row2, STSchema *pSchema1, STSchema *pSchema2) {
+void printCol(int16_t colId, void* val, char* tbname, int64_t ts){
+  if(colId == 245 || colId == 59 || colId == 56){
+    uError("smlcol tname:%s, ts:%"PRId64 ",colId:%d, val:%"PRId64, tbname, ts, colId, val != NULL ? *(int64_t*)val : 999);
+  }
+}
+
+SMemRow mergeTwoMemRows(void *buffer, SMemRow row1, SMemRow row2, STSchema *pSchema1, STSchema *pSchema2, char* tbname) {
 #if 0
   ASSERT(memRowKey(row1) == memRowKey(row2));
   ASSERT(schemaVersion(pSchema1) == memRowVersion(row1));
@@ -833,12 +839,17 @@ SMemRow mergeTwoMemRows(void *buffer, SMemRow row1, SMemRow row2, STSchema *pSch
   SColInfo colInfo = {0};
   int32_t  kvIdx1 = 0, kvIdx2 = 0;
 
+  int64_t ts = 0;
   while (i < nCols1) {
     STColumn *pCol = schemaColAt(pSchema1, i);
     void *    val1 = tdGetMemRowDataOfColEx(row1, pCol->colId, pCol->type, TD_DATA_ROW_HEAD_SIZE + pCol->offset, &kvIdx1);
+    if(pCol->colId == 0){
+      ts = *(int64_t*)val1;
+    }
     // if val1 != NULL, use val1;
     if (val1 != NULL && !isNull(val1, pCol->type)) {
       tdAppendColVal(dataRow, val1, pCol->type, pCol->offset);
+      printCol(pCol->colId, val1, tbname, ts);
       kvLen += tdGetColAppendLen(SMEM_ROW_KV, val1, pCol->type);
       setSColInfo(&colInfo, pCol->colId, pCol->type, val1);
       taosArrayPush(stashRow, &colInfo);
@@ -864,6 +875,8 @@ SMemRow mergeTwoMemRows(void *buffer, SMemRow row1, SMemRow row2, STSchema *pSch
       val2 = (void *)getNullValue(pCol->type);
     }
     tdAppendColVal(dataRow, val2, pCol->type, pCol->offset);
+    printCol(pCol->colId, val2, tbname, ts);
+
     if (!isNull(val2, pCol->type)) {
       kvLen += tdGetColAppendLen(SMEM_ROW_KV, val2, pCol->type);
       setSColInfo(&colInfo, pCol->colId, pCol->type, val2);
@@ -891,6 +904,8 @@ SMemRow mergeTwoMemRows(void *buffer, SMemRow row1, SMemRow row2, STSchema *pSch
     for (k = 0; k < nKvNCols; ++k) {
       SColInfo *pColInfo = taosArrayGet(stashRow, k);
       tdAppendKvColVal(kvRow, pColInfo->colVal, true, pColInfo->colId, pColInfo->colType, toffset);
+      printCol(pColInfo->colId, pColInfo->colVal, tbname, ts);
+
       toffset += sizeof(SColIdx);
     }
     ASSERT(kvLen == memRowTLen(tRow));

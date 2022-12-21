@@ -1903,6 +1903,7 @@ static void mergeTwoRowFromMem(STsdbQueryHandle* pQueryHandle, int32_t capacity,
     }
   }
 
+  int64_t ts = 0;
 
   int32_t i = 0, j = 0, k = 0;
   while(i < numOfCols && (j < numOfColsOfRow1 || k < numOfColsOfRow2)) {
@@ -1978,6 +1979,10 @@ static void mergeTwoRowFromMem(STsdbQueryHandle* pQueryHandle, int32_t capacity,
       value = tdGetKvRowDataOfCol(rowBody, offset);
     }
 
+    if(colId == 0){
+      ts = *(int64_t*)value;
+    }
+    printCol(colId, value, TABLE_CHAR_NAME(pTable), ts);
 
     if (colId == pColInfo->info.colId) {
       if(forceSetNull || (!isNull(value, (int8_t)pColInfo->info.type))) {

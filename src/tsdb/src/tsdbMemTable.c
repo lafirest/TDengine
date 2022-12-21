@@ -801,7 +801,7 @@ static SMemRow tsdbInsertDupKeyMerge(SMemRow row1, SMemRow row2, STsdbRepo* pRep
     }
   }
 
-  SMemRow tmp = tsdbMergeTwoRows(pBuf, row1, row2, pSchema1, pSchema2);
+  SMemRow tmp = tsdbMergeTwoRows(pBuf, row1, row2, pSchema1, pSchema2, TABLE_CHAR_NAME(pTable));
 
   void* pMem = tsdbAllocBytes(pRepo, memRowTLen(tmp));
   if(pMem == NULL) return NULL;
