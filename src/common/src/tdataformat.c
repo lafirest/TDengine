@@ -806,7 +806,7 @@ SKVRow tdGetKVRowFromBuilder(SKVRowBuilder *pBuilder) {
 }
 
 void printCol(int16_t colId, void* val, char* tbname, int64_t ts){
-  if(colId == 245 || colId == 59 || colId == 56){
+  if(strstr(tbname, "type_634771f8eb512f37bb8f47e9_1egKidUavmw") != NULL && (colId == 245 || colId == 59 || colId == 56)){
     uError("smlcol tname:%s, ts:%"PRId64 ",colId:%d, val:%"PRId64, tbname, ts, colId, val != NULL ? *(int64_t*)val : 999);
   }
 }
