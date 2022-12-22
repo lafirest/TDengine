@@ -500,7 +500,7 @@ int tsParseOneRow(char **str, STableDataBlocks *pDataBlocks, int16_t timePrec, i
     tscGetMemRowAppendInfo(schema, pBuilder->memRowType, spd, i, &toffset, &colId);
 
     int32_t ret =
-        tsParseOneColumnKV(pSchema, &sToken, row, pInsertParam->msg, str, isPrimaryKey, timePrec, toffset, colId, ts, pTableMeta->sTableName);
+        tsParseOneColumnKV(pSchema, &sToken, row, pInsertParam->msg, str, isPrimaryKey, timePrec, toffset, colId, ts, pDataBlocks->tableName.tname);
     if (ret != TSDB_CODE_SUCCESS) {
       return ret;
     }

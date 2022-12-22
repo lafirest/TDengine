@@ -799,7 +799,7 @@ static FORCE_INLINE int32_t tsParseOneColumnKV(SSchema *pSchema, SStrToken *pTok
       if (isNullStr(pToken)) {
         tdAppendMemRowColVal(row, getNullValue(pSchema->type), true, colId, pSchema->type, toffset);
         if(strcasecmp(pSchema->name, "dwzt_32960$i") == 0){
-          printCol(colId, &iv, tbname, ts, pSchema->type, "bindbigint null");
+          printCol(colId, (void*)getNullValue(pSchema->type), tbname, ts, pSchema->type, "bindbigint null");
         }
       } else {
         ret = tStrToInteger(pToken->z, pToken->type, pToken->n, &iv, true);
