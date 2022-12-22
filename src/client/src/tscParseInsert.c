@@ -446,6 +446,7 @@ int tsParseOneRow(char **str, STableDataBlocks *pDataBlocks, int16_t timePrec, i
 
   initSMemRow(row, pBuilder->memRowType, pDataBlocks, spd->numOfBound);
 
+  int64_t ts = 0;
   // 1. set the parsed value from sql string
   for (int i = 0; i < spd->numOfBound; ++i) {
     // the start position in data block buffer of current value in sql
@@ -499,13 +500,14 @@ int tsParseOneRow(char **str, STableDataBlocks *pDataBlocks, int16_t timePrec, i
     tscGetMemRowAppendInfo(schema, pBuilder->memRowType, spd, i, &toffset, &colId);
 
     int32_t ret =
-        tsParseOneColumnKV(pSchema, &sToken, row, pInsertParam->msg, str, isPrimaryKey, timePrec, toffset, colId);
+        tsParseOneColumnKV(pSchema, &sToken, row, pInsertParam->msg, str, isPrimaryKey, timePrec, toffset, colId, ts, pTableMeta->sTableName);
     if (ret != TSDB_CODE_SUCCESS) {
       return ret;
     }
 
     if (isPrimaryKey) {
       TSKEY tsKey = memRowKey(row);
+      ts = tsKey;
       if (tsCheckTimestamp(pDataBlocks, (const char *)&tsKey) != TSDB_CODE_SUCCESS) {
         tscInvalidOperationMsg(pInsertParam->msg, "client time/server time can not be mixed up", sToken.z);
         return TSDB_CODE_TSC_INVALID_TIME_STAMP;
@@ -520,6 +522,11 @@ int tsParseOneRow(char **str, STableDataBlocks *pDataBlocks, int16_t timePrec, i
       for (int32_t i = 0; i < spd->numOfCols; ++i) {
         if (spd->cols[i].valStat == VAL_STAT_NONE) {
           tdAppendDataColVal(dataRow, getNullValue(schema[i].type), true, schema[i].type, spd->cols[i].toffset);
+          if(strcasecmp(schema[i].name, "dwzt_32960$i") == 0){
+            char tmp[128] = {0};
+            sprintf(tmp, "bindbigint none,rowsize:%d", pBuilder->rowSize);
+            printCol(schema[i].colId, (void*)getNullValue(schema[i].type), pTableMeta->sTableName, ts, schema[i].type, tmp);
+          }
         }
       }
     }

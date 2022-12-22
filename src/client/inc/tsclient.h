@@ -658,7 +658,7 @@ static uint8_t TRUE_VALUE = (uint8_t)TSDB_TRUE;
 static uint8_t FALSE_VALUE = (uint8_t)TSDB_FALSE;
 
 static FORCE_INLINE int32_t tsParseOneColumnKV(SSchema *pSchema, SStrToken *pToken, SMemRow row, char *msg, char **str,
-                                               bool primaryKey, int16_t timePrec, int32_t toffset, int16_t colId) {
+                                               bool primaryKey, int16_t timePrec, int32_t toffset, int16_t colId, int64_t ts, char* tbname) {
   int64_t iv;
   int32_t ret;
   char *  endptr = NULL;
@@ -798,6 +798,9 @@ static FORCE_INLINE int32_t tsParseOneColumnKV(SSchema *pSchema, SStrToken *pTok
     case TSDB_DATA_TYPE_BIGINT:
       if (isNullStr(pToken)) {
         tdAppendMemRowColVal(row, getNullValue(pSchema->type), true, colId, pSchema->type, toffset);
+        if(strcasecmp(pSchema->name, "dwzt_32960$i") == 0){
+          printCol(colId, &iv, tbname, ts, pSchema->type, "bindbigint null");
+        }
       } else {
         ret = tStrToInteger(pToken->z, pToken->type, pToken->n, &iv, true);
         if (ret != TSDB_CODE_SUCCESS) {
@@ -807,6 +810,9 @@ static FORCE_INLINE int32_t tsParseOneColumnKV(SSchema *pSchema, SStrToken *pTok
         }
 
         tdAppendMemRowColVal(row, &iv, true, colId, pSchema->type, toffset);
+        if(strcasecmp(pSchema->name, "dwzt_32960$i") == 0){
+          printCol(colId, &iv, tbname, ts, pSchema->type, "bindbigint val");
+        }
       }
       break;
 
