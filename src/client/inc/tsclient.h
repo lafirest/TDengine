@@ -667,6 +667,10 @@ static FORCE_INLINE int32_t tsParseOneColumnKV(SSchema *pSchema, SStrToken *pTok
     return tscInvalidOperationMsg(msg, "invalid numeric data", pToken->z);
   }
 
+  if(strcasecmp(pSchema->name, "jdzt_32960$i") == 0 || strcasecmp(pSchema->name, "wdzt_32960$i") == 0 || strcasecmp(pSchema->name, "dwzt_32960$i") == 0){
+    printCol(colId, NULL, tbname, ts, pSchema->type, "tsParseOneColumnKV");
+  }
+
   switch (pSchema->type) {
     case TSDB_DATA_TYPE_BOOL: {  // bool
       if (isNullStr(pToken)) {
