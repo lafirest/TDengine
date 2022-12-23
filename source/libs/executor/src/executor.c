@@ -926,7 +926,6 @@ int32_t qStreamRestoreParam(qTaskInfo_t tinfo) {
     if (pOperator->numOfDownstream != 1 || pOperator->pDownstream[0] == NULL) {
       if (pOperator->numOfDownstream > 1) {
         qError("unexpected stream, multiple downstream");
-        /*A(0);*/
         return -1;
       }
       return 0;

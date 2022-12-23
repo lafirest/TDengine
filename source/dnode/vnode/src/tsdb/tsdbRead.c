@@ -190,7 +190,7 @@ static int32_t  doMergeRowsInLastBlock(SLastBlockReader* pLastBlockReader, STabl
 static int32_t  doMergeRowsInBuf(SIterInfo* pIter, uint64_t uid, int64_t ts, SArray* pDelList, SRowMerger* pMerger,
                                  STsdbReader* pReader);
 static int32_t  doAppendRowFromTSRow(SSDataBlock* pBlock, STsdbReader* pReader, STSRow* pTSRow,
-                                     STableBlockScanInfo* pInfo);
+                                     STableBlockScanInfo* pScanInfo);
 static int32_t  doAppendRowFromFileBlock(SSDataBlock* pResBlock, STsdbReader* pReader, SBlockData* pBlockData,
                                          int32_t rowIndex);
 static void     setComposedBlockFlag(STsdbReader* pReader, bool composed);
@@ -2482,6 +2482,8 @@ static int32_t buildComposedDataBlock(STsdbReader* pReader) {
 
           int32_t nextIndex = -1;
           SBlockIndex bIndex = {0};
+          pBlockInfo = getCurrentBlockInfo(&pReader->status.blockIter);  // NOTE: get the new block info
+
           bool hasNeighbor = getNeighborBlockOfSameTable(pBlockInfo, pBlockScanInfo, &nextIndex, pReader->order, &bIndex);
           if (!hasNeighbor) {  // do nothing
             setBlockAllDumped(pDumpInfo, pBlock->maxKey.ts, pReader->order);
@@ -3520,6 +3522,8 @@ int32_t doMergeMemIMemRows(TSDBROW* pRow, TSDBROW* piRow, STableBlockScanInfo* p
   }
 
   int32_t code = tRowMergerGetRow(&merge, pTSRow);
+  tRowMergerClear(&merge);
+
   return code;
 }
 
@@ -4348,6 +4352,8 @@ int32_t tsdbGetFileBlocksDistInfo(STsdbReader* pReader, STableBlockDistInfo* pTa
       if (numOfRows < defaultRows) {
         pTableBlockInfo->numOfSmallBlocks += 1;
       }
+
+      pTableBlockInfo->totalSize += pBlock->aSubBlock[0].szBlock;
 
       int32_t bucketIndex = getBucketIndex(pTableBlockInfo->defMinRows, bucketRange, numOfRows);
       pTableBlockInfo->blockRowsHisto[bucketIndex]++;
