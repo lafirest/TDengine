@@ -40,7 +40,7 @@ enum {
 
 static int32_t tscAllocateMemIfNeed(STableDataBlocks *pDataBlock, int32_t rowSize, int32_t *numOfRows);
 static int32_t parseBoundColumns(SInsertStatementParam *pInsertParam, SParsedDataColInfo *pColInfo, SSchema *pSchema,
-                                 char *str, char **end);
+                                 char *str, char **end, char* tbname, int* pCol);
 int initMemRowBuilder(SMemRowBuilder *pBuilder, uint32_t nRows, SParsedDataColInfo *pColInfo) {
   ASSERT(nRows >= 0 && pColInfo->numOfCols > 0 && (pColInfo->numOfBound <= pColInfo->numOfCols));
   if (nRows > 0) {
@@ -432,7 +432,7 @@ int32_t tsCheckTimestamp(STableDataBlocks *pDataBlocks, const char *start) {
 }
 
 int tsParseOneRow(char **str, STableDataBlocks *pDataBlocks, int16_t timePrec, int32_t *len, char *tmpTokenBuf,
-                  SInsertStatementParam *pInsertParam) {
+                  SInsertStatementParam *pInsertParam, char* doPrint, int pCol) {
   int32_t   idx = 0;
   SStrToken sToken = {0};
 
@@ -456,6 +456,9 @@ int tsParseOneRow(char **str, STableDataBlocks *pDataBlocks, int16_t timePrec, i
 
     SSchema *pSchema = &schema[colIndex];  // get colId here
 
+    if(doPrint != NULL && colIndex == pCol){
+      tscError("smlcol tsParseOneRow name:%s, colName:%s, colIndex:%d", doPrint, pSchema->name, colIndex);
+    }
     idx = 0;
     sToken = tStrGetToken(*str, &idx, true);
     *str += idx;
@@ -570,7 +573,7 @@ int32_t boundIdxCompar(const void *lhs, const void *rhs) {
 }
 
 int32_t tsParseValues(char **str, STableDataBlocks *pDataBlock, int maxRows, SInsertStatementParam *pInsertParam,
-    int32_t* numOfRows, char *tmpTokenBuf) {
+    int32_t* numOfRows, char *tmpTokenBuf, char* doPrint, int pCol) {
   int32_t idx = 0;
   int32_t code = 0;
 
@@ -609,7 +612,7 @@ int32_t tsParseValues(char **str, STableDataBlocks *pDataBlock, int maxRows, SIn
     }
 
     int32_t len = 0;
-    code = tsParseOneRow(str, pDataBlock, precision, &len, tmpTokenBuf, pInsertParam);
+    code = tsParseOneRow(str, pDataBlock, precision, &len, tmpTokenBuf, pInsertParam, doPrint, pCol);
     if (code != TSDB_CODE_SUCCESS) {  // error message has been set in tsParseOneRow, return directly
       return TSDB_CODE_TSC_SQL_SYNTAX_ERROR;
     }
@@ -834,7 +837,7 @@ int tscSortRemoveDataBlockDupRows(STableDataBlocks *dataBuf, SBlockKeyInfo *pBlk
   return 0;
 }
 
-static int32_t doParseInsertStatement(SInsertStatementParam *pInsertParam, char **str, STableDataBlocks* dataBuf, int32_t *totalNum) {  
+static int32_t doParseInsertStatement(SInsertStatementParam *pInsertParam, char **str, STableDataBlocks* dataBuf, int32_t *totalNum, char* doPrint, int pCol) {
   int32_t maxNumOfRows;
   int32_t code = tscAllocateMemIfNeed(dataBuf, getExtendedRowSize(dataBuf), &maxNumOfRows);
   if (TSDB_CODE_SUCCESS != code) {
@@ -845,7 +848,7 @@ static int32_t doParseInsertStatement(SInsertStatementParam *pInsertParam, char 
   char tmpTokenBuf[TSDB_MAX_BYTES_PER_ROW] = {0};  // used for deleting Escape character: \\, \', \"
 
   int32_t numOfRows = 0;
-  code = tsParseValues(str, dataBuf, maxNumOfRows, pInsertParam, &numOfRows, tmpTokenBuf);
+  code = tsParseValues(str, dataBuf, maxNumOfRows, pInsertParam, &numOfRows, tmpTokenBuf, doPrint, pCol);
   if (code != TSDB_CODE_SUCCESS) {
     return code;
   }
@@ -1001,7 +1004,7 @@ static int32_t tscCheckIfCreateTable(char **sqlstr, SSqlObj *pSql, char** boundC
        * tags(tagVal1, tagVal2, ..., tagValn) values(v1, v2,... vn);
        */
       char* end = NULL;
-      code = parseBoundColumns(pInsertParam, &spd, pTagSchema, sql, &end);
+      code = parseBoundColumns(pInsertParam, &spd, pTagSchema, sql, &end, NULL, NULL);
       if (code != TSDB_CODE_SUCCESS) {
         tscDestroyBoundColumnInfo(&spd);
         return code;
@@ -1208,7 +1211,7 @@ static int32_t validateDataSource(SInsertStatementParam *pInsertParam, int32_t t
 }
 
 static int32_t parseBoundColumns(SInsertStatementParam *pInsertParam, SParsedDataColInfo* pColInfo, SSchema* pSchema,
-    char* str, char **end) {
+    char* str, char **end, char* tbname, int* pCol) {
   int32_t nCols = pColInfo->numOfCols;
 
   pColInfo->numOfBound = 0;
@@ -1240,6 +1243,12 @@ static int32_t parseBoundColumns(SInsertStatementParam *pInsertParam, SParsedDat
     strncpy(tmpTokenBuf, sToken.z, sToken.n);
     sToken.z = tmpTokenBuf;
 
+    bool needPrint = false;
+    if(strcasecmp(sToken.z, "dwzt_32960$i") == 0){
+      needPrint = true;
+    }
+
+
     if (TK_STRING == sToken.type || TK_ID == sToken.type) {
       sToken.n = stringProcess(sToken.z, sToken.n);
     }
@@ -1262,7 +1271,10 @@ static int32_t parseBoundColumns(SInsertStatementParam *pInsertParam, SParsedDat
           code = tscInvalidOperationMsg(pInsertParam->msg, "duplicated column name", sToken.z);
           goto _clean;
         }
-
+        if(tbname != NULL && needPrint){
+          *pCol = t;
+          tscError("smlcol first,name:%s, t:%d, name:%s", tbname, t, pSchema[t].name);
+        }
         pColInfo->cols[t].valStat = VAL_STAT_HAS;
         pColInfo->boundedColumns[pColInfo->numOfBound] = t;
         ++pColInfo->numOfBound;
@@ -1297,6 +1309,10 @@ static int32_t parseBoundColumns(SInsertStatementParam *pInsertParam, SParsedDat
             goto _clean;
           }
 
+          if(tbname != NULL && needPrint){
+            *pCol = t;
+            tscError("smlcol second,name:%s,t:%d, name:%s", tbname, t, pSchema[t].name);
+          }
           pColInfo->cols[t].valStat = VAL_STAT_HAS;
           pColInfo->boundedColumns[pColInfo->numOfBound] = t;
           ++pColInfo->numOfBound;
@@ -1528,7 +1544,7 @@ int tsParseInsertSql(SSqlObj *pSql) {
           goto _clean;
         }
 
-        code = doParseInsertStatement(pInsertParam, &str, dataBuf, &totalNum);
+        code = doParseInsertStatement(pInsertParam, &str, dataBuf, &totalNum, NULL, -1);
         if (code != TSDB_CODE_SUCCESS) {
           goto _clean;
         }
@@ -1548,8 +1564,17 @@ int tsParseInsertSql(SSqlObj *pSql) {
           goto _clean;
         }
 
+        char* doPrint = NULL;
+        if(strstr(pTableMetaInfo->name.tname, "type_634771f8eb512f37bb8f47e9_1egKidUavmw") != NULL){
+          doPrint = pTableMetaInfo->name.tname;
+          char tmp[2048] = {0};
+          tstrncpy(tmp, bindedColumns, 2048);
+          tscError("smlcol name:%s, cols:%s", pTableMetaInfo->name.tname, tmp);
+        }
+        int pCol = -1;
+
         SSchema *pSchema = tscGetTableSchema(pTableMeta);
-        code = parseBoundColumns(pInsertParam, &dataBuf->boundColumnInfo, pSchema, bindedColumns, NULL);
+        code = parseBoundColumns(pInsertParam, &dataBuf->boundColumnInfo, pSchema, bindedColumns, NULL, doPrint, &pCol);
         if (code != TSDB_CODE_SUCCESS) {
           goto _clean;
         }
@@ -1564,7 +1589,7 @@ int tsParseInsertSql(SSqlObj *pSql) {
           goto _clean;
         }
 
-        code = doParseInsertStatement(pInsertParam, &str, dataBuf, &totalNum);
+        code = doParseInsertStatement(pInsertParam, &str, dataBuf, &totalNum, doPrint, pCol);
         if (code != TSDB_CODE_SUCCESS) {
           goto _clean;
         }
@@ -1794,7 +1819,7 @@ static void parseFileSendDataBlock(void *param, TAOS_RES *tres, int32_t numOfRow
     strtolower(line, line);
 
     int32_t len = 0;
-    code = tsParseOneRow(&lineptr, pTableDataBlock, tinfo.precision, &len, tokenBuf, pInsertParam);
+    code = tsParseOneRow(&lineptr, pTableDataBlock, tinfo.precision, &len, tokenBuf, pInsertParam, NULL, -1);
     if (code != TSDB_CODE_SUCCESS || pTableDataBlock->numOfParams > 0) {
       pSql->res.code = code;
       break;
