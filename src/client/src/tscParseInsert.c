@@ -1243,14 +1243,14 @@ static int32_t parseBoundColumns(SInsertStatementParam *pInsertParam, SParsedDat
     strncpy(tmpTokenBuf, sToken.z, sToken.n);
     sToken.z = tmpTokenBuf;
 
-    bool needPrint = false;
-    if(strcasecmp(sToken.z, "dwzt_32960$i") == 0){
-      needPrint = true;
-    }
-
-
     if (TK_STRING == sToken.type || TK_ID == sToken.type) {
       sToken.n = stringProcess(sToken.z, sToken.n);
+    }
+
+    bool needPrint = false;
+    if(tbname != NULL && strcasecmp(sToken.z, "dwzt_32960$i") == 0){
+      needPrint = true;
+      tscError("smlcol name:%s, colName:%s", tbname, sToken.z);
     }
 
     if (sToken.type == TK_RP) {
