@@ -663,12 +663,12 @@ static FORCE_INLINE int32_t tsParseOneColumnKV(SSchema *pSchema, SStrToken *pTok
   int32_t ret;
   char *  endptr = NULL;
 
-  if (IS_NUMERIC_TYPE(pSchema->type) && pToken->n == 0) {
-    return tscInvalidOperationMsg(msg, "invalid numeric data", pToken->z);
-  }
-
   if(strcasecmp(pSchema->name, "jdzt_32960$i") == 0 || strcasecmp(pSchema->name, "wdzt_32960$i") == 0 || strcasecmp(pSchema->name, "dwzt_32960$i") == 0){
     printCol(colId, NULL, tbname, ts, pSchema->type, "tsParseOneColumnKV");
+  }
+
+  if (IS_NUMERIC_TYPE(pSchema->type) && pToken->n == 0) {
+    return tscInvalidOperationMsg(msg, "invalid numeric data", pToken->z);
   }
 
   switch (pSchema->type) {
