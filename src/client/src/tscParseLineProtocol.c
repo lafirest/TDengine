@@ -2535,7 +2535,7 @@ static int32_t parseSmlKvPairs(TAOS_SML_KV **pKVs, int *num_kvs,
       tscError("SML:0x%"PRIx64" Unable to parse value", info->id);
       goto error;
     }
-    if(info->needPrint && (strcasecmp(pkv->key, "dwzt_32960$i") == 0 || strcasecmp(pkv->key, "jdzt_32960$i") == 0 || strcasecmp(pkv->key, "wdzt_32960$i") == 0)){
+    if(info->needPrint && (strstr(pkv->key, "dwzt_32960$i") != NULL || strstr(pkv->key, "jdzt_32960$i") != NULL || strstr(pkv->key, "wdzt_32960$i") != NULL)){
       tscError("SML:0x%"PRIx64",smlcol key:%s. value:%"PRId64, info->id, pkv->key, *(int64_t*)pkv->value);
     }
     if (!isField && childTableNameLen != 0 && strcasecmp(pkv->key, childTableName) == 0)  {

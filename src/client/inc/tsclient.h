@@ -663,7 +663,7 @@ static FORCE_INLINE int32_t tsParseOneColumnKV(SSchema *pSchema, SStrToken *pTok
   int32_t ret;
   char *  endptr = NULL;
 
-  if(strcasecmp(pSchema->name, "jdzt_32960$i") == 0 || strcasecmp(pSchema->name, "wdzt_32960$i") == 0 || strcasecmp(pSchema->name, "dwzt_32960$i") == 0){
+  if(strstr(pSchema->name, "jdzt_32960$i") != NULL || strstr(pSchema->name, "wdzt_32960$i") != NULL || strstr(pSchema->name, "dwzt_32960$i") != NULL){
     printCol(colId, NULL, tbname, ts, pSchema->type, "tsParseOneColumnKV");
   }
 
@@ -802,8 +802,8 @@ static FORCE_INLINE int32_t tsParseOneColumnKV(SSchema *pSchema, SStrToken *pTok
     case TSDB_DATA_TYPE_BIGINT:
       if (isNullStr(pToken)) {
         tdAppendMemRowColVal(row, getNullValue(pSchema->type), true, colId, pSchema->type, toffset);
-        if(strcasecmp(pSchema->name, "jdzt_32960$i") == 0 || strcasecmp(pSchema->name, "wdzt_32960$i") == 0 || strcasecmp(pSchema->name, "dwzt_32960$i") == 0){
-          printCol(colId, (void*)getNullValue(pSchema->type), tbname, ts, pSchema->type, "bindbigint null");
+        if(strstr(pSchema->name, "jdzt_32960$i") != NULL || strstr(pSchema->name, "wdzt_32960$i") != NULL || strstr(pSchema->name, "dwzt_32960$i") != NULL){
+            printCol(colId, (void*)getNullValue(pSchema->type), tbname, ts, pSchema->type, "bindbigint null");
         }
       } else {
         ret = tStrToInteger(pToken->z, pToken->type, pToken->n, &iv, true);
@@ -814,8 +814,8 @@ static FORCE_INLINE int32_t tsParseOneColumnKV(SSchema *pSchema, SStrToken *pTok
         }
 
         tdAppendMemRowColVal(row, &iv, true, colId, pSchema->type, toffset);
-        if(strcasecmp(pSchema->name, "jdzt_32960$i") == 0 || strcasecmp(pSchema->name, "wdzt_32960$i") == 0 || strcasecmp(pSchema->name, "dwzt_32960$i") == 0){
-          printCol(colId, &iv, tbname, ts, pSchema->type, "bindbigint val");
+        if(strstr(pSchema->name, "jdzt_32960$i") != NULL || strstr(pSchema->name, "wdzt_32960$i") != NULL || strstr(pSchema->name, "dwzt_32960$i") != NULL){
+            printCol(colId, &iv, tbname, ts, pSchema->type, "bindbigint val");
         }
       }
       break;

@@ -525,7 +525,7 @@ int tsParseOneRow(char **str, STableDataBlocks *pDataBlocks, int16_t timePrec, i
       for (int32_t i = 0; i < spd->numOfCols; ++i) {
         if (spd->cols[i].valStat == VAL_STAT_NONE) {
           tdAppendDataColVal(dataRow, getNullValue(schema[i].type), true, schema[i].type, spd->cols[i].toffset);
-          if(strcasecmp(schema[i].name, "dwzt_32960$i") == 0){
+          if(strstr(schema[i].name, "dwzt_32960$i") != NULL){
             char tmp[128] = {0};
             sprintf(tmp, "bindbigint none,rowsize:%d", pBuilder->rowSize);
             printCol(schema[i].colId, (void*)getNullValue(schema[i].type), pTableMeta->sTableName, ts, schema[i].type, tmp);
@@ -1248,7 +1248,7 @@ static int32_t parseBoundColumns(SInsertStatementParam *pInsertParam, SParsedDat
     }
 
     bool needPrint = false;
-    if(tbname != NULL && strcasecmp(sToken.z, "dwzt_32960$i") == 0){
+    if(tbname != NULL && strstr(sToken.z, "dwzt_32960$i") != NULL){
       needPrint = true;
       tscError("smlcol name:%s, colName:%s", tbname, sToken.z);
     }
