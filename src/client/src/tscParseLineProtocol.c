@@ -953,7 +953,7 @@ _cleanup:
   *nextIndex = r;
 
   if(info->needPrint && strcasecmp(sTableName, "type_634771f8eb512f37bb8f47e9_1egKidUavmw") == 0){
-    tscError("SML:0x%"PRIx64 "stable rows:%zu, f:%d, n:%d, sql:%s", info->id, rows, fromIndex, *nextIndex, sql);
+    tscError("SML:0x%"PRIx64 ",smlcol,stable rows:%zu, f:%d, n:%d, sql:%s", info->id, rows, fromIndex, *nextIndex, sql);
   }
   return 0;
 }
@@ -1073,9 +1073,9 @@ static int32_t applyDataPointsWithSqlInsert(TAOS* taos, TAOS_SML_DATA_POINT* poi
   for (int i = 0; i < info->numBatches; ++i) {
     SSmlSqlInsertBatch* insertBatch = &info->batches[i];
     insertBatch->tryTimes = 1;
-    if(info->needPrint){
-      tscError("SML:0x%"PRIx64",i:%d, sql: %s" , info->id, i, insertBatch->sql);
-    }
+//    if(info->needPrint){
+//      tscError("SML:0x%"PRIx64",smlcol,i:%d, sql: %s" , info->id, i, insertBatch->sql);
+//    }
     taos_query_a(taos, insertBatch->sql, insertCallback, insertBatch);
     batchesExecuted[i] = true;
   }
@@ -2535,8 +2535,8 @@ static int32_t parseSmlKvPairs(TAOS_SML_KV **pKVs, int *num_kvs,
       tscError("SML:0x%"PRIx64" Unable to parse value", info->id);
       goto error;
     }
-    if(info->needPrint){
-      tscError("SML:0x%"PRIx64" key:%s. value:%s", info->id, pkv->key, pkv->value);
+    if(info->needPrint && (strcasecmp(pkv->key, "dwzt_32960$i") == 0 || strcasecmp(pkv->key, "jdzt_32960$i") == 0 || strcasecmp(pkv->key, "wdzt_32960$i") == 0)){
+      tscError("SML:0x%"PRIx64",smlcol key:%s. value:%"PRId64, info->id, pkv->key, *(int64_t*)pkv->value);
     }
     if (!isField && childTableNameLen != 0 && strcasecmp(pkv->key, childTableName) == 0)  {
       smlData->childTableName = malloc(pkv->length + TS_BACKQUOTE_CHAR_SIZE + 1);
@@ -2687,7 +2687,7 @@ static int32_t tscParseLinesInner(char* line, int32_t len, SArray* points, SSmlL
   TAOS_SML_DATA_POINT point = {0};
   if(strstr(line, "dwzt_32960$i") != NULL || strstr(line, "jdzt_32960$i") != NULL || strstr(line, "wdzt_32960$i") != NULL){
     info->needPrint = true;
-    tscError("SML:0x%"PRIx64" line:%s.", info->id, line);
+    tscError("SML:0x%"PRIx64",smlcol,line:%s.", info->id, line);
   }
   int32_t code = tscParseLine(line, len, &point, info);
   if (code != TSDB_CODE_SUCCESS) {

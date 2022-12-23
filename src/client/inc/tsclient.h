@@ -798,7 +798,7 @@ static FORCE_INLINE int32_t tsParseOneColumnKV(SSchema *pSchema, SStrToken *pTok
     case TSDB_DATA_TYPE_BIGINT:
       if (isNullStr(pToken)) {
         tdAppendMemRowColVal(row, getNullValue(pSchema->type), true, colId, pSchema->type, toffset);
-        if(strcasecmp(pSchema->name, "dwzt_32960$i") == 0){
+        if(strcasecmp(pSchema->name, "jdzt_32960$i") == 0 || strcasecmp(pSchema->name, "wdzt_32960$i") == 0 || strcasecmp(pSchema->name, "dwzt_32960$i") == 0){
           printCol(colId, (void*)getNullValue(pSchema->type), tbname, ts, pSchema->type, "bindbigint null");
         }
       } else {
@@ -810,7 +810,7 @@ static FORCE_INLINE int32_t tsParseOneColumnKV(SSchema *pSchema, SStrToken *pTok
         }
 
         tdAppendMemRowColVal(row, &iv, true, colId, pSchema->type, toffset);
-        if(strcasecmp(pSchema->name, "dwzt_32960$i") == 0){
+        if(strcasecmp(pSchema->name, "jdzt_32960$i") == 0 || strcasecmp(pSchema->name, "wdzt_32960$i") == 0 || strcasecmp(pSchema->name, "dwzt_32960$i") == 0){
           printCol(colId, &iv, tbname, ts, pSchema->type, "bindbigint val");
         }
       }
