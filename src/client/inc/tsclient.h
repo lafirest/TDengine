@@ -37,6 +37,7 @@ extern "C" {
 #include "qTsbuf.h"
 #include "qUtil.h"
 #include "tcmdtype.h"
+#include "tscLog.h"
 
 typedef enum {
   TAOS_REQ_FROM_SHELL,
@@ -658,13 +659,17 @@ static uint8_t TRUE_VALUE = (uint8_t)TSDB_TRUE;
 static uint8_t FALSE_VALUE = (uint8_t)TSDB_FALSE;
 
 static FORCE_INLINE int32_t tsParseOneColumnKV(SSchema *pSchema, SStrToken *pToken, SMemRow row, char *msg, char **str,
-                                               bool primaryKey, int16_t timePrec, int32_t toffset, int16_t colId, int64_t ts, char* tbname) {
+                                               bool primaryKey, int16_t timePrec, int32_t toffset, int16_t colId, int64_t ts, char* tbname, char* doPrint, bool p245) {
   int64_t iv;
   int32_t ret;
   char *  endptr = NULL;
 
+  if(p245){
+    printCol(colId, NULL, tbname, ts, pSchema->type, "tsParseOneColumnKV1");
+    tscError("smlcol tsParseOneColumnKV tbname:%s, colId:%d, colName:%s, ts:%" PRId64, doPrint, colId, pSchema->name, ts);
+  }
   if(strstr(pSchema->name, "jdzt_32960$i") != NULL || strstr(pSchema->name, "wdzt_32960$i") != NULL || strstr(pSchema->name, "dwzt_32960$i") != NULL){
-    printCol(colId, NULL, tbname, ts, pSchema->type, "tsParseOneColumnKV");
+    printCol(colId, NULL, tbname, ts, pSchema->type, "tsParseOneColumnKV2");
   }
 
   if (IS_NUMERIC_TYPE(pSchema->type) && pToken->n == 0) {

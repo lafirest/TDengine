@@ -457,7 +457,7 @@ int tsParseOneRow(char **str, STableDataBlocks *pDataBlocks, int16_t timePrec, i
     SSchema *pSchema = &schema[colIndex];  // get colId here
 
     if(doPrint != NULL && colIndex == pCol){
-      tscError("smlcol tsParseOneRow name:%s, colName:%s, colIndex:%d", doPrint, pSchema->name, colIndex);
+      tscError("smlcol tsParseOneRow1 name:%s, colName:%s, colIndex:%d, ts:%" PRId64, doPrint, pSchema->name, colIndex, ts);
     }
     idx = 0;
     sToken = tStrGetToken(*str, &idx, true);
@@ -502,8 +502,14 @@ int tsParseOneRow(char **str, STableDataBlocks *pDataBlocks, int16_t timePrec, i
     int16_t colId = -1;
     tscGetMemRowAppendInfo(schema, pBuilder->memRowType, spd, i, &toffset, &colId);
 
+    bool p245 = false;
+    if(doPrint != NULL && colIndex == pCol){
+      tscError("smlcol tsParseOneRow2 name:%s, colName:%s, colIndex:%d, colId:%d, rowType:%d, offset:%d, ts:%" PRId64, doPrint, pSchema->name, colIndex, colId, pBuilder->memRowType, toffset, ts);
+      p245 = true;
+    }
+
     int32_t ret =
-        tsParseOneColumnKV(pSchema, &sToken, row, pInsertParam->msg, str, isPrimaryKey, timePrec, toffset, colId, ts, pDataBlocks->tableName.tname);
+        tsParseOneColumnKV(pSchema, &sToken, row, pInsertParam->msg, str, isPrimaryKey, timePrec, toffset, colId, ts, pDataBlocks->tableName.tname, doPrint, p245);
     if (ret != TSDB_CODE_SUCCESS) {
       return ret;
     }
