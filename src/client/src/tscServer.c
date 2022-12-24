@@ -2397,7 +2397,7 @@ int tscProcessTableMetaRsp(SSqlObj *pSql) {
     char tmp[65535] = {0};
     int len = 0;
     for(int i = 0; i < pTableMeta->tableInfo.numOfColumns + pTableMeta->tableInfo.numOfTags; i++){
-      len = sprintf(tmp + len, "i:%d:%s,%d,%d,%d;", i, pTableMeta->schema[i].name, pTableMeta->schema[i].bytes, pTableMeta->schema[i].colId, pTableMeta->schema[i].type);
+      len += sprintf(tmp + len, "i:%d:%s,%d,%d,%d;", i, pTableMeta->schema[i].name, pTableMeta->schema[i].bytes, pTableMeta->schema[i].colId, pTableMeta->schema[i].type);
     }
     tscError("smlcol meta:%s", tmp);
   }

@@ -1260,7 +1260,7 @@ static int32_t parseBoundColumns(SInsertStatementParam *pInsertParam, SParsedDat
       char tmp[65535] = {0};
       int len = 0;
       for(int i = 0; i < nCols; i++){
-        len = sprintf(tmp + len, "i:%d:%s,%d,%d,%d;", i, pSchema[i].name, pSchema[i].bytes, pSchema[i].colId, pSchema[i].type);
+        len += sprintf(tmp + len, "i:%d:%s,%d,%d,%d;", i, pSchema[i].name, pSchema[i].bytes, pSchema[i].colId, pSchema[i].type);
       }
       tscError("smlcol parseBoundColumns meta:%s", tmp);
     }

@@ -1864,7 +1864,7 @@ static int32_t mnodeSetSchemaFromSuperTable(SSchema *pSchema, SSTableObj *pTable
     pSchema->bytes = htons(pTable->schema[i].bytes);
     pSchema->colId = htons(pTable->schema[i].colId);
     pSchema++;
-    len = sprintf(tmp + len, "i:%d:%s,%d,%d,%d;", i, pTable->schema[i].name, pTable->schema[i].bytes, pTable->schema[i].colId, pTable->schema[i].type);
+    len += sprintf(tmp + len, "i:%d:%s,%d,%d,%d;", i, pTable->schema[i].name, pTable->schema[i].bytes, pTable->schema[i].colId, pTable->schema[i].type);
 
   }
   mError("smlcol table:%s, meta:%s", pTable->info.tableId, tmp);
