@@ -665,11 +665,11 @@ static FORCE_INLINE int32_t tsParseOneColumnKV(SSchema *pSchema, SStrToken *pTok
   char *  endptr = NULL;
 
   if(p245){
-    printCol(colId, NULL, tbname, ts, pSchema->type, "tsParseOneColumnKV1");
+    printCol(colId, NULL, tbname, ts, pSchema->type, "tsParseOneColumnKV1", NULL, NULL);
     tscError("smlcol tsParseOneColumnKV tbname:%s, colId:%d, colName:%s, ts:%" PRId64, doPrint, colId, pSchema->name, ts);
   }
   if(strstr(pSchema->name, "jdzt_32960$i") != NULL || strstr(pSchema->name, "wdzt_32960$i") != NULL || strstr(pSchema->name, "dwzt_32960$i") != NULL){
-    printCol(colId, NULL, tbname, ts, pSchema->type, "tsParseOneColumnKV2");
+    printCol(colId, NULL, tbname, ts, pSchema->type, "tsParseOneColumnKV2", NULL, NULL);
   }
 
   if (IS_NUMERIC_TYPE(pSchema->type) && pToken->n == 0) {
@@ -808,7 +808,7 @@ static FORCE_INLINE int32_t tsParseOneColumnKV(SSchema *pSchema, SStrToken *pTok
       if (isNullStr(pToken)) {
         tdAppendMemRowColVal(row, getNullValue(pSchema->type), true, colId, pSchema->type, toffset);
         if(strstr(pSchema->name, "jdzt_32960$i") != NULL || strstr(pSchema->name, "wdzt_32960$i") != NULL || strstr(pSchema->name, "dwzt_32960$i") != NULL){
-            printCol(colId, (void*)getNullValue(pSchema->type), tbname, ts, pSchema->type, "bindbigint null");
+            printCol(colId, (void*)getNullValue(pSchema->type), tbname, ts, pSchema->type, "bindbigint null", NULL, NULL);
         }
       } else {
         ret = tStrToInteger(pToken->z, pToken->type, pToken->n, &iv, true);
@@ -820,7 +820,7 @@ static FORCE_INLINE int32_t tsParseOneColumnKV(SSchema *pSchema, SStrToken *pTok
 
         tdAppendMemRowColVal(row, &iv, true, colId, pSchema->type, toffset);
         if(strstr(pSchema->name, "jdzt_32960$i") != NULL || strstr(pSchema->name, "wdzt_32960$i") != NULL || strstr(pSchema->name, "dwzt_32960$i") != NULL){
-            printCol(colId, &iv, tbname, ts, pSchema->type, "bindbigint val");
+            printCol(colId, &iv, tbname, ts, pSchema->type, "bindbigint val", NULL, NULL);
         }
       }
       break;

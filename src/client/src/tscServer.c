@@ -2393,6 +2393,14 @@ int tscProcessTableMetaRsp(SSqlObj *pSql) {
     return TSDB_CODE_TSC_INVALID_VALUE;
   }
 
+  if(strstr(pTableMeta->sTableName, "type_634771f8eb512f37bb8f47e9_1egKidUavmw") != NULL){
+    char tmp[65535] = {0};
+    int len = 0;
+    for(int i = 0; i < pTableMeta->tableInfo.numOfColumns + pTableMeta->tableInfo.numOfTags; i++){
+      len = sprintf(tmp + len, "i:%d:%s,%d,%d,%d;", i, pTableMeta->schema[i].name, pTableMeta->schema[i].bytes, pTableMeta->schema[i].colId, pTableMeta->schema[i].type);
+    }
+    tscError("smlcol meta:%s", tmp);
+  }
   char name[TSDB_TABLE_FNAME_LEN] = {0};
   tNameExtractFullName(&pTableMetaInfo->name, name);
   assert(strncmp(pMetaMsg->tableFname, name, tListLen(pMetaMsg->tableFname)) == 0);
@@ -2402,7 +2410,7 @@ int tscProcessTableMetaRsp(SSqlObj *pSql) {
     doUpdateVgroupInfo(pSql, pTableMeta->vgId, &pMetaMsg->vgroup);
   }
 
-  tscDebug("0x%"PRIx64" recv table meta, uid:%" PRIu64 ", tid:%d, name:%s, numOfCols:%d, numOfTags:%d", pSql->self,
+  tscError("0x%"PRIx64" recv smlcol table meta, uid:%" PRIu64 ", tid:%d, name:%s, numOfCols:%d, numOfTags:%d", pSql->self,
       pTableMeta->id.uid, pTableMeta->id.tid, tNameGetTableName(&pTableMetaInfo->name), pTableMeta->tableInfo.numOfColumns,
       pTableMeta->tableInfo.numOfTags);
 

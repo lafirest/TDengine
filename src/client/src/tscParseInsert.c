@@ -534,7 +534,7 @@ int tsParseOneRow(char **str, STableDataBlocks *pDataBlocks, int16_t timePrec, i
           if(strstr(schema[i].name, "dwzt_32960$i") != NULL){
             char tmp[128] = {0};
             sprintf(tmp, "bindbigint none,rowsize:%d", pBuilder->rowSize);
-            printCol(schema[i].colId, (void*)getNullValue(schema[i].type), pTableMeta->sTableName, ts, schema[i].type, tmp);
+            printCol(schema[i].colId, (void*)getNullValue(schema[i].type), pTableMeta->sTableName, ts, schema[i].type, tmp, NULL, NULL);
           }
         }
       }
@@ -1257,6 +1257,12 @@ static int32_t parseBoundColumns(SInsertStatementParam *pInsertParam, SParsedDat
     if(tbname != NULL && strstr(sToken.z, "dwzt_32960$i") != NULL){
       needPrint = true;
       tscError("smlcol name:%s, colName:%s", tbname, sToken.z);
+      char tmp[65535] = {0};
+      int len = 0;
+      for(int i = 0; i < nCols; i++){
+        len = sprintf(tmp + len, "i:%d:%s,%d,%d,%d;", i, pSchema[i].name, pSchema[i].bytes, pSchema[i].colId, pSchema[i].type);
+      }
+      tscError("smlcol parseBoundColumns meta:%s", tmp);
     }
 
     if (sToken.type == TK_RP) {

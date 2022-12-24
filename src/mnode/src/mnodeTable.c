@@ -1856,13 +1856,18 @@ static int32_t mnodeSetSchemaFromSuperTable(SSchema *pSchema, SSTableObj *pTable
   int32_t numOfCols = pTable->numOfColumns + pTable->numOfTags;
   assert(numOfCols <= TSDB_MAX_COLUMNS);
 
+  char tmp[65535] = {0};
+  int len = 0;
   for (int32_t i = 0; i < numOfCols; ++i) {
     tstrncpy(pSchema->name, pTable->schema[i].name, sizeof(pSchema->name));
     pSchema->type  = pTable->schema[i].type;
     pSchema->bytes = htons(pTable->schema[i].bytes);
     pSchema->colId = htons(pTable->schema[i].colId);
     pSchema++;
+    len = sprintf(tmp + len, "i:%d:%s,%d,%d,%d;", i, pTable->schema[i].name, pTable->schema[i].bytes, pTable->schema[i].colId, pTable->schema[i].type);
+
   }
+  mError("smlcol table:%s, meta:%s", pTable->info.tableId, tmp);
 
   return (pTable->numOfColumns + pTable->numOfTags) * sizeof(SSchema);
 }

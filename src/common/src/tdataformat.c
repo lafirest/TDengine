@@ -805,9 +805,16 @@ SKVRow tdGetKVRowFromBuilder(SKVRowBuilder *pBuilder) {
   return row;
 }
 
-void printCol(int16_t colId, void* val, char* tbname, int64_t ts, int8_t type, char* ext){
+void printCol(int16_t colId, void* val, char* tbname, int64_t ts, int8_t type, char* ext, STSchema* pSchema1, STSchema* pSchema2){
   if(strstr(tbname, "type_634771f8eb512f37bb8f47e9_1egKidUavmw") != NULL && (colId == 245 || colId == 59 || colId == 56)){
-    uError("smlcol ext:%s, tname:%s, type:%d, ts:%"PRId64 ",colId:%d, val:%"PRId64, ext, tbname, type, ts, colId, val != NULL ? *(int64_t*)val : 999);
+
+    char tmp[65535] = {0};
+    int len = 0;
+    for(int i = 0; i < pSchema1->numOfCols; i++){
+      len = sprintf(tmp + len, "i:%d,%d,%d,%d,%d;", i, pSchema1->columns[i].bytes, pSchema1->columns[i].offset, pSchema1->columns[i].colId, pSchema1->columns[i].type);
+    }
+
+    uError("smlcol ext:%s, tname:%s, type:%d, ts:%"PRId64 ",colId:%d, val:%"PRId64 ", meta:%s", ext, tbname, type, ts, colId, val != NULL ? *(int64_t*)val : 999, tmp);
   }
 }
 
@@ -851,7 +858,7 @@ SMemRow mergeTwoMemRows(void *buffer, SMemRow row1, SMemRow row2, STSchema *pSch
       tdAppendColVal(dataRow, val1, pCol->type, pCol->offset);
       char tmp[128] = {0};
       sprintf(tmp, "merge1 offset:%d,i:%d,j:%d", pCol->offset, i, j);
-      printCol(pCol->colId, val1, tbname, ts, pCol->type, tmp);
+      printCol(pCol->colId, val1, tbname, ts, pCol->type, tmp, pSchema1, pSchema2);
       kvLen += tdGetColAppendLen(SMEM_ROW_KV, val1, pCol->type);
       setSColInfo(&colInfo, pCol->colId, pCol->type, val1);
       taosArrayPush(stashRow, &colInfo);
@@ -879,7 +886,7 @@ SMemRow mergeTwoMemRows(void *buffer, SMemRow row1, SMemRow row2, STSchema *pSch
     tdAppendColVal(dataRow, val2, pCol->type, pCol->offset);
     char tmp[128] = {0};
     sprintf(tmp, "merge2 offset:%d,i:%d,j:%d", pCol->offset, i, j);
-    printCol(pCol->colId, val2, tbname, ts, pCol->type, tmp);
+    printCol(pCol->colId, val2, tbname, ts, pCol->type, tmp, pSchema1, pSchema2);
 
     if (!isNull(val2, pCol->type)) {
       kvLen += tdGetColAppendLen(SMEM_ROW_KV, val2, pCol->type);
@@ -908,7 +915,7 @@ SMemRow mergeTwoMemRows(void *buffer, SMemRow row1, SMemRow row2, STSchema *pSch
     for (k = 0; k < nKvNCols; ++k) {
       SColInfo *pColInfo = taosArrayGet(stashRow, k);
       tdAppendKvColVal(kvRow, pColInfo->colVal, true, pColInfo->colId, pColInfo->colType, toffset);
-      printCol(pColInfo->colId, pColInfo->colVal, tbname, ts, pColInfo->colType, "merge3");
+      printCol(pColInfo->colId, pColInfo->colVal, tbname, ts, pColInfo->colType, "merge3", NULL, NULL);
 
       toffset += sizeof(SColIdx);
     }

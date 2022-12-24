@@ -952,9 +952,9 @@ _cleanup:
   }
   *nextIndex = r;
 
-  if(info->needPrint && strcasecmp(sTableName, "type_634771f8eb512f37bb8f47e9_1egKidUavmw") == 0){
-    tscError("SML:0x%"PRIx64 ",smlcol,stable rows:%zu, f:%d, n:%d, sql:%s", info->id, rows, fromIndex, *nextIndex, sql);
-  }
+//  if(info->needPrint && strcasecmp(sTableName, "type_634771f8eb512f37bb8f47e9_1egKidUavmw") == 0){
+//    tscError("SML:0x%"PRIx64 ",smlcol,stable rows:%zu, f:%d, n:%d, sql:%s", info->id, rows, fromIndex, *nextIndex, sql);
+//  }
   return 0;
 }
 
@@ -2535,9 +2535,9 @@ static int32_t parseSmlKvPairs(TAOS_SML_KV **pKVs, int *num_kvs,
       tscError("SML:0x%"PRIx64" Unable to parse value", info->id);
       goto error;
     }
-    if(info->needPrint && (strstr(pkv->key, "dwzt_32960$i") != NULL || strstr(pkv->key, "jdzt_32960$i") != NULL || strstr(pkv->key, "wdzt_32960$i") != NULL)){
-      tscError("SML:0x%"PRIx64",smlcol key:%s. value:%"PRId64, info->id, pkv->key, *(int64_t*)pkv->value);
-    }
+//    if(info->needPrint && (strstr(pkv->key, "dwzt_32960$i") != NULL || strstr(pkv->key, "jdzt_32960$i") != NULL || strstr(pkv->key, "wdzt_32960$i") != NULL)){
+//      tscError("SML:0x%"PRIx64",smlcol key:%s. value:%"PRId64, info->id, pkv->key, *(int64_t*)pkv->value);
+//    }
     if (!isField && childTableNameLen != 0 && strcasecmp(pkv->key, childTableName) == 0)  {
       smlData->childTableName = malloc(pkv->length + TS_BACKQUOTE_CHAR_SIZE + 1);
       memcpy(smlData->childTableName, pkv->value, pkv->length);
