@@ -2410,9 +2410,11 @@ int tscProcessTableMetaRsp(SSqlObj *pSql) {
     doUpdateVgroupInfo(pSql, pTableMeta->vgId, &pMetaMsg->vgroup);
   }
 
-  tscError("0x%"PRIx64" recv smlcol table meta, uid:%" PRIu64 ", tid:%d, name:%s, numOfCols:%d, numOfTags:%d", pSql->self,
-      pTableMeta->id.uid, pTableMeta->id.tid, tNameGetTableName(&pTableMetaInfo->name), pTableMeta->tableInfo.numOfColumns,
-      pTableMeta->tableInfo.numOfTags);
+  if(strstr(pTableMeta->sTableName, "type_634771f8eb512f37bb8f47e9_1egKidUavmw") != NULL) {
+    tscError("0x%" PRIx64 " recv smlcol table meta, uid:%" PRIu64 ", tid:%d, name:%s, numOfCols:%d, numOfTags:%d",
+             pSql->self, pTableMeta->id.uid, pTableMeta->id.tid, tNameGetTableName(&pTableMetaInfo->name),
+             pTableMeta->tableInfo.numOfColumns, pTableMeta->tableInfo.numOfTags);
+  }
 
   free(pTableMeta);
   return TSDB_CODE_SUCCESS;
