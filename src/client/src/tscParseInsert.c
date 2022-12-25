@@ -655,14 +655,15 @@ void tscSetBoundColumnInfo(SParsedDataColInfo *pColInfo, SSchema *pSchema, int32
   pColInfo->allNullLen = 0;
 
   int32_t nVar = 0;
+
+  char tmp[65535] = {0};
+  int len = 0;
   for (int32_t i = 0; i < pColInfo->numOfCols; ++i) {
     uint8_t type = pSchema[i].type;
     if (i > 0) {
       pColInfo->cols[i].offset = pSchema[i - 1].bytes + pColInfo->cols[i - 1].offset;
       pColInfo->cols[i].toffset = pColInfo->flen;
-      if(print){
-        tscError("smlcol i:%d, name:%s, bytes:%d, colId:%d, offset:%d", i, pSchema[i].name, pSchema[i].bytes, pSchema[i].colId, pColInfo->flen);
-      }
+      len += sprintf(tmp + len, "i:%d,%s,%d,%d,%d;", i, pSchema[i].name, pSchema[i].bytes, pSchema[i].colId, pColInfo->flen);
     }
     pColInfo->flen += TYPE_BYTES[type];
     switch (type) {
@@ -678,6 +679,9 @@ void tscSetBoundColumnInfo(SParsedDataColInfo *pColInfo, SSchema *pSchema, int32
         break;
     }
     pColInfo->boundedColumns[i] = i;
+  }
+  if(print){
+    tscError("smlcol tscSetBoundColumnInfo:%s", tmp);
   }
   pColInfo->allNullLen += pColInfo->flen;
   pColInfo->boundNullLen = pColInfo->allNullLen;  // default set allNullLen
