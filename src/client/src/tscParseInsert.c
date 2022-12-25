@@ -456,9 +456,9 @@ int tsParseOneRow(char **str, STableDataBlocks *pDataBlocks, int16_t timePrec, i
 
     SSchema *pSchema = &schema[colIndex];  // get colId here
 
-    if(doPrint != NULL && colIndex == pCol){
-      tscError("smlcol tsParseOneRow1 name:%s, colName:%s, colIndex:%d, ts:%" PRId64, doPrint, pSchema->name, colIndex, ts);
-    }
+//    if(doPrint != NULL && colIndex == pCol){
+//      tscError("smlcol tsParseOneRow1 name:%s, colName:%s, colIndex:%d, ts:%" PRId64, doPrint, pSchema->name, colIndex, ts);
+//    }
     idx = 0;
     sToken = tStrGetToken(*str, &idx, true);
     *str += idx;
@@ -504,7 +504,7 @@ int tsParseOneRow(char **str, STableDataBlocks *pDataBlocks, int16_t timePrec, i
 
     bool p245 = false;
     if(doPrint != NULL && colIndex == pCol){
-      tscError("smlcol tsParseOneRow2 name:%s, colName:%s, colIndex:%d, colId:%d, rowType:%d, offset:%d, ts:%" PRId64, doPrint, pSchema->name, colIndex, colId, pBuilder->memRowType, toffset, ts);
+      tscError("smlcol tsParseOneRow2 name:%s, colName:%s, colIndex:%d, colId:%d, rowType:%d, order:%d, offset:%d, ts:%" PRId64, doPrint, pSchema->name, colIndex, colId, pBuilder->memRowType, spd->orderStatus, toffset, ts);
       p245 = true;
     }
 
@@ -644,7 +644,7 @@ int32_t tsParseValues(char **str, STableDataBlocks *pDataBlock, int maxRows, SIn
   }
 }
 
-void tscSetBoundColumnInfo(SParsedDataColInfo *pColInfo, SSchema *pSchema, int32_t numOfCols) {
+void tscSetBoundColumnInfo(SParsedDataColInfo *pColInfo, SSchema *pSchema, int32_t numOfCols, bool print) {
   pColInfo->numOfCols = numOfCols;
   pColInfo->numOfBound = numOfCols;
   pColInfo->orderStatus = ORDER_STATUS_ORDERED;  // default is ORDERED for non-bound mode
@@ -660,6 +660,9 @@ void tscSetBoundColumnInfo(SParsedDataColInfo *pColInfo, SSchema *pSchema, int32
     if (i > 0) {
       pColInfo->cols[i].offset = pSchema[i - 1].bytes + pColInfo->cols[i - 1].offset;
       pColInfo->cols[i].toffset = pColInfo->flen;
+      if(print){
+        tscError("smlcol i:%d, name:%s, bytes:%d, colId:%d, offset:%d", i, pSchema[i].name, pSchema[i].bytes, pSchema[i].colId, pColInfo->flen);
+      }
     }
     pColInfo->flen += TYPE_BYTES[type];
     switch (type) {
@@ -994,7 +997,7 @@ static int32_t tscCheckIfCreateTable(char **sqlstr, SSqlObj *pSql, char** boundC
     STableComInfo tinfo = tscGetTableInfo(pSTableMetaInfo->pTableMeta);
     
     SParsedDataColInfo spd = {0};
-    tscSetBoundColumnInfo(&spd, pTagSchema, tscGetNumOfTags(pSTableMetaInfo->pTableMeta));
+    tscSetBoundColumnInfo(&spd, pTagSchema, tscGetNumOfTags(pSTableMetaInfo->pTableMeta), false);
 
     idx = 0;
     sToken = tStrGetToken(sql, &idx, false);
@@ -1256,13 +1259,12 @@ static int32_t parseBoundColumns(SInsertStatementParam *pInsertParam, SParsedDat
     bool needPrint = false;
     if(tbname != NULL && strstr(sToken.z, "dwzt_32960$i") != NULL){
       needPrint = true;
-      tscError("smlcol name:%s, colName:%s", tbname, sToken.z);
       char tmp[65535] = {0};
       int len = 0;
       for(int i = 0; i < nCols; i++){
         len += sprintf(tmp + len, "i:%d:%s,%d,%d,%d;", i, pSchema[i].name, pSchema[i].bytes, pSchema[i].colId, pSchema[i].type);
       }
-      tscError("smlcol parseBoundColumns meta:%s", tmp);
+      tscError("smlcol parseBoundColumns name:%s,colName:%s meta:%s", tbname, sToken.z, tmp);
     }
 
     if (sToken.type == TK_RP) {

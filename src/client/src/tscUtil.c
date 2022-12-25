@@ -2057,7 +2057,11 @@ int32_t tscCreateDataBlock(size_t defaultSize, int32_t rowSize, int32_t startOff
 
   SParsedDataColInfo* pColInfo = &dataBuf->boundColumnInfo;
   SSchema* pSchema = tscGetTableSchema(dataBuf->pTableMeta);
-  tscSetBoundColumnInfo(pColInfo, pSchema, dataBuf->pTableMeta->tableInfo.numOfColumns);
+  bool print = false;
+  if(strstr(name->tname, "type_634771f8eb512f37bb8f47e9_1egKidUavmw") != NULL){
+    print = true;
+  }
+  tscSetBoundColumnInfo(pColInfo, pSchema, dataBuf->pTableMeta->tableInfo.numOfColumns, print);
 
   dataBuf->vgId     = dataBuf->pTableMeta->vgId;
 

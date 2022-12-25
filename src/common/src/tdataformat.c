@@ -806,7 +806,7 @@ SKVRow tdGetKVRowFromBuilder(SKVRowBuilder *pBuilder) {
 }
 
 void printCol(int16_t colId, void* val, char* tbname, int64_t ts, int8_t type, char* ext, STSchema* pSchema1, STSchema* pSchema2){
-  if(strstr(tbname, "type_634771f8eb512f37bb8f47e9_1egKidUavmw") != NULL && (colId == 245 || colId == 59 || colId == 56)){
+  if(strstr(tbname, "type_634771f8eb512f37bb8f47e9_1egKidUavmw") != NULL && (colId == 245 || colId == 246 || colId == 59 || colId == 56)){
 
     char tmp[65535] = {0};
     int len = 0;

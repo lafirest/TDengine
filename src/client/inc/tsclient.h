@@ -523,7 +523,7 @@ char* tscGetSqlStr(SSqlObj* pSql);
 bool tscIsQueryWithLimit(SSqlObj* pSql);
 
 bool tscHasReachLimitation(SQueryInfo *pQueryInfo, SSqlRes *pRes);
-void tscSetBoundColumnInfo(SParsedDataColInfo *pColInfo, SSchema *pSchema, int32_t numOfCols);
+void tscSetBoundColumnInfo(SParsedDataColInfo *pColInfo, SSchema *pSchema, int32_t numOfCols, bool print);
 
 char *tscGetErrorMsgPayload(SSqlCmd *pCmd);
 int32_t tscGetErrorMsgLength(SSqlCmd* pCmd);
@@ -664,13 +664,13 @@ static FORCE_INLINE int32_t tsParseOneColumnKV(SSchema *pSchema, SStrToken *pTok
   int32_t ret;
   char *  endptr = NULL;
 
-  if(p245){
-    printCol(colId, NULL, tbname, ts, pSchema->type, "tsParseOneColumnKV1", NULL, NULL);
-    tscError("smlcol tsParseOneColumnKV tbname:%s, colId:%d, colName:%s, ts:%" PRId64, doPrint, colId, pSchema->name, ts);
-  }
-  if(strstr(pSchema->name, "jdzt_32960$i") != NULL || strstr(pSchema->name, "wdzt_32960$i") != NULL || strstr(pSchema->name, "dwzt_32960$i") != NULL){
-    printCol(colId, NULL, tbname, ts, pSchema->type, "tsParseOneColumnKV2", NULL, NULL);
-  }
+//  if(p245){
+//    printCol(colId, NULL, tbname, ts, pSchema->type, "tsParseOneColumnKV1", NULL, NULL);
+//    tscError("smlcol tsParseOneColumnKV tbname:%s, colId:%d, colName:%s, ts:%" PRId64, doPrint, colId, pSchema->name, ts);
+//  }
+//  if(strstr(pSchema->name, "jdzt_32960$i") != NULL || strstr(pSchema->name, "wdzt_32960$i") != NULL || strstr(pSchema->name, "dwzt_32960$i") != NULL){
+//    printCol(colId, NULL, tbname, ts, pSchema->type, "tsParseOneColumnKV2", NULL, NULL);
+//  }
 
   if (IS_NUMERIC_TYPE(pSchema->type) && pToken->n == 0) {
     return tscInvalidOperationMsg(msg, "invalid numeric data", pToken->z);
