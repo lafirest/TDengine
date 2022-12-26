@@ -1865,13 +1865,13 @@ static int32_t mnodeSetSchemaFromSuperTable(SSchema *pSchema, SSTableObj *pTable
     pSchema++;
   }
 
-  if(strstr(pTable->info.tableId, "type_634771f8eb512f37bb8f47e9_1egKidUavmw") != NULL) {
-    char tmp[65535] = {0};
-    int len = 0;
-    for (int32_t i = 0; i < numOfCols; ++i) {
-      len += sprintf(tmp + len, "i:%d:%s,%d,%d,%d;", i, pTable->schema[i].name, pTable->schema[i].bytes, pTable->schema[i].colId, pTable->schema[i].type);
-    }
-    mError("smlcol server table:%s, meta:%s", pTable->info.tableId, tmp);
+//  if(strstr(pTable->info.tableId, "type_634771f8eb512f37bb8f47e9_1egKidUavmw") != NULL) {
+//    char tmp[65535] = {0};
+//    int len = 0;
+//    for (int32_t i = 0; i < numOfCols; ++i) {
+//      len += sprintf(tmp + len, "i:%d:%s,%d,%d,%d;", i, pTable->schema[i].name, pTable->schema[i].bytes, pTable->schema[i].colId, pTable->schema[i].type);
+//    }
+//    mError("smlcol server table:%s, meta:%s", pTable->info.tableId, tmp);
   }
 
   return (pTable->numOfColumns + pTable->numOfTags) * sizeof(SSchema);

@@ -1982,7 +1982,9 @@ static void mergeTwoRowFromMem(STsdbQueryHandle* pQueryHandle, int32_t capacity,
     if(colId == 0){
       ts = *(int64_t*)value;
     }
-    printCol(colId, value, TABLE_CHAR_NAME(pTable), ts, pColInfo->info.type, "tsdbRead", pSchema1, pSchema2);
+    char tmp[64] = {0};
+    sprintf(tmp, "tsdbRead, offset:%d", offset);
+    printCol(colId, value, TABLE_CHAR_NAME(pTable), ts, pColInfo->info.type, tmp, pSchema1, pSchema2);
 
     if (colId == pColInfo->info.colId) {
       if(forceSetNull || (!isNull(value, (int8_t)pColInfo->info.type))) {
