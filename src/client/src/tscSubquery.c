@@ -3939,6 +3939,9 @@ TAOS_ROW doSetResultRowData(SSqlObj *pSql) {
     int32_t type  = pInfo->field.type;
     int32_t bytes = pInfo->field.bytes;
 
+    if(strcmp(pInfo->field.name, "dwzt_32960$i") == 0){
+      tscError("smlcoldata name:%s, val:%"PRId64, pInfo->field.name, *(int64_t*)pRes->urow[i]);
+    }
     if (pQueryInfo->isStddev && type == TSDB_DATA_TYPE_JSON){  // for json tag compare in the second round of stddev
       pRes->tsrow[j] = pRes->urow[i];
     }else if (!IS_VAR_DATA_TYPE(type) && type != TSDB_DATA_TYPE_JSON) {
