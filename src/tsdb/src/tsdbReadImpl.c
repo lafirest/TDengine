@@ -747,7 +747,7 @@ static int tsdbCheckAndDecodeColumnData(SDataCol *pDataCol, void *content, int32
     pDataCol->len = len - sizeof(TSCKSUM);
     memcpy(pDataCol->pData, content, pDataCol->len);
   }
-  if (pDataCol->colId == 245 || pDataCol->colId == 59){
+  if (pDataCol->colId == 246 || pDataCol->colId == 59){
     tsdbError("smlcoldata3 colId:%d, len:%d, data:%"PRId64, pDataCol->colId, pDataCol->len, *(int64_t*)pDataCol->pData);
   }
   if (IS_VAR_DATA_TYPE(pDataCol->type)) {

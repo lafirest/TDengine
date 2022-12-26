@@ -3657,7 +3657,7 @@ int32_t loadDataBlockOnDemand(SQueryRuntimeEnv* pRuntimeEnv, STableScanInfo* pTa
 
     for (int i = 0; i < taosArrayGetSize(pBlock->pDataBlock); ++i) {
       SColumnInfoData* pColInfo = taosArrayGet(pBlock->pDataBlock, i);
-      if (pColInfo->info.colId == 245 || pColInfo->info.colId == 59){
+      if (pColInfo->info.colId == 246 || pColInfo->info.colId == 59){
         qError("smlcoldata1 colId:%d, len:%d, data:%"PRId64, pColInfo->info.colId, pColInfo->info.bytes, *(int64_t*)pColInfo->pData);
       }
     }

@@ -1832,7 +1832,7 @@ static int32_t doCopyRowsFromFileBlock(STsdbQueryHandle* pQueryHandle, int32_t c
       }
       i++;
     }
-    if (src->colId == 245 || src->colId == 59){
+    if (src->colId == 246 || src->colId == 59){
       tsdbError("smlcoldata2 colId:%d, len:%d, data:%"PRId64, src->colId, src->len, *(int64_t*)pData);
     }
   }
@@ -2406,6 +2406,13 @@ static void doMergeTwoLevelData(STsdbQueryHandle* pQueryHandle, STableCheckInfo*
   moveDataToFront(pQueryHandle, numOfRows, numOfCols);
   updateInfoAfterMerge(pQueryHandle, pCheckInfo, numOfRows, pos);
   doCheckGeneratedBlockRange(pQueryHandle);
+
+  for (int i = 0; i < taosArrayGetSize(pQueryHandle->pColumns); ++i) {
+    SColumnInfoData* pColInfo = taosArrayGet(pQueryHandle->pColumns, i);
+    if (pColInfo->info.colId == 246 || pColInfo->info.colId == 59){
+      tsdbError("smlcoldata4 colId:%d, len:%d, data:%"PRId64, pColInfo->info.colId, pColInfo->info.bytes, *(int64_t*)pColInfo->pData);
+    }
+  }
 
   tsdbDebug("%p uid:%" PRIu64",tid:%d data block created, mixblock:%d, brange:%"PRIu64"-%"PRIu64" rows:%d, 0x%"PRIx64,
       pQueryHandle, pCheckInfo->tableId.uid, pCheckInfo->tableId.tid, cur->mixBlock, cur->win.skey,
