@@ -1263,12 +1263,12 @@ static int32_t parseBoundColumns(SInsertStatementParam *pInsertParam, SParsedDat
     bool needPrint = false;
     if(tbname != NULL && strstr(sToken.z, "dwzt_32960$i") != NULL){
       needPrint = true;
-      char tmp[65535] = {0};
-      int len = 0;
-      for(int i = 0; i < nCols; i++){
-        len += sprintf(tmp + len, "i:%d:%s,%d,%d,%d;", i, pSchema[i].name, pSchema[i].bytes, pSchema[i].colId, pSchema[i].type);
-      }
-      tscError("smlcol parseBoundColumns name:%s,colName:%s meta:%s", tbname, sToken.z, tmp);
+//      char tmp[65535] = {0};
+//      int len = 0;
+//      for(int i = 0; i < nCols; i++){
+//        len += sprintf(tmp + len, "i:%d:%s,%d,%d,%d;", i, pSchema[i].name, pSchema[i].bytes, pSchema[i].colId, pSchema[i].type);
+//      }
+//      tscError("smlcol parseBoundColumns name:%s,colName:%s meta:%s", tbname, sToken.z, tmp);
     }
 
     if (sToken.type == TK_RP) {
@@ -1585,9 +1585,9 @@ int tsParseInsertSql(SSqlObj *pSql) {
         char* doPrint = NULL;
         if(strstr(pTableMetaInfo->name.tname, "type_634771f8eb512f37bb8f47e9_1egKidUavmw") != NULL){
           doPrint = pTableMetaInfo->name.tname;
-          char tmp[2048] = {0};
-          tstrncpy(tmp, bindedColumns, 2048);
-          tscError("smlcol name:%s, cols:%s", pTableMetaInfo->name.tname, tmp);
+//          char tmp[2048] = {0};
+//          tstrncpy(tmp, bindedColumns, 2048);
+//          tscError("smlcol name:%s, cols:%s", pTableMetaInfo->name.tname, tmp);
         }
         int pCol = -1;
 
