@@ -1832,6 +1832,9 @@ static int32_t doCopyRowsFromFileBlock(STsdbQueryHandle* pQueryHandle, int32_t c
       }
       i++;
     }
+    if (src->colId == 245 || src->colId == 59){
+      tsdbError("smlcoldata2 colId:%d, len:%d, data:%"PRId64, src->colId, src->len, *(int64_t*)pData);
+    }
   }
 
   while (i < requiredNumOfCols) { // the remain columns are all null data
