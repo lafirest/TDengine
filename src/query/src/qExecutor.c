@@ -3655,13 +3655,6 @@ int32_t loadDataBlockOnDemand(SQueryRuntimeEnv* pRuntimeEnv, STableScanInfo* pTa
       return terrno;
     }
 
-    for (int i = 0; i < taosArrayGetSize(pBlock->pDataBlock); ++i) {
-      SColumnInfoData* pColInfo = taosArrayGet(pBlock->pDataBlock, i);
-      if (pColInfo->info.colId == 246 || pColInfo->info.colId == 59){
-        qError("smlcoldata1 colId:%d, len:%d, data:%"PRId64, pColInfo->info.colId, pColInfo->info.bytes, *(int64_t*)pColInfo->pData);
-      }
-    }
-
     if (pQueryAttr->pFilters != NULL) {
       SColumnDataParam param = {.numOfCols = pBlock->info.numOfCols, .pDataBlock = pBlock->pDataBlock};
       filterSetColFieldData(pQueryAttr->pFilters, &param, getColumnDataFromId);
@@ -3669,6 +3662,18 @@ int32_t loadDataBlockOnDemand(SQueryRuntimeEnv* pRuntimeEnv, STableScanInfo* pTa
 
     if (pQueryAttr->pFilters != NULL || pRuntimeEnv->pTsBuf != NULL) {
       filterColRowsInDataBlock(pRuntimeEnv, pBlock, ascQuery);
+    }
+
+    for (int i = 0; i < taosArrayGetSize(pBlock->pDataBlock); ++i) {
+      SColumnInfoData* pColInfo = taosArrayGet(pBlock->pDataBlock, i);
+      char tmp[65535] = {0};
+      if (pColInfo->info.colId == 0 || pColInfo->info.colId == 246 || pColInfo->info.colId == 59){
+        int lenTmp = 0;
+        for (int k = 0; k < pBlock->info.rows; ++k) {
+          lenTmp += sprintf(tmp + lenTmp, ", i:%d, data:%"PRId64, k, *(int64_t*)(pColInfo->pData + k * pColInfo->info.bytes));
+        }
+      }
+      qError("smlcoldata query colId:%d, len:%d, data:%s", pColInfo->info.colId, pColInfo->info.bytes, tmp);
     }
   }
 

@@ -747,8 +747,13 @@ static int tsdbCheckAndDecodeColumnData(SDataCol *pDataCol, void *content, int32
     pDataCol->len = len - sizeof(TSCKSUM);
     memcpy(pDataCol->pData, content, pDataCol->len);
   }
-  if (pDataCol->colId == 246 || pDataCol->colId == 59){
-    tsdbError("smlcoldata3 colId:%d, len:%d, data:%"PRId64, pDataCol->colId, pDataCol->len, *(int64_t*)pDataCol->pData);
+  if (pDataCol->colId == 0 || pDataCol->colId == 246 || pDataCol->colId == 59){
+    char tmp[65535] = {0};
+    int lenTmp = 0;
+    for (int i = 0; i < numOfRows; ++i) {
+      lenTmp += sprintf(tmp + lenTmp, ", i:%d, data:%"PRId64, i, *(int64_t*)(pDataCol->pData + i * pDataCol->bytes));
+    }
+    tsdbError("smlcoldata tsdbCheckAndDecodeColumnData colId:%d, len:%d, val:%s", pDataCol->colId, pDataCol->len, tmp);
   }
   if (IS_VAR_DATA_TYPE(pDataCol->type)) {
     dataColSetOffset(pDataCol, numOfRows);

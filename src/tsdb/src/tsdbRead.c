@@ -1832,8 +1832,13 @@ static int32_t doCopyRowsFromFileBlock(STsdbQueryHandle* pQueryHandle, int32_t c
       }
       i++;
     }
-    if (src->colId == 246 || src->colId == 59){
-      tsdbError("smlcoldata2 colId:%d, len:%d, data:%"PRId64, src->colId, src->len, *(int64_t*)pData);
+    if (src->colId == 0 || src->colId == 246 || src->colId == 59){
+      char tmp[65535] = {0};
+      int lenTmp = 0;
+      for (int k = 0; k < num; ++k) {
+        lenTmp += sprintf(tmp + lenTmp, ", i:%d, data:%"PRId64, k, *(int64_t*)(pData + bytes * k));
+      }
+      tsdbError("smlcoldata doCopyRowsFromFileBlock order:%d, src->len:%d, colId:%d, num:%d, len:%d, data:%s", pQueryHandle->order, src->len, src->colId, num, src->len, tmp);
     }
   }
 
@@ -1986,7 +1991,7 @@ static void mergeTwoRowFromMem(STsdbQueryHandle* pQueryHandle, int32_t capacity,
       ts = *(int64_t*)value;
     }
     char tmp[64] = {0};
-    sprintf(tmp, "tsdbRead, offset:%d", offset);
+    sprintf(tmp, "smlcoldata mergeTwoRowFromMem, offset:%d,%d,%d.", offset, colId == pColInfo->info.colId, forceSetNull);
     printCol(colId, value, TABLE_CHAR_NAME(pTable), ts, pColInfo->info.type, tmp, pSchema1, pSchema2);
 
     if (colId == pColInfo->info.colId) {
@@ -2247,6 +2252,7 @@ static void doMergeTwoLevelData(STsdbQueryHandle* pQueryHandle, STableCheckInfo*
 
   // no data in buffer, load data from file directly
   if (pCheckInfo->iiter == NULL && pCheckInfo->iter == NULL) {
+    tsdbError("smlcoldata doMergeTwoLevelData1");
     copyAllRemainRowsFromFileBlock(pQueryHandle, pCheckInfo, &blockInfo, endPos);
     return;
   } else if (pCheckInfo->iter != NULL || pCheckInfo->iiter != NULL) {
@@ -2283,7 +2289,9 @@ static void doMergeTwoLevelData(STsdbQueryHandle* pQueryHandle, STableCheckInfo*
           pSchema2 = tsdbGetTableSchemaByVersion(pTable, memRowVersion(row2), (int8_t)memRowType(row2));
           rv2 = memRowVersion(row2);
         }
-        
+
+        tsdbError("smlcoldata doMergeTwoLevelData2");
+
         mergeTwoRowFromMem(pQueryHandle, pQueryHandle->outputCapacity, numOfRows, row1, row2, numOfCols, pTable, pSchema1, pSchema2, true);
         numOfRows += 1;
         // record start key with memory key if not
@@ -2299,6 +2307,8 @@ static void doMergeTwoLevelData(STsdbQueryHandle* pQueryHandle, STableCheckInfo*
       // same  select mem key if update is true
       } else if (keyMem == keyFile[pos]) {
         if (pCfg->update) {
+          tsdbError("smlcoldata doMergeTwoLevelData3");
+
           if(pCfg->update == TD_ROW_PARTIAL_UPDATE) {
             doCopyRowsFromFileBlock(pQueryHandle, pQueryHandle->outputCapacity, numOfRows, pos, pos);
           }
@@ -2337,6 +2347,8 @@ static void doMergeTwoLevelData(STsdbQueryHandle* pQueryHandle, STableCheckInfo*
           cur->win.skey = keyFile[pos];
         }
 
+        tsdbError("smlcoldata doMergeTwoLevelData4");
+
         int32_t end = doBinarySearchKey(pCols->cols[0].pData, pCols->numOfRows, pos, keyMem, pQueryHandle->order);
         assert(end != -1);
 
@@ -2372,6 +2384,8 @@ static void doMergeTwoLevelData(STsdbQueryHandle* pQueryHandle, STableCheckInfo*
        * if cache is empty, load remain file block data. In contrast, if there are remain data in cache, do NOT
        * copy them all to result buffer, since it may be overlapped with file data block.
        */
+      tsdbError("smlcoldata doMergeTwoLevelData5");
+
       if (node == NULL ||
           ((memRowKey((SMemRow)SL_GET_NODE_DATA(node)) > pQueryHandle->window.ekey) &&
            ASCENDING_TRAVERSE(pQueryHandle->order)) ||
@@ -2409,9 +2423,14 @@ static void doMergeTwoLevelData(STsdbQueryHandle* pQueryHandle, STableCheckInfo*
 
   for (int i = 0; i < taosArrayGetSize(pQueryHandle->pColumns); ++i) {
     SColumnInfoData* pColInfo = taosArrayGet(pQueryHandle->pColumns, i);
-    if (pColInfo->info.colId == 246 || pColInfo->info.colId == 59){
-      tsdbError("smlcoldata4 colId:%d, len:%d, data:%"PRId64, pColInfo->info.colId, pColInfo->info.bytes, *(int64_t*)pColInfo->pData);
+    char tmp[65535] = {0};
+    if (pColInfo->info.colId == 0 || pColInfo->info.colId == 246 || pColInfo->info.colId == 59){
+      int lenTmp = 0;
+      for (int k = 0; k < numOfRows; ++k) {
+        lenTmp += sprintf(tmp + lenTmp, ", i:%d, data:%"PRId64, k, *(int64_t*)(pColInfo->pData + k * pColInfo->info.bytes));
+      }
     }
+    tsdbError("smlcoldata doMergeTwoLevelData end colId:%d, len:%d data:%s", pColInfo->info.colId, pColInfo->info.bytes, tmp);
   }
 
   tsdbDebug("%p uid:%" PRIu64",tid:%d data block created, mixblock:%d, brange:%"PRIu64"-%"PRIu64" rows:%d, 0x%"PRIx64,
