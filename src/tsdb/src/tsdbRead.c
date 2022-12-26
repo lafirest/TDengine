@@ -1838,7 +1838,7 @@ static int32_t doCopyRowsFromFileBlock(STsdbQueryHandle* pQueryHandle, int32_t c
       for (int k = 0; k < num; ++k) {
         lenTmp += sprintf(tmp + lenTmp, ", i:%d, data:%"PRId64, k, *(int64_t*)(pData + bytes * k));
       }
-      tsdbError("smlcoldata doCopyRowsFromFileBlock order:%d, src->len:%d, colId:%d, num:%d, len:%d, data:%s", pQueryHandle->order, src->len, src->colId, num, src->len, tmp);
+      tsdbError("smlcoldata doCopyRowsFromFileBlock order:%d, src->len:%d, colId:%d, num:%d, len:%d, val:%s", pQueryHandle->order, src->len, src->colId, num, src->len, tmp);
     }
   }
 

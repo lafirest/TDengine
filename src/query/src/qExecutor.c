@@ -3673,7 +3673,7 @@ int32_t loadDataBlockOnDemand(SQueryRuntimeEnv* pRuntimeEnv, STableScanInfo* pTa
           lenTmp += sprintf(tmp + lenTmp, ", i:%d, data:%"PRId64, k, *(int64_t*)(pColInfo->pData + k * pColInfo->info.bytes));
         }
       }
-      qError("smlcoldata query colId:%d, len:%d, data:%s", pColInfo->info.colId, pColInfo->info.bytes, tmp);
+      qError("smlcoldata query colId:%d, len:%d, val:%s", pColInfo->info.colId, pColInfo->info.bytes, tmp);
     }
   }
 
