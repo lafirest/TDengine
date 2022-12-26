@@ -1872,7 +1872,7 @@ static int32_t mnodeSetSchemaFromSuperTable(SSchema *pSchema, SSTableObj *pTable
 //      len += sprintf(tmp + len, "i:%d:%s,%d,%d,%d;", i, pTable->schema[i].name, pTable->schema[i].bytes, pTable->schema[i].colId, pTable->schema[i].type);
 //    }
 //    mError("smlcol server table:%s, meta:%s", pTable->info.tableId, tmp);
-  }
+//  }
 
   return (pTable->numOfColumns + pTable->numOfTags) * sizeof(SSchema);
 }
