@@ -858,7 +858,7 @@ SMemRow mergeTwoMemRows(void *buffer, SMemRow row1, SMemRow row2, STSchema *pSch
       tdAppendColVal(dataRow, val1, pCol->type, pCol->offset);
       char tmp[128] = {0};
       SColIdx *pColIdx = kvRowColIdxAt(memRowKvBody(row1), kvIdx1 - 1);
-      sprintf(tmp, "merge1 offset:%d,colId:%d,i:%d,j:%d", pColIdx->offset, pColIdx->colId, i, j);
+      sprintf(tmp, "merge1 buffer:%p,offset:%d,colId:%d,i:%d,j:%d", buffer, pColIdx->offset, pColIdx->colId, i, j);
       printCol(pCol->colId, val1, tbname, ts, pCol->type, tmp, pSchema1, pSchema2);
       kvLen += tdGetColAppendLen(SMEM_ROW_KV, val1, pCol->type);
       setSColInfo(&colInfo, pCol->colId, pCol->type, val1);
@@ -887,7 +887,7 @@ SMemRow mergeTwoMemRows(void *buffer, SMemRow row1, SMemRow row2, STSchema *pSch
     tdAppendColVal(dataRow, val2, pCol->type, pCol->offset);
     char tmp[128] = {0};
     SColIdx *pColIdx = kvRowColIdxAt(memRowKvBody(row2), kvIdx2 - 1);
-    sprintf(tmp, "tmpmerge2 offset:%d,colId:%d,i:%d,j:%d", pColIdx->offset, pColIdx->colId, i, j);
+    sprintf(tmp, "merge2 buffer:%p, offset:%d,colId:%d,i:%d,j:%d", buffer, pColIdx->offset, pColIdx->colId, i, j);
     printCol(pCol->colId, val2, tbname, ts, pCol->type, tmp, pSchema1, pSchema2);
 
     if (!isNull(val2, pCol->type)) {
@@ -918,7 +918,7 @@ SMemRow mergeTwoMemRows(void *buffer, SMemRow row1, SMemRow row2, STSchema *pSch
       SColInfo *pColInfo = taosArrayGet(stashRow, k);
       tdAppendKvColVal(kvRow, pColInfo->colVal, true, pColInfo->colId, pColInfo->colType, toffset);
       char tmp[128] = {0};
-      sprintf(tmp, "merge3 offset:%d,colId:%d", kvRowLen(kvRow), pColInfo->colId);
+      sprintf(tmp, "merge3 buffer:%p,offset:%d,colId:%d", buffer, kvRowLen(kvRow), pColInfo->colId);
       printCol(pColInfo->colId, pColInfo->colVal, tbname, ts, pColInfo->colType, tmp, NULL, NULL);
 
       toffset += sizeof(SColIdx);
