@@ -819,7 +819,7 @@ void printDataCol(SDataCols *pCols, char *ext){
         char tmp[655350] = {0};
         int tmpLen = 0;
         for(int j = 0; j < pCols->numOfRows; j++){
-          int l = snprintf(tmp + tmpLen, 655349 - tmpLen, "%"PRId64":%"PRId64",", *(int64_t*)((char*)(pDataCol->pData) + j * pDataCol->bytes), isAllRowsNull(pDataCol) ? 999 : *(int64_t*)((char*)(pDataCol->pData) + j * pDataCol->bytes));
+          int l = snprintf(tmp + tmpLen, 655349 - tmpLen, "%"PRId64":%"PRId64",", *(int64_t*)((char*)(pCols->cols->pData) + j * pCols->cols->bytes), isAllRowsNull(pDataCol) ? 999 : *(int64_t*)((char*)(pDataCol->pData) + j * pDataCol->bytes));
           if (l < 0) {
             uError("smlcoldata printDataCol error tbname:%s, val:%s", ext, tmp);
           }else{
