@@ -1104,7 +1104,7 @@ int tsdbWriteBlockImpl(STsdbRepo *pRepo, STable *pTable, SDFile *pDFile, SDFile 
       char tmp[655350] = {0};
       int tmpLen = 0;
       for(int j = 0; j < rowsToWrite; j++){
-        int l = snprintf(tmp + tmpLen, 655349 - tmpLen, "%"PRId64":%"PRId64",", *(int64_t*)((char*)(pDataCols->cols->pData) + j * pDataCols->cols->bytes), *(int64_t*)((char*)(pDataCol->pData) + j * pDataCol->bytes));
+        int l = snprintf(tmp + tmpLen, 655349 - tmpLen, "%"PRId64":%"PRId64",", *(int64_t*)((char*)(pDataCols->cols->pData) + j * pDataCols->cols->bytes), isAllRowsNull(pDataCol) ? TSDB_DATA_BIGINT_NULL : *(int64_t*)((char*)(pDataCol->pData) + j * pDataCol->bytes));
         if (l < 0) {
           tsdbError("smlcoldata tsdbWriteBlockImpl error tbname:%s, val:%s", tbname, tmp);
         }else{

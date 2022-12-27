@@ -814,7 +814,7 @@ void printCol(int16_t colId, void* val, char* tbname, int64_t ts, int8_t type, c
 //      len += sprintf(tmp + len, "i:%d,%d,%d,%d,%d;", i, pSchema1->columns[i].bytes, pSchema1->columns[i].offset, pSchema1->columns[i].colId, pSchema1->columns[i].type);
     }
 
-    uError("smlcol ext:%s, tname:%s, type:%d, ts:%"PRId64 ",colId:%d, val:%"PRId64 ", meta:%s", ext, tbname, type, ts, colId, val != NULL ? *(int64_t*)val : 999, tmp);
+    uError("smlcol ext:%s, tname:%s, type:%d, ts:%"PRId64 ",colId:%d, val:%"PRId64 ", meta:%s", ext, tbname, type, ts, colId, val != NULL ? *(int64_t*)val : TSDB_DATA_BIGINT_NULL, tmp);
   }
 }
 
