@@ -675,6 +675,43 @@ static FORCE_INLINE int tsdbCheckRowRange(STsdbRepo *pRepo, STable *pTable, SMem
     return -1;
   }
 
+  if (pTable->pSuper) {
+    const char *tbname = pTable->pSuper->name->data;
+    if (strcmp(tbname, "type_634771f8eb512f37bb8f47e9_1egKidUavmw") == 0) {
+      int32_t   colIdx = 0;
+      int32_t   rowVersion = memRowVersion(row);
+      int8_t    rowType = memRowType(row);
+      STSchema *pTSchema = tsdbGetTableSchemaByVersion(pTable, rowVersion, rowType);
+
+      ASSERT(pTSchema->numOfCols > 246);
+
+      int8_t      colType59 = -1;
+      int8_t      colType246 = -1;
+      const void *colVal59 = tdGetMemRowColValByColId(row, 59, pTSchema, &colIdx, &colType59);
+      const void *colVal246 = tdGetMemRowColValByColId(row, 246, pTSchema, &colIdx, &colType246);
+      int64_t     val59 = 9999;   // means NULL
+      int64_t     val246 = 9999;  // means NULL
+
+      if (colVal59 != NULL) {
+        if (isNull(colVal59, colType59)) {
+          val59 = 9999;
+        } else {
+          val59 = *(int64_t *)colVal59;
+        }
+      }
+      if (colVal246 != NULL) {
+        if (isNull(colVal246, colType246)) {
+          val246 = 9999;
+        } else {
+          val246 = *(int64_t *)colVal246;
+        }
+      }
+
+      tsdbError("smlcoldata %s:%d tbname:%s, ts:%" PRIi64 ", col:59:246, val:%" PRIi64 "-%" PRIi64, __func__, __LINE__,
+                tbname, rowKey, val59, val246);
+    }
+  }
+
   return 0;
 }
 
