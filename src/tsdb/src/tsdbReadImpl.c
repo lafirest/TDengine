@@ -751,7 +751,7 @@ static int tsdbCheckAndDecodeColumnData(SDataCol *pDataCol, void *content, int32
     char tmp[65535] = {0};
     int lenTmp = 0;
     for (int i = 0; i < numOfRows; ++i) {
-      lenTmp += sprintf(tmp + lenTmp, ", i:%d, data:%"PRId64, i, *(int64_t*)(pDataCol->pData + i * pDataCol->bytes));
+      lenTmp += snprintf(tmp + lenTmp, 65534 - lenTmp, ", i:%d, data:%"PRId64, i, *(int64_t*)(pDataCol->pData + i * pDataCol->bytes));
     }
     tsdbError("smlcoldata tsdbCheckAndDecodeColumnData colId:%d, len:%d, val:%s", pDataCol->colId, pDataCol->len, tmp);
   }

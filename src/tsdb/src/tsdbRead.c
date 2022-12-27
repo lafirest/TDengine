@@ -1836,7 +1836,7 @@ static int32_t doCopyRowsFromFileBlock(STsdbQueryHandle* pQueryHandle, int32_t c
       char tmp[65535] = {0};
       int lenTmp = 0;
       for (int k = 0; k < num; ++k) {
-        lenTmp += sprintf(tmp + lenTmp, ", i:%d, data:%"PRId64, k, *(int64_t*)(pData + bytes * k));
+        lenTmp += snprintf(tmp + lenTmp, 65534 - lenTmp, ", i:%d, data:%"PRId64, k, *(int64_t*)(pData + bytes * k));
       }
       tsdbError("smlcoldata doCopyRowsFromFileBlock order:%d, src->len:%d, colId:%d, num:%d, len:%d, val:%s", pQueryHandle->order, src->len, src->colId, num, src->len, tmp);
     }
@@ -2427,7 +2427,7 @@ static void doMergeTwoLevelData(STsdbQueryHandle* pQueryHandle, STableCheckInfo*
     if (pColInfo->info.colId == 0 || pColInfo->info.colId == 246 || pColInfo->info.colId == 59){
       int lenTmp = 0;
       for (int k = 0; k < numOfRows; ++k) {
-        lenTmp += sprintf(tmp + lenTmp, ", i:%d, data:%"PRId64, k, *(int64_t*)(pColInfo->pData + k * pColInfo->info.bytes));
+        lenTmp += snprintf(tmp + lenTmp, 65534 - lenTmp, ", i:%d, data:%"PRId64, k, *(int64_t*)(pColInfo->pData + k * pColInfo->info.bytes));
       }
     }
     tsdbError("smlcoldata doMergeTwoLevelData end colId:%d, len:%d data:%s", pColInfo->info.colId, pColInfo->info.bytes, tmp);

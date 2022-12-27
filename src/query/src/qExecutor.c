@@ -3670,7 +3670,7 @@ int32_t loadDataBlockOnDemand(SQueryRuntimeEnv* pRuntimeEnv, STableScanInfo* pTa
       if (pColInfo->info.colId == 0 || pColInfo->info.colId == 246 || pColInfo->info.colId == 59){
         int lenTmp = 0;
         for (int k = 0; k < pBlock->info.rows; ++k) {
-          lenTmp += sprintf(tmp + lenTmp, ", i:%d, data:%"PRId64, k, *(int64_t*)(pColInfo->pData + k * pColInfo->info.bytes));
+          lenTmp += snprintf(tmp + lenTmp, 65534 - lenTmp, ", i:%d, data:%"PRId64, k, *(int64_t*)(pColInfo->pData + k * pColInfo->info.bytes));
         }
       }
       qError("smlcoldata query colId:%d, len:%d, val:%s", pColInfo->info.colId, pColInfo->info.bytes, tmp);
