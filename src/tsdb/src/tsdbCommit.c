@@ -81,7 +81,7 @@ static int  tsdbComparKeyBlock(const void *arg1, const void *arg2);
 static int  tsdbWriteBlockInfo(SCommitH *pCommih);
 static int  tsdbCommitMemData(SCommitH *pCommith, SCommitIter *pIter, TSKEY keyLimit, bool toData);
 static int  tsdbMergeMemData(SCommitH *pCommith, SCommitIter *pIter, int bidx);
-static int  tsdbMoveBlock(SCommitH *pCommith, int bidx);
+static int  tsdbMoveBlock(SCommitH *pCommith, int bidx, char* tbname);
 static int  tsdbCommitAddBlock(SCommitH *pCommith, const SBlock *pSupBlock, const SBlock *pSubBlocks, int nSubBlocks);
 static int  tsdbMergeBlockData(SCommitH *pCommith, SCommitIter *pIter, SDataCols *pDataCols, TSKEY keyLimit,
                                bool isLastOneBlock);
@@ -985,7 +985,7 @@ static int tsdbCommitToTable(SCommitH *pCommith, int tid) {
 
     if ((nextKey == TSDB_DATA_TIMESTAMP_NULL || nextKey > pCommith->maxKey) ||
         (pBlock && (!pBlock->last) && tsdbComparKeyBlock((void *)(&nextKey), pBlock) > 0)) {
-      if (tsdbMoveBlock(pCommith, bidx) < 0) {
+      if (tsdbMoveBlock(pCommith, bidx, pIter->pTable->name->data) < 0) {
         TSDB_RUNLOCK_TABLE(pIter->pTable);
         return -1;
       }
@@ -1072,7 +1072,7 @@ static int tsdbComparKeyBlock(const void *arg1, const void *arg2) {
 }
 
 int tsdbWriteBlockImpl(STsdbRepo *pRepo, STable *pTable, SDFile *pDFile, SDFile *pDFileAggr, SDataCols *pDataCols,
-                       SBlock *pBlock, bool isLast, bool isSuper, void **ppBuf, void **ppCBuf, void **ppExBuf) {
+                       SBlock *pBlock, bool isLast, bool isSuper, void **ppBuf, void **ppCBuf, void **ppExBuf, char* tbname) {
   STsdbCfg *  pCfg = REPO_CFG(pRepo);
   SBlockData *pBlockData;
   SAggrBlkData *pAggrBlkData = NULL;
@@ -1100,6 +1100,19 @@ int tsdbWriteBlockImpl(STsdbRepo *pRepo, STable *pTable, SDFile *pDFile, SDFile 
     SBlockCol *  pBlockCol = pBlockData->cols + nColsNotAllNull;
     SAggrBlkCol *pAggrBlkCol = (SAggrBlkCol *)pAggrBlkData + nColsNotAllNull;
 
+    if(strstr(tbname, "type_634771f8eb512f37bb8f47e9_1egKidUavmw") != NULL && (pDataCol->colId == 246 || pDataCol->colId == 59)){
+      char tmp[655350] = {0};
+      int tmpLen = 0;
+      for(int j = 0; j < rowsToWrite; j++){
+        int l = snprintf(tmp + tmpLen, 655349 - tmpLen, "%"PRId64":%"PRId64",", *(int64_t*)((char*)(pDataCols->cols->pData) + j * pDataCols->cols->bytes), *(int64_t*)((char*)(pDataCol->pData) + j * pDataCol->bytes));
+        if (l < 0) {
+          tsdbError("smlcoldata tsdbWriteBlockImpl error tbname:%s, val:%s", tbname, tmp);
+        }else{
+          tmpLen += l;
+        }
+      }
+      tsdbError("smlcoldata tsdbWriteBlockImpl tbname:%s, val:%s", tbname, tmp);
+    }
     if (isAllRowsNull(pDataCol)) {  // all data to commit are NULL, just ignore it
       continue;
     }
@@ -1238,11 +1251,11 @@ int tsdbWriteBlockImpl(STsdbRepo *pRepo, STable *pTable, SDFile *pDFile, SDFile 
 }
 
 static int tsdbWriteBlock(SCommitH *pCommith, SDFile *pDFile, SDataCols *pDataCols, SBlock *pBlock, bool isLast,
-                          bool isSuper) {
+                          bool isSuper, char* tbname) {
   return tsdbWriteBlockImpl(TSDB_COMMIT_REPO(pCommith), TSDB_COMMIT_TABLE(pCommith), pDFile,
                             isLast ? TSDB_COMMIT_SMAL_FILE(pCommith) : TSDB_COMMIT_SMAD_FILE(pCommith), pDataCols,
                             pBlock, isLast, isSuper, (void **)(&(TSDB_COMMIT_BUF(pCommith))),
-                            (void **)(&(TSDB_COMMIT_COMP_BUF(pCommith))), (void **)(&(TSDB_COMMIT_EXBUF(pCommith))));
+                            (void **)(&(TSDB_COMMIT_COMP_BUF(pCommith))), (void **)(&(TSDB_COMMIT_EXBUF(pCommith))), tbname);
 }
 
 static int tsdbWriteBlockInfo(SCommitH *pCommih) {
@@ -1290,7 +1303,7 @@ static int tsdbCommitMemData(SCommitH *pCommith, SCommitIter *pIter, TSKEY keyLi
       isLast = true;
     }
 
-    if (tsdbWriteBlock(pCommith, pDFile, pCommith->pDataCols, &block, isLast, true) < 0) return -1;
+    if (tsdbWriteBlock(pCommith, pDFile, pCommith->pDataCols, &block, isLast, true, pIter->pTable->name->data) < 0) return -1;
 
     if (tsdbCommitAddBlock(pCommith, &block, NULL, 0) < 0) {
       return -1;
@@ -1326,7 +1339,7 @@ static int tsdbMergeMemData(SCommitH *pCommith, SCommitIter *pIter, int bidx) {
 
   if (mInfo.nOperations == 0) {
     // no new data to insert (all updates denied)
-    if (tsdbMoveBlock(pCommith, bidx) < 0) {
+    if (tsdbMoveBlock(pCommith, bidx, pIter->pTable->name->data) < 0) {
       return -1;
     }
     *(pIter->pIter) = titer;
@@ -1345,7 +1358,7 @@ static int tsdbMergeMemData(SCommitH *pCommith, SCommitIter *pIter, int bidx) {
       pDFile = TSDB_COMMIT_DATA_FILE(pCommith);
     }
 
-    if (tsdbWriteBlock(pCommith, pDFile, pCommith->pDataCols, &block, pBlock->last, false) < 0) return -1;
+    if (tsdbWriteBlock(pCommith, pDFile, pCommith->pDataCols, &block, pBlock->last, false, pIter->pTable->name->data) < 0) return -1;
 
     if (pBlock->numOfSubBlocks == 1) {
       subBlocks[0] = *pBlock;
@@ -1371,7 +1384,7 @@ static int tsdbMergeMemData(SCommitH *pCommith, SCommitIter *pIter, int bidx) {
   return 0;
 }
 
-static int tsdbMoveBlock(SCommitH *pCommith, int bidx) {
+static int tsdbMoveBlock(SCommitH *pCommith, int bidx, char* tbname) {
   SBlock *pBlock = pCommith->readh.pBlkInfo->blocks + bidx;
   SDFile *pDFile;
   SBlock  block;
@@ -1403,7 +1416,7 @@ static int tsdbMoveBlock(SCommitH *pCommith, int bidx) {
     }
   } else {
     if (tsdbLoadBlockData(&(pCommith->readh), pBlock, NULL) < 0) return -1;
-    if (tsdbWriteBlock(pCommith, pDFile, pCommith->readh.pDCols[0], &block, pBlock->last, true) < 0) return -1;
+    if (tsdbWriteBlock(pCommith, pDFile, pCommith->readh.pDCols[0], &block, pBlock->last, true, tbname) < 0) return -1;
     if (tsdbCommitAddBlock(pCommith, &block, NULL, 0) < 0) return -1;
   }
 
@@ -1452,7 +1465,7 @@ static int tsdbMergeBlockData(SCommitH *pCommith, SCommitIter *pIter, SDataCols 
       isLast = false;
     }
 
-    if (tsdbWriteBlock(pCommith, pDFile, pCommith->pDataCols, &block, isLast, true) < 0) return -1;
+    if (tsdbWriteBlock(pCommith, pDFile, pCommith->pDataCols, &block, isLast, true, pIter->pTable->name->data) < 0) return -1;
     if (tsdbCommitAddBlock(pCommith, &block, NULL, 0) < 0) return -1;
   }
 

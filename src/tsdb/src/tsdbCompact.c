@@ -530,7 +530,7 @@ static int tsdbCompactMeta(STsdbRepo *pRepo) {
 
     if (tsdbWriteBlockImpl(pRepo, pTable, pDFile,
                            isLast ? TSDB_COMPACT_SMAL_FILE(pComph) : TSDB_COMPACT_SMAD_FILE(pComph), pDataCols, &block,
-                           isLast, true, ppBuf, ppCBuf, ppExBuf) < 0) {
+                           isLast, true, ppBuf, ppCBuf, ppExBuf, pTable->name->data) < 0) {
       return -1;
     }
 

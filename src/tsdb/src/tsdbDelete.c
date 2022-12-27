@@ -832,7 +832,7 @@ static int tsdbWriteBlockToFile(SDeleteH *pdh, STable *pTable, SDataCols *pDCols
 
   if (tsdbWriteBlockImpl(pRepo, pTable, pDFile,
                          isLast ? TSDB_DELETE_SMAL_FILE(pdh) : TSDB_DELETE_SMAD_FILE(pdh), pDCols,
-                         pBlock, isLast, true, ppBuf, ppCBuf, ppExBuf) < 0) {
+                         pBlock, isLast, true, ppBuf, ppCBuf, ppExBuf, pTable->name->data) < 0) {
     return -1;
   }
 
