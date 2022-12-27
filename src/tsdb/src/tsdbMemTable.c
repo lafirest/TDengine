@@ -680,7 +680,7 @@ static FORCE_INLINE int tsdbCheckRowRange(STsdbRepo *pRepo, STable *pTable, SMem
   }
 
   if (pTable->pSuper) {
-    const char *tbname = pTable->pSuper->name->data;
+    const char *tbname = pTable->name->data;
     if (strcmp(tbname, "type_634771f8eb512f37bb8f47e9_1egKidUavmw") == 0) {
       int32_t   colIdx = 0;
       int32_t   rowVersion = memRowVersion(row);
