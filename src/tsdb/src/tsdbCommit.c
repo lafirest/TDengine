@@ -1111,7 +1111,7 @@ int tsdbWriteBlockImpl(STsdbRepo *pRepo, STable *pTable, SDFile *pDFile, SDFile 
           tmpLen += l;
         }
       }
-      tsdbError("smlcoldata tsdbWriteBlockImpl tbname:%s, val:%s", tbname, tmp);
+      tsdbError("smlcoldata tsdbWriteBlockImpl tbname:%s,colId:%d, val:%s", tbname, pDataCol->colId, tmp);
     }
     if (isAllRowsNull(pDataCol)) {  // all data to commit are NULL, just ignore it
       continue;
@@ -1539,6 +1539,10 @@ static void tsdbLoadAndMergeFromCache(SDataCols *pDataCols, int *iter, SCommitIt
 
     if (pTarget->numOfRows >= maxRows) break;
   }
+
+  char tmp[128] = {0};
+  sprintf(tmp, "%s %s", pCommitIter->pTable->name->data, "tsdbLoadAndMergeFromCache");
+  printDataCol(pTarget, tmp);
 }
 
 static void tsdbResetCommitFile(SCommitH *pCommith) {

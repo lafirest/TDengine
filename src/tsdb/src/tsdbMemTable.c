@@ -501,6 +501,10 @@ int tsdbLoadDataFromCache(STable *pTable, SSkipListIterator *pIter, TSKEY maxKey
     }
   }
 
+  char tmp[128] = {0};
+  sprintf(tmp, "%s %s", pTable->name->data, "tsdbLoadDataFromCache");
+  printDataCol(pCols, tmp);
+
   return 0;
 }
 

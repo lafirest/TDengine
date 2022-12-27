@@ -805,6 +805,32 @@ SKVRow tdGetKVRowFromBuilder(SKVRowBuilder *pBuilder) {
   return row;
 }
 
+void printDataCol(SDataCols *pCols, char *ext){
+  bool print = false;
+  if(strstr(ext, "type_634771f8eb512f37bb8f47e9_1egKidUavmw") != NULL){
+    print = true;
+  }
+  if(print){
+    int dcol = 0;
+    while (dcol < pCols->numOfCols) {
+      SDataCol *pDataCol = &(pCols->cols[dcol++]);
+      if(pDataCol->colId == 246 || pDataCol->colId == 59){
+        char tmp[655350] = {0};
+        int tmpLen = 0;
+        for(int j = 0; j < pCols->numOfRows; j++){
+          int l = snprintf(tmp + tmpLen, 655349 - tmpLen, "%"PRId64":%"PRId64",", *(int64_t*)((char*)(pDataCol->pData) + j * pDataCol->bytes), isAllRowsNull(pDataCol) ? 999 : *(int64_t*)((char*)(pDataCol->pData) + j * pDataCol->bytes));
+          if (l < 0) {
+            uError("smlcoldata printDataCol error tbname:%s, val:%s", ext, tmp);
+          }else{
+            tmpLen += l;
+          }
+        }
+        uError("smlcoldata printDataCol tbname:%s,colId:%d, val:%s", ext, pDataCol->colId, tmp);
+      }
+    }
+  }
+}
+
 void printCol(int16_t colId, void* val, char* tbname, int64_t ts, int8_t type, char* ext, STSchema* pSchema1, STSchema* pSchema2){
   if(strstr(tbname, "type_634771f8eb512f37bb8f47e9_1egKidUavmw") != NULL && (colId == 246 || colId == 59 || colId == 56)){
 
