@@ -684,6 +684,44 @@ static FORCE_INLINE void *tdGetMemRowDataOfCol(void *row, int16_t colId, int8_t 
   }
 }
 
+static FORCE_INLINE void *tdGetKvRowColValByColId(void *row, int16_t colId, int16_t colType, int32_t *kvNIdx) {
+  while (*kvNIdx < kvRowNCols(row)) {
+    SColIdx *pColIdx = kvRowColIdxAt(row, *kvNIdx);
+    if (pColIdx->colId == colId) {
+      ++(*kvNIdx);
+      return tdGetKvRowDataOfCol(row, pColIdx->offset);
+    } else if (pColIdx->colId > colId) {
+      return NULL;
+    } else {
+      ++(*kvNIdx);
+    }
+  }
+  return NULL;
+}
+
+
+static FORCE_INLINE void *tdGetMemRowColValByColId(void *row, int16_t colId, STSchema *pTSchema, int32_t *kvNIdx, int8_t *pType) {
+  int32_t nCols = schemaNCols(pTSchema);
+  int8_t  colType = -1;
+  int32_t offset = -1;
+  for (int32_t c = 0; c < nCols; ++c) {
+    STColumn *pCol = &pTSchema->columns[c];
+    if (pCol->colId == colId) {
+      colType = pCol->type;
+      offset = pCol->offset;
+      *pType = colType;
+      break;
+    }
+  }
+  ASSERT(offset != -1 && colType != -1);
+
+  if (isDataRow(row)) {
+    return tdGetRowDataOfCol(memRowDataBody(row), colType, offset + TD_DATA_ROW_HEAD_SIZE);
+  } else {
+    return tdGetKvRowColValByColId(memRowKvBody(row), colId, colType, kvNIdx);
+  }
+}
+
 /**
  * NOTE:
  *  1. Applicable to scan columns one by one
