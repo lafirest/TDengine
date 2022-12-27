@@ -806,6 +806,7 @@ SKVRow tdGetKVRowFromBuilder(SKVRowBuilder *pBuilder) {
 }
 
 void printDataCol(SDataCols *pCols, char *ext){
+  if(pCols == NULL) return;
   bool print = false;
   if(strstr(ext, "type_634771f8eb512f37bb8f47e9_1egKidUavmw") != NULL){
     print = true;
