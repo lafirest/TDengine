@@ -3666,11 +3666,16 @@ int32_t loadDataBlockOnDemand(SQueryRuntimeEnv* pRuntimeEnv, STableScanInfo* pTa
 
     for (int i = 0; i < taosArrayGetSize(pBlock->pDataBlock); ++i) {
       SColumnInfoData* pColInfo = taosArrayGet(pBlock->pDataBlock, i);
-      char tmp[65535] = {0};
+      char tmp[655350] = {0};
       if (pColInfo->info.colId == 0 || pColInfo->info.colId == 246 || pColInfo->info.colId == 59){
         int lenTmp = 0;
         for (int k = 0; k < pBlock->info.rows; ++k) {
-          lenTmp += snprintf(tmp + lenTmp, 65534 - lenTmp, ", i:%d, data:%"PRId64, k, *(int64_t*)(pColInfo->pData + k * pColInfo->info.bytes));
+          int l = snprintf(tmp + lenTmp, 655349 - lenTmp, ",%d:%"PRId64, k, *(int64_t*)(pColInfo->pData + k * pColInfo->info.bytes));
+          if(l < 0){
+            qError("smlcoldata query error colId:%d, len:%d, l:%d", pColInfo->info.colId, pColInfo->info.bytes, l);
+          }else{
+            lenTmp += l;
+          }
         }
       }
       qError("smlcoldata query colId:%d, len:%d, val:%s", pColInfo->info.colId, pColInfo->info.bytes, tmp);

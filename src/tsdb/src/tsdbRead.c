@@ -1833,10 +1833,15 @@ static int32_t doCopyRowsFromFileBlock(STsdbQueryHandle* pQueryHandle, int32_t c
       i++;
     }
     if (src->colId == 0 || src->colId == 246 || src->colId == 59){
-      char tmp[65535] = {0};
+      char tmp[655350] = {0};
       int lenTmp = 0;
       for (int k = 0; k < num; ++k) {
-        lenTmp += snprintf(tmp + lenTmp, 65534 - lenTmp, ", i:%d, data:%"PRId64, k, *(int64_t*)(pData + bytes * k));
+        int l = snprintf(tmp + lenTmp, 655349 - lenTmp, ",:%d:%"PRId64, k, *(int64_t*)(pData + bytes * k));
+        if(l < 0){
+          tsdbError("smlcoldata doCopyRowsFromFileBlock error order:%d, src->len:%d, colId:%d, num:%d, len:%d, l:%d", pQueryHandle->order, src->len, src->colId, num, src->len, l);
+        }else{
+          lenTmp += l;
+        }
       }
       tsdbError("smlcoldata doCopyRowsFromFileBlock order:%d, src->len:%d, colId:%d, num:%d, len:%d, val:%s", pQueryHandle->order, src->len, src->colId, num, src->len, tmp);
     }
@@ -2423,11 +2428,16 @@ static void doMergeTwoLevelData(STsdbQueryHandle* pQueryHandle, STableCheckInfo*
 
   for (int i = 0; i < taosArrayGetSize(pQueryHandle->pColumns); ++i) {
     SColumnInfoData* pColInfo = taosArrayGet(pQueryHandle->pColumns, i);
-    char tmp[65535] = {0};
+    char tmp[655350] = {0};
     if (pColInfo->info.colId == 0 || pColInfo->info.colId == 246 || pColInfo->info.colId == 59){
       int lenTmp = 0;
       for (int k = 0; k < numOfRows; ++k) {
-        lenTmp += snprintf(tmp + lenTmp, 65534 - lenTmp, ", i:%d, data:%"PRId64, k, *(int64_t*)(pColInfo->pData + k * pColInfo->info.bytes));
+        int l = snprintf(tmp + lenTmp, 655349 - lenTmp, ",:%d:%"PRId64, k, *(int64_t*)(pColInfo->pData + k * pColInfo->info.bytes));
+        if(l < 0){
+          tsdbError("smlcoldata doMergeTwoLevelData end error. numOfRows:%d, colId:%d, len:%d l:%d", numOfRows, pColInfo->info.colId, pColInfo->info.bytes, l);
+        }else{
+          lenTmp += l;
+        }
       }
     }
     tsdbError("smlcoldata doMergeTwoLevelData end numOfRows:%d, colId:%d, len:%d data:%s", numOfRows, pColInfo->info.colId, pColInfo->info.bytes, tmp);
