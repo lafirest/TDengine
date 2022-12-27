@@ -856,10 +856,10 @@ SMemRow mergeTwoMemRows(void *buffer, SMemRow row1, SMemRow row2, STSchema *pSch
     // if val1 != NULL, use val1;
     if (val1 != NULL && !isNull(val1, pCol->type)) {
       tdAppendColVal(dataRow, val1, pCol->type, pCol->offset);
-      char tmp[128] = {0};
+//      char tmp[128] = {0};
       SColIdx *pColIdx = kvRowColIdxAt(memRowKvBody(row1), kvIdx1 - 1);
-      sprintf(tmp, "merge1 offset:%d,colId:%d,i:%d,j:%d", pColIdx->offset, pColIdx->colId, i, j);
-      printCol(pCol->colId, val1, tbname, ts, pCol->type, tmp, pSchema1, pSchema2);
+//      sprintf(tmp, "merge1 offset:%d,colId:%d,i:%d,j:%d", pColIdx->offset, pColIdx->colId, i, j);
+//      printCol(pCol->colId, val1, tbname, ts, pCol->type, tmp, pSchema1, pSchema2);
       kvLen += tdGetColAppendLen(SMEM_ROW_KV, val1, pCol->type);
       setSColInfo(&colInfo, pCol->colId, pCol->type, val1);
       taosArrayPush(stashRow, &colInfo);
@@ -885,10 +885,10 @@ SMemRow mergeTwoMemRows(void *buffer, SMemRow row1, SMemRow row2, STSchema *pSch
       val2 = (void *)getNullValue(pCol->type);
     }
     tdAppendColVal(dataRow, val2, pCol->type, pCol->offset);
-    char tmp[128] = {0};
+//    char tmp[128] = {0};
     SColIdx *pColIdx = kvRowColIdxAt(memRowKvBody(row2), kvIdx2 - 1);
-    sprintf(tmp, "merge2 offset:%d,colId:%d,i:%d,j:%d", pColIdx->offset, pColIdx->colId, i, j);
-    printCol(pCol->colId, val2, tbname, ts, pCol->type, tmp, pSchema1, pSchema2);
+//    sprintf(tmp, "tmpmerge2 offset:%d,colId:%d,i:%d,j:%d", pColIdx->offset, pColIdx->colId, i, j);
+//    printCol(pCol->colId, val2, tbname, ts, pCol->type, tmp, pSchema1, pSchema2);
 
     if (!isNull(val2, pCol->type)) {
       kvLen += tdGetColAppendLen(SMEM_ROW_KV, val2, pCol->type);
@@ -917,9 +917,9 @@ SMemRow mergeTwoMemRows(void *buffer, SMemRow row1, SMemRow row2, STSchema *pSch
     for (k = 0; k < nKvNCols; ++k) {
       SColInfo *pColInfo = taosArrayGet(stashRow, k);
       tdAppendKvColVal(kvRow, pColInfo->colVal, true, pColInfo->colId, pColInfo->colType, toffset);
-      char tmp[128] = {0};
-      sprintf(tmp, "merge3 offset:%d,colId:%d", kvRowLen(kvRow), pColInfo->colId);
-      printCol(pColInfo->colId, pColInfo->colVal, tbname, ts, pColInfo->colType, tmp, NULL, NULL);
+//      char tmp[128] = {0};
+//      sprintf(tmp, "merge3 offset:%d,colId:%d", kvRowLen(kvRow), pColInfo->colId);
+//      printCol(pColInfo->colId, pColInfo->colVal, tbname, ts, pColInfo->colType, tmp, NULL, NULL);
 
       toffset += sizeof(SColIdx);
     }
