@@ -769,6 +769,7 @@ void tscSortRemoveDataBlockDupRowsRaw(STableDataBlocks *dataBuf) {
       }      
       pBlocks->numOfRows = i + 1;
       dataBuf->size = sizeof(SSubmitBlk) + dataBuf->rowSize * pBlocks->numOfRows;
+      tscError("tsClientMerge is true, update:%d", dataBuf->pTableMeta->tableInfo.update);
     }
   }
 

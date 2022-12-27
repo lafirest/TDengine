@@ -2249,7 +2249,7 @@ static void doMergeTwoLevelData(STsdbQueryHandle* pQueryHandle, STableCheckInfo*
   // position in file ->fpos
   int32_t pos = cur->pos;
   cur->win = TSWINDOW_INITIALIZER;
-
+  tsdbError("smlcoldata pCfg->update:%d", pCfg->update);
   // no data in buffer, load data from file directly
   if (pCheckInfo->iiter == NULL && pCheckInfo->iter == NULL) {
     tsdbError("smlcoldata doMergeTwoLevelData1");
