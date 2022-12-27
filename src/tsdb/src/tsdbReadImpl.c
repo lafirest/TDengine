@@ -750,8 +750,8 @@ static int tsdbCheckAndDecodeColumnData(SDataCol *pDataCol, void *content, int32
   if (pDataCol->colId == 0 || pDataCol->colId == 246 || pDataCol->colId == 59){
     char tmp[65535] = {0};
     int lenTmp = 0;
-    for (int i = 0; i < 1; ++i) {
-      lenTmp += snprintf(tmp + lenTmp, 65534 - lenTmp, ", i:%d, data:%"PRId64, i, *(int64_t*)(pDataCol->pData + i * pDataCol->bytes));
+    for (int i = 0; i < numOfRows; ++i) {
+      lenTmp += snprintf(tmp + lenTmp, 65534 - lenTmp, ", i:%d, data:%"PRId64, i, *(int64_t*)POINTER_SHIFT(pDataCol->pData, i * pDataCol->bytes));
     }
     tsdbError("smlcoldata tsdbCheckAndDecodeColumnData colId:%d, len:%d, val:%s", pDataCol->colId, pDataCol->len, tmp);
   }
