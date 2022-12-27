@@ -2430,7 +2430,7 @@ static void doMergeTwoLevelData(STsdbQueryHandle* pQueryHandle, STableCheckInfo*
         lenTmp += snprintf(tmp + lenTmp, 65534 - lenTmp, ", i:%d, data:%"PRId64, k, *(int64_t*)(pColInfo->pData + k * pColInfo->info.bytes));
       }
     }
-    tsdbError("smlcoldata doMergeTwoLevelData end colId:%d, len:%d data:%s", pColInfo->info.colId, pColInfo->info.bytes, tmp);
+    tsdbError("smlcoldata doMergeTwoLevelData end numOfRows:%d, colId:%d, len:%d data:%s", numOfRows, pColInfo->info.colId, pColInfo->info.bytes, tmp);
   }
 
   tsdbDebug("%p uid:%" PRIu64",tid:%d data block created, mixblock:%d, brange:%"PRIu64"-%"PRIu64" rows:%d, 0x%"PRIx64,
