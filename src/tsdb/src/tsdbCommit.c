@@ -1491,6 +1491,24 @@ static void tsdbLoadAndMergeFromCache(SDataCols *pDataCols, int *iter, SCommitIt
   tdResetDataCols(pTarget);
 
   while (true) {
+    bool    isCheckData = false;
+    int64_t row1_val59 = SML_COL_DATA_BIGINT_DEBUG_NULL;
+    int64_t row2_val59 = SML_COL_DATA_BIGINT_DEBUG_NULL;
+    int64_t row3_val59 = SML_COL_DATA_BIGINT_DEBUG_NULL;
+
+    int64_t row1_val246 = SML_COL_DATA_BIGINT_DEBUG_NULL;
+    int64_t row2_val246 = SML_COL_DATA_BIGINT_DEBUG_NULL;
+    int64_t row3_val246 = SML_COL_DATA_BIGINT_DEBUG_NULL;
+
+    int64_t row2_val0 = SML_COL_DATA_BIGINT_DEBUG_NULL;
+
+    if (update == TD_ROW_PARTIAL_UPDATE) {
+      const char *tbname = pCommitIter->pTable->name->data;
+      if (strstr(tbname, "type_634771f8eb512f37bb8f47e9_1egKidUavmw") != NULL) {
+        isCheckData = true;
+      }
+    }
+
     key1 = (*iter >= pDataCols->numOfRows) ? INT64_MAX : dataColsKeyAt(pDataCols, *iter);
     SMemRow row = tsdbNextIterRow(pCommitIter->pIter);
     if (row == NULL || memRowKey(row) > maxKey) {
@@ -1519,24 +1537,28 @@ static void tsdbLoadAndMergeFromCache(SDataCols *pDataCols, int *iter, SCommitIt
 
       tdAppendMemRowToDataCol(row, pSchema, pTarget, true, 0);
 
+      int32_t colIdx = 0;
+      int8_t  colType59 = 0;
+      int8_t  colType246 = 0;
+
+      const void *colVal59 = tdGetMemRowColValByColId(row, 59, pSchema, &colIdx, &colType59);
+      ASSERT(colType59 == TSDB_DATA_TYPE_BIGINT);
+      if (colVal59 && !isNull(colVal59, TSDB_DATA_TYPE_BIGINT)) {
+        row2_val59 = *(int64_t *)colVal59;
+      }
+      const void *colVal246 = tdGetMemRowColValByColId(row, 246, pSchema, &colIdx, &colType246);
+      ASSERT(colType246 == TSDB_DATA_TYPE_BIGINT);
+      if (colVal246 && !isNull(colVal246, TSDB_DATA_TYPE_BIGINT)) {
+        row2_val246 = *(int64_t *)colVal246;
+      }
+      const void *colVal0 = (int64_t*)tdGetMemRowColValByColId(row, 0, pSchema, &colIdx, &colType246);
+      if (colVal0 && !isNull(colVal0, TSDB_DATA_TYPE_BIGINT)) {
+        row2_val0 = *(int64_t *)colVal0;
+      }
+      tsdbError("smlcoldata mergefromcache tbname:%s, %"PRId64":%"PRId64":%"PRId64, pCommitIter->pTable->name->data, row2_val0, row2_val59, row2_val246);
+
       tSkipListIterNext(pCommitIter->pIter);
     } else {
-      bool    isCheckData = false;
-      int64_t row1_val59 = SML_COL_DATA_BIGINT_DEBUG_NULL;
-      int64_t row2_val59 = SML_COL_DATA_BIGINT_DEBUG_NULL;
-      int64_t row3_val59 = SML_COL_DATA_BIGINT_DEBUG_NULL;
-
-      int64_t row1_val246 = SML_COL_DATA_BIGINT_DEBUG_NULL;
-      int64_t row2_val246 = SML_COL_DATA_BIGINT_DEBUG_NULL;
-      int64_t row3_val246 = SML_COL_DATA_BIGINT_DEBUG_NULL;
-
-      if (update == TD_ROW_PARTIAL_UPDATE) {
-        const char *tbname = pCommitIter->pTable->pSuper->name->data;
-        if (strcmp(tbname, "type_634771f8eb512f37bb8f47e9_1egKidUavmw") == 0) {
-          isCheckData = true;
-        }
-      }
-
       if (update != TD_ROW_OVERWRITE_UPDATE) {
         //copy disk data
         for (int i = 0; i < pDataCols->numOfCols; i++) {
