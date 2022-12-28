@@ -1522,13 +1522,13 @@ static void tsdbLoadAndMergeFromCache(SDataCols *pDataCols, int *iter, SCommitIt
       tSkipListIterNext(pCommitIter->pIter);
     } else {
       bool    isCheckData = false;
-      int64_t row1_val59 = 9999;
-      int64_t row2_val59 = 9999;
-      int64_t row3_val59 = 9999;
+      int64_t row1_val59 = SML_COL_DATA_BIGINT_DEBUG_NULL;
+      int64_t row2_val59 = SML_COL_DATA_BIGINT_DEBUG_NULL;
+      int64_t row3_val59 = SML_COL_DATA_BIGINT_DEBUG_NULL;
 
-      int64_t row1_val246 = 9999;
-      int64_t row2_val246 = 9999;
-      int64_t row3_val246 = 9999;
+      int64_t row1_val246 = SML_COL_DATA_BIGINT_DEBUG_NULL;
+      int64_t row2_val246 = SML_COL_DATA_BIGINT_DEBUG_NULL;
+      int64_t row3_val246 = SML_COL_DATA_BIGINT_DEBUG_NULL;
 
       if (update == TD_ROW_PARTIAL_UPDATE) {
         const char *tbname = pCommitIter->pTable->pSuper->name->data;
