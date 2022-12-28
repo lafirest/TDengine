@@ -804,7 +804,7 @@ static FORCE_INLINE void setSColInfo(SColInfo* colInfo, int16_t colId, uint8_t c
 
 SMemRow mergeTwoMemRows(void *buffer, SMemRow row1, SMemRow row2, STSchema *pSchema1, STSchema *pSchema2, char* tbname);
 void printCol(int16_t colId, void* val, char* tbname, int64_t ts, int8_t type, char* ext, STSchema* pSchema1, STSchema* pSchema2);
-void printDataCol(SDataCols *pCols, char *ext);
+void printDataCol(SDataCols *pCols, char *ext, const char* src, int32_t line, int32_t total, int32_t index);
 
 #if 0
 // ----------------- Raw payload structure for row:

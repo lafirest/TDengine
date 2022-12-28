@@ -20,7 +20,7 @@
 static void tsdbResetReadTable(SReadH *pReadh);
 static void tsdbResetReadFile(SReadH *pReadh);
 static int  tsdbLoadBlockDataImpl(SReadH *pReadh, SBlock *pBlock, SDataCols *pDataCols);
-static int  tsdbCheckAndDecodeColumnData(SDataCol *pDataCol, void *content, int32_t len, int8_t comp, int numOfRows,
+static int  tsdbCheckAndDecodeColumnData(SReadH *pReadh, SDataCol *pDataCol, void *content, int32_t len, int8_t comp, int numOfRows,
                                          int maxPoints, char *buffer, int bufferSize);
 static int  tsdbLoadBlockDataColsImpl(SReadH *pReadh, SBlock *pBlock, SDataCols *pDataCols, int16_t *colIds,
                                       int numOfColIds);
@@ -381,12 +381,22 @@ int tsdbLoadBlockData(SReadH *pReadh, SBlock *pBlock, SBlockInfo *pBlkInfo) {
       iBlock = (SBlock *)POINTER_SHIFT(pReadh->pBlkInfo, pBlock->offset);
     }
   }
+  pReadh->isCheckData = false;
+  if (update == TD_ROW_PARTIAL_UPDATE) {
+    const char *tbname = pReadh->pTable->name->data;
+    if (strstr(tbname, "type_634771f8eb512f37bb8f47e9_1egKidUavmw") != NULL) {
+      pReadh->isCheckData = true;
+    }
+  }
 
   if (tsdbLoadBlockDataImpl(pReadh, iBlock, pReadh->pDCols[0]) < 0) return -1;
   for (int i = 1; i < pBlock->numOfSubBlocks; i++) {
     iBlock++;
     if (tsdbLoadBlockDataImpl(pReadh, iBlock, pReadh->pDCols[1]) < 0) return -1;
-    if (tdMergeDataCols(pReadh->pDCols[0], pReadh->pDCols[1], pReadh->pDCols[1]->numOfRows, NULL, update != TD_ROW_PARTIAL_UPDATE) < 0) return -1;
+    if (tdMergeDataCols(pReadh->pDCols[0], pReadh->pDCols[1], pReadh->pDCols[1]->numOfRows, NULL,
+                        update != TD_ROW_PARTIAL_UPDATE) < 0)
+      return -1;
+    printDataCol(pReadh->pDCols[0], pReadh->pTable->name->data, __func__, __LINE__, pBlock->numOfSubBlocks, i);
   }
 
   ASSERT(pReadh->pDCols[0]->numOfRows == pBlock->numOfRows);
@@ -413,7 +423,10 @@ int tsdbLoadBlockDataCols(SReadH *pReadh, SBlock *pBlock, SBlockInfo *pBlkInfo, 
   for (int i = 1; i < pBlock->numOfSubBlocks; i++) {
     iBlock++;
     if (tsdbLoadBlockDataColsImpl(pReadh, iBlock, pReadh->pDCols[1], colIds, numOfColsIds) < 0) return -1;
-    if (tdMergeDataCols(pReadh->pDCols[0], pReadh->pDCols[1], pReadh->pDCols[1]->numOfRows, NULL, update != TD_ROW_PARTIAL_UPDATE) < 0) return -1;
+    if (tdMergeDataCols(pReadh->pDCols[0], pReadh->pDCols[1], pReadh->pDCols[1]->numOfRows, NULL,
+                        update != TD_ROW_PARTIAL_UPDATE) < 0)
+      return -1;
+    printDataCol(pReadh->pDCols[0], pReadh->pTable->name->data, __func__, __LINE__, pBlock->numOfSubBlocks, i);
   }
 
   ASSERT(pReadh->pDCols[0]->numOfRows == pBlock->numOfRows);
@@ -697,7 +710,7 @@ static int tsdbLoadBlockDataImpl(SReadH *pReadh, SBlock *pBlock, SDataCols *pDat
         if (tsdbMakeRoom((void **)(&TSDB_READ_COMP_BUF(pReadh)), zsize) < 0) return -1;
       }
 
-      if (tsdbCheckAndDecodeColumnData(pDataCol, POINTER_SHIFT(pBlockData, tsize + toffset), tlen, pBlock->algorithm,
+      if (tsdbCheckAndDecodeColumnData(pReadh, pDataCol, POINTER_SHIFT(pBlockData, tsize + toffset), tlen, pBlock->algorithm,
                                        pBlock->numOfRows, pDataCols->maxPoints, TSDB_READ_COMP_BUF(pReadh),
                                        (int)taosTSizeof(TSDB_READ_COMP_BUF(pReadh))) < 0) {
         tsdbError("vgId:%d file %s is broken at column %d block offset %" PRId64 " column offset %u",
@@ -721,7 +734,7 @@ static int tsdbLoadBlockDataImpl(SReadH *pReadh, SBlock *pBlock, SDataCols *pDat
   return 0;
 }
 
-static int tsdbCheckAndDecodeColumnData(SDataCol *pDataCol, void *content, int32_t len, int8_t comp, int numOfRows,
+static int tsdbCheckAndDecodeColumnData(SReadH *pReadh, SDataCol *pDataCol, void *content, int32_t len, int8_t comp, int numOfRows,
                                         int maxPoints, char *buffer, int bufferSize) {
   if (!taosCheckChecksumWhole((uint8_t *)content, len)) {
     terrno = TSDB_CODE_TDB_FILE_CORRUPTED;
@@ -747,19 +760,26 @@ static int tsdbCheckAndDecodeColumnData(SDataCol *pDataCol, void *content, int32
     pDataCol->len = len - sizeof(TSCKSUM);
     memcpy(pDataCol->pData, content, pDataCol->len);
   }
-  if (pDataCol->colId == 0 || pDataCol->colId == 246 || pDataCol->colId == 59){
-    char tmp[655350] = {0};
-    int lenTmp = 0;
-    for (int i = 0; i < numOfRows; ++i) {
-      int l = snprintf(tmp + lenTmp, 655349 - lenTmp, ",%d:%"PRId64, i, *(int64_t*)POINTER_SHIFT(pDataCol->pData, i * pDataCol->bytes));
-      if(l < 0){
-        tsdbError("smlcoldata tsdbCheckAndDecodeColumnData numOfRows: %d, colId:%d, len:%d, l:%d", numOfRows, pDataCol->colId, pDataCol->len, l);
-      }else{
-        lenTmp += l;
+  if (pReadh->isCheckData == true) {
+    if (pDataCol->colId == 0 || pDataCol->colId == 246 || pDataCol->colId == 59) {
+      const char *tbname = pReadh->pTable->name->data;
+      char        tmp[655350] = {0};
+      int         lenTmp = 0;
+      for (int i = 0; i < numOfRows; ++i) {
+        int l = snprintf(tmp + lenTmp, 655349 - lenTmp, ",%d:%" PRId64, i,
+                         *(int64_t *)POINTER_SHIFT(pDataCol->pData, i * pDataCol->bytes));
+        if (l < 0) {
+          tsdbError("smlcoldata tsdbCheckAndDecodeColumnData:%d tbname:%s numOfRows: %d, colId:%d, len:%d, l:%d",
+                    __LINE__, tbname, numOfRows, pDataCol->colId, pDataCol->len, l);
+        } else {
+          lenTmp += l;
+        }
       }
+      tsdbError("smlcoldata tsdbCheckAndDecodeColumnData:%d tbname:%s numOfRows: %d, colId:%d, len:%d, val:%s",
+                __LINE__, tbname, numOfRows, pDataCol->colId, pDataCol->len, tmp);
     }
-    tsdbError("smlcoldata tsdbCheckAndDecodeColumnData numOfRows: %d, colId:%d, len:%d, val:%s", numOfRows, pDataCol->colId, pDataCol->len, tmp);
   }
+
   if (IS_VAR_DATA_TYPE(pDataCol->type)) {
     dataColSetOffset(pDataCol, numOfRows);
   }
@@ -878,7 +898,7 @@ static int tsdbLoadColData(SReadH *pReadh, SDFile *pDFile, SBlock *pBlock, SBloc
     return -1;
   }
 
-  if (tsdbCheckAndDecodeColumnData(pDataCol, pReadh->pBuf, pBlockCol->len, pBlock->algorithm, pBlock->numOfRows,
+  if (tsdbCheckAndDecodeColumnData(pReadh, pDataCol, pReadh->pBuf, pBlockCol->len, pBlock->algorithm, pBlock->numOfRows,
                                    pCfg->maxRowsPerFileBlock, pReadh->pCBuf, (int32_t)taosTSizeof(pReadh->pCBuf)) < 0) {
     tsdbError("vgId:%d file %s is broken at column %d offset %" PRId64, REPO_ID(pRepo), TSDB_FILE_FULL_NAME(pDFile),
               pBlockCol->colId, offset);
