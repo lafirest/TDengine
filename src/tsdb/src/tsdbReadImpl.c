@@ -385,7 +385,11 @@ int tsdbLoadBlockData(SReadH *pReadh, SBlock *pBlock, SBlockInfo *pBlkInfo) {
   if (update == TD_ROW_PARTIAL_UPDATE) {
     const char *tbname = pReadh->pTable->name->data;
     if (strstr(tbname, "type_634771f8eb512f37bb8f47e9_1egKidUavmw") != NULL) {
-      pReadh->isCheckData = true;
+      STSchema *pTSchema = tsdbGetTableSchemaByVersion(pReadh->pTable, -1, -1);
+      ASSERT(pTSchema != NULL);
+      if (pTSchema->numOfCols > 246) {
+        pReadh->isCheckData = true;
+      }
     }
   }
 
