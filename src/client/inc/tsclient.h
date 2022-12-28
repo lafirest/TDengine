@@ -824,7 +824,7 @@ static FORCE_INLINE int32_t tsParseOneColumnKV(SSchema *pSchema, SStrToken *pTok
         if(strstr(pSchema->name, "jdzt_32960$i") != NULL || strstr(pSchema->name, "wdzt_32960$i") != NULL || strstr(pSchema->name, "dwzt_32960$i") != NULL){
           char tmp[64] = {0};
           sprintf(tmp, "bindbigint val,offset:%d", kvRowLen(memRowKvBody(row)));
-          printCol(colId, &iv, tbname, ts, pSchema->type, "bindbigint val", NULL, NULL);
+          printCol(colId, &iv, tbname, ts, pSchema->type, tmp, NULL, NULL);
         }
       }
       break;
