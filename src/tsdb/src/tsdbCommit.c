@@ -1491,14 +1491,6 @@ static void tsdbLoadAndMergeFromCache(SDataCols *pDataCols, int *iter, SCommitIt
   tdResetDataCols(pTarget);
 
   bool    isCheckData = false;
-  int64_t row1_val59 = SML_COL_DATA_BIGINT_DEBUG_NULL;
-  int64_t row2_val59 = SML_COL_DATA_BIGINT_DEBUG_NULL;
-  int64_t row3_val59 = SML_COL_DATA_BIGINT_DEBUG_NULL;
-
-  int64_t row1_val246 = SML_COL_DATA_BIGINT_DEBUG_NULL;
-  int64_t row2_val246 = SML_COL_DATA_BIGINT_DEBUG_NULL;
-  int64_t row3_val246 = SML_COL_DATA_BIGINT_DEBUG_NULL;
-
   if (update == TD_ROW_PARTIAL_UPDATE) {
     const char *tbname = pCommitIter->pTable->name->data;
     if (strstr(tbname, "type_634771f8eb512f37bb8f47e9_1egKidUavmw") != NULL) {
@@ -1511,6 +1503,14 @@ static void tsdbLoadAndMergeFromCache(SDataCols *pDataCols, int *iter, SCommitIt
   }
 
   while (true) {
+    int64_t row1_val59 = SML_COL_DATA_BIGINT_DEBUG_NULL;
+    int64_t row2_val59 = SML_COL_DATA_BIGINT_DEBUG_NULL;
+    int64_t row3_val59 = SML_COL_DATA_BIGINT_DEBUG_NULL;
+
+    int64_t row1_val246 = SML_COL_DATA_BIGINT_DEBUG_NULL;
+    int64_t row2_val246 = SML_COL_DATA_BIGINT_DEBUG_NULL;
+    int64_t row3_val246 = SML_COL_DATA_BIGINT_DEBUG_NULL;
+
     key1 = (*iter >= pDataCols->numOfRows) ? INT64_MAX : dataColsKeyAt(pDataCols, *iter);
     SMemRow row = tsdbNextIterRow(pCommitIter->pIter);
     if (row == NULL || memRowKey(row) > maxKey) {
@@ -1642,16 +1642,16 @@ static void tsdbLoadAndMergeFromCache(SDataCols *pDataCols, int *iter, SCommitIt
             }
           }
 
-          // step 4: check update2 merge result
-          tsdbSmlColDataCheckUpdate2(row1_val59, row2_val59, row3_val59);
-          tsdbSmlColDataCheckUpdate2(row1_val246, row2_val246, row3_val246);
-
           tsdbError("smlcoldata mergefromcache from file/mem(1):%d tbname:%s, %" PRId64 ":%" PRId64 ":%" PRId64,
                     __LINE__, pCommitIter->pTable->name->data, memRowKey(row), row1_val59, row1_val246);
           tsdbError("smlcoldata mergefromcache from file/mem(2):%d tbname:%s, %" PRId64 ":%" PRId64 ":%" PRId64,
                     __LINE__, pCommitIter->pTable->name->data, memRowKey(row), row2_val59, row2_val246);
           tsdbError("smlcoldata mergefromcache from file/mem(3):%d tbname:%s, %" PRId64 ":%" PRId64 ":%" PRId64,
                     __LINE__, pCommitIter->pTable->name->data, memRowKey(row), row3_val59, row3_val246);
+
+          // step 4: check update2 merge result
+          tsdbSmlColDataCheckUpdate2(row1_val59, row2_val59, row3_val59);
+          tsdbSmlColDataCheckUpdate2(row1_val246, row2_val246, row3_val246);
         }
       }
       (*iter)++;
