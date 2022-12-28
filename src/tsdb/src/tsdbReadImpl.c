@@ -402,6 +402,7 @@ int tsdbLoadBlockData(SReadH *pReadh, SBlock *pBlock, SBlockInfo *pBlkInfo) {
       return -1;
     printDataCol(pReadh->pDCols[0], pReadh->pTable->name->data, __func__, __LINE__, pBlock->numOfSubBlocks, i);
   }
+  printDataCol(pReadh->pDCols[0], pReadh->pTable->name->data, __func__, __LINE__, 100, 100);
 
   ASSERT(pReadh->pDCols[0]->numOfRows == pBlock->numOfRows);
   ASSERT(dataColsKeyFirst(pReadh->pDCols[0]) == pBlock->keyFirst);
@@ -432,6 +433,7 @@ int tsdbLoadBlockDataCols(SReadH *pReadh, SBlock *pBlock, SBlockInfo *pBlkInfo, 
       return -1;
     printDataCol(pReadh->pDCols[0], pReadh->pTable->name->data, __func__, __LINE__, pBlock->numOfSubBlocks, i);
   }
+  printDataCol(pReadh->pDCols[0], pReadh->pTable->name->data, __func__, __LINE__, 100, 100);
 
   ASSERT(pReadh->pDCols[0]->numOfRows == pBlock->numOfRows);
   ASSERT(dataColsKeyFirst(pReadh->pDCols[0]) == pBlock->keyFirst);

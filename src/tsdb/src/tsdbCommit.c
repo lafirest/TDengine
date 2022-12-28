@@ -1579,19 +1579,21 @@ static void tsdbLoadAndMergeFromCache(SDataCols *pDataCols, int *iter, SCommitIt
       if (update != TD_ROW_OVERWRITE_UPDATE) {
         //copy disk data
         for (int i = 0; i < pDataCols->numOfCols; i++) {
-          //TODO: dataColAppendVal may fail
+          // TODO: dataColAppendVal may fail
           dataColAppendVal(pTarget->cols + i, tdGetColDataOfRow(pDataCols->cols + i, *iter), pTarget->numOfRows,
                            pTarget->maxPoints, 0);
-        }
-        if (isCheckData == true) {
-          // step 1: fetch data of dataCol
-          const void *val59 = tdGetColDataOfRow(pDataCols->cols + 59, *iter);
-          if (val59 && !isNull(val59, TSDB_DATA_TYPE_BIGINT)) {
-            row1_val59 = *(int64_t *)val59;
+          if (isCheckData == true && (pDataCols->cols + i)->colId == 59) {
+            // step 1: fetch data of dataCol
+            const void *val59 = tdGetColDataOfRow(pDataCols->cols + i, *iter);
+            if (val59 && !isNull(val59, TSDB_DATA_TYPE_BIGINT)) {
+              row1_val59 = *(int64_t *)val59;
+            }
           }
-          const void *val246 = tdGetColDataOfRow(pDataCols->cols + 246, *iter);
-          if (val246 && !isNull(val246, TSDB_DATA_TYPE_BIGINT)) {
-            row1_val246 = *(int64_t *)val246;
+          if (isCheckData == true && (pDataCols->cols + i)->colId == 246) {
+            const void *val246 = tdGetColDataOfRow(pDataCols->cols + i, *iter);
+            if (val246 && !isNull(val246, TSDB_DATA_TYPE_BIGINT)) {
+              row1_val246 = *(int64_t *)val246;
+            }
           }
         }
 
