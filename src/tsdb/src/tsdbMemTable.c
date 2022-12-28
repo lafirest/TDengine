@@ -693,19 +693,19 @@ static FORCE_INLINE int tsdbCheckRowRange(STsdbRepo *pRepo, STable *pTable, SMem
       int8_t      colType246 = -1;
       const void *colVal59 = tdGetMemRowColValByColId(row, 59, pTSchema, &colIdx, &colType59);
       const void *colVal246 = tdGetMemRowColValByColId(row, 246, pTSchema, &colIdx, &colType246);
-      int64_t     val59 = 9999;   // means NULL
-      int64_t     val246 = 9999;  // means NULL
+      int64_t     val59 = SML_COL_DATA_BIGINT_DEBUG_NULL;  
+      int64_t     val246 = SML_COL_DATA_BIGINT_DEBUG_NULL;
 
       if (colVal59 != NULL) {
         if (isNull(colVal59, colType59)) {
-          val59 = 9999;
+          val59 = SML_COL_DATA_BIGINT_DEBUG_NULL;
         } else {
           val59 = *(int64_t *)colVal59;
         }
       }
       if (colVal246 != NULL) {
         if (isNull(colVal246, colType246)) {
-          val246 = 9999;
+          val246 = SML_COL_DATA_BIGINT_DEBUG_NULL;
         } else {
           val246 = *(int64_t *)colVal246;
         }
