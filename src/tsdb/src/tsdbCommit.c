@@ -1586,13 +1586,15 @@ static void tsdbLoadAndMergeFromCache(SDataCols *pDataCols, int *iter, SCommitIt
             row2_val246 = *(int64_t *)colVal246;
           }
           // step 3: fetch data from merged SDataCol
-          const void *val59 = tdGetColDataOfRow(pTarget->cols + 59, pTarget->numOfRows - 1);
-          if (val59 && !isNull(val59, TSDB_DATA_TYPE_BIGINT)) {
-            row3_val59 = *(int64_t *)val59;
-          }
-          const void *val246 = tdGetColDataOfRow(pTarget->cols + 246, pTarget->numOfRows - 1);
-          if (val246 && !isNull(val246, TSDB_DATA_TYPE_BIGINT)) {
-            row3_val246 = *(int64_t *)val246;
+          if (pTarget->numOfRows > 0) {
+            const void *val59 = tdGetColDataOfRow(pTarget->cols + 59, pTarget->numOfRows - 1);
+            if (val59 && !isNull(val59, TSDB_DATA_TYPE_BIGINT)) {
+              row3_val59 = *(int64_t *)val59;
+            }
+            const void *val246 = tdGetColDataOfRow(pTarget->cols + 246, pTarget->numOfRows - 1);
+            if (val246 && !isNull(val246, TSDB_DATA_TYPE_BIGINT)) {
+              row3_val246 = *(int64_t *)val246;
+            }
           }
 
           // step 4: check update2 merge result
