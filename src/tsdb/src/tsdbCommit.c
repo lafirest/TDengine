@@ -1537,25 +1537,27 @@ static void tsdbLoadAndMergeFromCache(SDataCols *pDataCols, int *iter, SCommitIt
 
       tdAppendMemRowToDataCol(row, pSchema, pTarget, true, 0);
 
-      int32_t colIdx = 0;
-      int8_t  colType59 = 0;
-      int8_t  colType246 = 0;
+      if(isCheckData){
+        int32_t colIdx = 0;
+        int8_t  colType59 = 0;
+        int8_t  colType246 = 0;
 
-      const void *colVal59 = tdGetMemRowColValByColId(row, 59, pSchema, &colIdx, &colType59);
-      ASSERT(colType59 == TSDB_DATA_TYPE_BIGINT);
-      if (colVal59 && !isNull(colVal59, TSDB_DATA_TYPE_BIGINT)) {
-        row2_val59 = *(int64_t *)colVal59;
+        const void *colVal59 = tdGetMemRowColValByColId(row, 59, pSchema, &colIdx, &colType59);
+        ASSERT(colType59 == TSDB_DATA_TYPE_BIGINT);
+        if (colVal59 && !isNull(colVal59, TSDB_DATA_TYPE_BIGINT)) {
+          row2_val59 = *(int64_t *)colVal59;
+        }
+        const void *colVal246 = tdGetMemRowColValByColId(row, 246, pSchema, &colIdx, &colType246);
+        ASSERT(colType246 == TSDB_DATA_TYPE_BIGINT);
+        if (colVal246 && !isNull(colVal246, TSDB_DATA_TYPE_BIGINT)) {
+          row2_val246 = *(int64_t *)colVal246;
+        }
+        const void *colVal0 = (int64_t*)tdGetMemRowColValByColId(row, 0, pSchema, &colIdx, &colType246);
+        if (colVal0 && !isNull(colVal0, TSDB_DATA_TYPE_BIGINT)) {
+          row2_val0 = *(int64_t *)colVal0;
+        }
+        tsdbError("smlcoldata mergefromcache tbname:%s, %"PRId64":%"PRId64":%"PRId64, pCommitIter->pTable->name->data, row2_val0, row2_val59, row2_val246);
       }
-      const void *colVal246 = tdGetMemRowColValByColId(row, 246, pSchema, &colIdx, &colType246);
-      ASSERT(colType246 == TSDB_DATA_TYPE_BIGINT);
-      if (colVal246 && !isNull(colVal246, TSDB_DATA_TYPE_BIGINT)) {
-        row2_val246 = *(int64_t *)colVal246;
-      }
-      const void *colVal0 = (int64_t*)tdGetMemRowColValByColId(row, 0, pSchema, &colIdx, &colType246);
-      if (colVal0 && !isNull(colVal0, TSDB_DATA_TYPE_BIGINT)) {
-        row2_val0 = *(int64_t *)colVal0;
-      }
-      tsdbError("smlcoldata mergefromcache tbname:%s, %"PRId64":%"PRId64":%"PRId64, pCommitIter->pTable->name->data, row2_val0, row2_val59, row2_val246);
 
       tSkipListIterNext(pCommitIter->pIter);
     } else {
