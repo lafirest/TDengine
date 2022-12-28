@@ -70,7 +70,7 @@ void* tsdbAllocBytes(STsdbRepo* pRepo, int bytes);
 int   tsdbAsyncCommit(STsdbRepo* pRepo, SControlDataInfo* pCtlDataInfo);
 int   tsdbSyncCommitConfig(STsdbRepo* pRepo);
 int   tsdbLoadDataFromCache(STable* pTable, SSkipListIterator* pIter, TSKEY maxKey, int maxRowsToRead, SDataCols* pCols,
-                            TKEY* filterKeys, int nFilterKeys, bool keepDup, SMergeInfo* pMergeInfo);
+                            TKEY* filterKeys, int nFilterKeys, bool keepDup, SMergeInfo* pMergeInfo, const char* source);
 void* tsdbCommitData(STsdbRepo* pRepo, bool end);
 
 static FORCE_INLINE SMemRow tsdbNextIterRow(SSkipListIterator* pIter) {

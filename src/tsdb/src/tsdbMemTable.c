@@ -393,7 +393,7 @@ int tsdbSyncCommit(STsdbRepo *repo) {
  * The function tries to procceed AS MUCH AS POSSIBLE.
  */
 int tsdbLoadDataFromCache(STable *pTable, SSkipListIterator *pIter, TSKEY maxKey, int maxRowsToRead, SDataCols *pCols,
-                          TKEY *filterKeys, int nFilterKeys, bool keepDup, SMergeInfo *pMergeInfo) {
+                          TKEY *filterKeys, int nFilterKeys, bool keepDup, SMergeInfo *pMergeInfo, const char* source) {
   ASSERT(maxRowsToRead > 0 && nFilterKeys >= 0);
   if (pIter == NULL) return 0;
   STSchema * pSchema = NULL;
@@ -501,8 +501,8 @@ int tsdbLoadDataFromCache(STable *pTable, SSkipListIterator *pIter, TSKEY maxKey
     }
   }
 
-  char tmp[128] = {0};
-  sprintf(tmp, "%s %s", pTable->name->data, "tsdbLoadDataFromCache");
+  char tmp[256] = {0};
+  sprintf(tmp, "%s %s %s", pTable->name->data, "tsdbLoadDataFromCache", source);
   printDataCol(pCols, tmp);
 
   return 0;

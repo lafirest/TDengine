@@ -849,7 +849,7 @@ static void tsdbSeekCommitIter(SCommitH *pCommith, TSKEY key) {
     SCommitIter *pIter = pCommith->iters + i;
     if (pIter->pTable == NULL || pIter->pIter == NULL) continue;
 
-    tsdbLoadDataFromCache(pIter->pTable, pIter->pIter, key - 1, INT32_MAX, NULL, NULL, 0, true, NULL);
+    tsdbLoadDataFromCache(pIter->pTable, pIter->pIter, key - 1, INT32_MAX, NULL, NULL, 0, true, NULL, __func__);
   }
 }
 
@@ -1291,7 +1291,7 @@ static int tsdbCommitMemData(SCommitH *pCommith, SCommitIter *pIter, TSKEY keyLi
 
   while (true) {
     tsdbLoadDataFromCache(pIter->pTable, pIter->pIter, keyLimit, defaultRows, pCommith->pDataCols, NULL, 0,
-                          pCfg->update, &mInfo);
+                          pCfg->update, &mInfo, __func__);
 
     if (pCommith->pDataCols->numOfRows <= 0) break;
 
@@ -1335,7 +1335,7 @@ static int tsdbMergeMemData(SCommitH *pCommith, SCommitIter *pIter, int bidx) {
   if (tsdbLoadBlockDataCols(&(pCommith->readh), pBlock, NULL, &colId, 1) < 0) return -1;
 
   tsdbLoadDataFromCache(pIter->pTable, &titer, keyLimit, INT32_MAX, NULL, pCommith->readh.pDCols[0]->cols[0].pData,
-                        pCommith->readh.pDCols[0]->numOfRows, pCfg->update, &mInfo);
+                        pCommith->readh.pDCols[0]->numOfRows, pCfg->update, &mInfo, __func__);
 
   if (mInfo.nOperations == 0) {
     // no new data to insert (all updates denied)
@@ -1351,7 +1351,7 @@ static int tsdbMergeMemData(SCommitH *pCommith, SCommitIter *pIter, int bidx) {
     // Add a sub-block
     tsdbLoadDataFromCache(pIter->pTable, pIter->pIter, keyLimit, INT32_MAX, pCommith->pDataCols,
                           pCommith->readh.pDCols[0]->cols[0].pData, pCommith->readh.pDCols[0]->numOfRows, pCfg->update,
-                          &mInfo);
+                          &mInfo, __func__);
     if (pBlock->last) {
       pDFile = TSDB_COMMIT_LAST_FILE(pCommith);
     } else {
@@ -1379,6 +1379,7 @@ static int tsdbMergeMemData(SCommitH *pCommith, SCommitIter *pIter, int bidx) {
   } else {
     if (tsdbLoadBlockData(&(pCommith->readh), pBlock, NULL) < 0) return -1;
     if (tsdbMergeBlockData(pCommith, pIter, pCommith->readh.pDCols[0], keyLimit, bidx == (nBlocks - 1)) < 0) return -1;
+    //
   }
 
   return 0;
