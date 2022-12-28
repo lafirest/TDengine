@@ -1524,19 +1524,13 @@ static void tsdbLoadAndMergeFromCache(SDataCols *pDataCols, int *iter, SCommitIt
                          pTarget->maxPoints, 0);
 
         if(isCheckData && (pDataCols->cols + i)->colId == 59){
-          int8_t  colType59 = 0;
-
           const void *colVal59 = tdGetColDataOfRow(pDataCols->cols + i, *iter);
-          ASSERT(colType59 == TSDB_DATA_TYPE_BIGINT);
           if (colVal59 && !isNull(colVal59, TSDB_DATA_TYPE_BIGINT)) {
             row2_val59 = *(int64_t *)colVal59;
           }
         }
         if(isCheckData && (pDataCols->cols + i)->colId == 246){
-          int8_t  colType246 = 0;
-
           const void *colVal246 = tdGetColDataOfRow(pDataCols->cols + i, *iter);
-          ASSERT(colType246 == TSDB_DATA_TYPE_BIGINT);
           if (colVal246 && !isNull(colVal246, TSDB_DATA_TYPE_BIGINT)) {
             row2_val246 = *(int64_t *)colVal246;
           }
