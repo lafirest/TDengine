@@ -1628,13 +1628,21 @@ static void tsdbLoadAndMergeFromCache(SDataCols *pDataCols, int *iter, SCommitIt
           }
           // step 3: fetch data from merged SDataCol
           if (pTarget->numOfRows > 0) {
-            const void *val59 = tdGetColDataOfRow(pTarget->cols + 59, pTarget->numOfRows - 1);
-            if (val59 && !isNull(val59, TSDB_DATA_TYPE_BIGINT)) {
-              row3_val59 = *(int64_t *)val59;
-            }
-            const void *val246 = tdGetColDataOfRow(pTarget->cols + 246, pTarget->numOfRows - 1);
-            if (val246 && !isNull(val246, TSDB_DATA_TYPE_BIGINT)) {
-              row3_val246 = *(int64_t *)val246;
+            for (int i = 0; i < pTarget->numOfCols; i++) {
+              SDataCol *qDataCol = (pTarget->cols + i);
+              if (qDataCol->len > 0) {
+                if (qDataCol->colId == 59) {
+                  const void *val59 = tdGetColDataOfRow(qDataCol, pTarget->numOfRows - 1);
+                  if (val59 && !isNull(val59, TSDB_DATA_TYPE_BIGINT)) {
+                    row3_val59 = *(int64_t *)val59;
+                  }
+                } else if (qDataCol->colId == 246) {
+                  const void *val246 = tdGetColDataOfRow(qDataCol, pTarget->numOfRows - 1);
+                  if (val246 && !isNull(val246, TSDB_DATA_TYPE_BIGINT)) {
+                    row3_val246 = *(int64_t *)val246;
+                  }
+                }
+              }
             }
           }
 
