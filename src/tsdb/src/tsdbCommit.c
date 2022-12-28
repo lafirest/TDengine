@@ -1502,7 +1502,11 @@ static void tsdbLoadAndMergeFromCache(SDataCols *pDataCols, int *iter, SCommitIt
   if (update == TD_ROW_PARTIAL_UPDATE) {
     const char *tbname = pCommitIter->pTable->name->data;
     if (strstr(tbname, "type_634771f8eb512f37bb8f47e9_1egKidUavmw") != NULL) {
-      isCheckData = true;
+      STSchema *pTSchema = tsdbGetTableSchemaByVersion(pCommitIter->pTable, -1, -1);
+      ASSERT(pTSchema != NULL);
+      if (pTSchema->numOfCols > 246) {
+        isCheckData = true;
+      }
     }
   }
 
