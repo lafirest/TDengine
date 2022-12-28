@@ -680,20 +680,22 @@ static FORCE_INLINE int tsdbCheckRowRange(STsdbRepo *pRepo, STable *pTable, SMem
   }
 
   if (pTable->pSuper) {
-    const char *tbname = pTable->pSuper->name->data;
-    if (strcmp(tbname, "type_634771f8eb512f37bb8f47e9_1egKidUavmw") == 0) {
+    const char *tbname = pTable->name->data;
+    if (strstr(tbname, "type_634771f8eb512f37bb8f47e9_1egKidUavmw") != NULL) {
       int32_t   colIdx = 0;
       int32_t   rowVersion = memRowVersion(row);
       int8_t    rowType = memRowType(row);
       STSchema *pTSchema = tsdbGetTableSchemaByVersion(pTable, rowVersion, rowType);
 
-      ASSERT(pTSchema->numOfCols > 246);
+      if (pTSchema->numOfCols < 246) {
+        return 0;
+      }
 
       int8_t      colType59 = -1;
       int8_t      colType246 = -1;
       const void *colVal59 = tdGetMemRowColValByColId(row, 59, pTSchema, &colIdx, &colType59);
       const void *colVal246 = tdGetMemRowColValByColId(row, 246, pTSchema, &colIdx, &colType246);
-      int64_t     val59 = SML_COL_DATA_BIGINT_DEBUG_NULL;  
+      int64_t     val59 = SML_COL_DATA_BIGINT_DEBUG_NULL;
       int64_t     val246 = SML_COL_DATA_BIGINT_DEBUG_NULL;
 
       if (colVal59 != NULL) {
@@ -711,8 +713,8 @@ static FORCE_INLINE int tsdbCheckRowRange(STsdbRepo *pRepo, STable *pTable, SMem
         }
       }
 
-      tsdbError("smlcoldata %s:%d tbname:%s, ts:%" PRIi64 ", col:59:246, val:%" PRIi64 "-%" PRIi64, __func__, __LINE__,
-                pTable->name->data, rowKey, val59, val246);
+      tsdbError("smlcoldata %s:%d super:%s tbname:%s, ts:%" PRIi64 ", col:59:246, val:%" PRIi64 "-%" PRIi64, __func__,
+                __LINE__, pTable->pSuper->name->data, tbname, rowKey, val59, val246);
     }
   }
 
