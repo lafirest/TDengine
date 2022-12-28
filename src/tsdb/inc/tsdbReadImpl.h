@@ -162,19 +162,20 @@ typedef struct {
 typedef void SAggrBlkData;  // SBlockCol cols[];
 
 struct SReadH {
-  STsdbRepo * pRepo;
-  SDFileSet   rSet;     // FSET to read
-  SArray *    aBlkIdx;  // SBlockIdx array
-  STable *    pTable;   // table to read
-  SBlockIdx * pBlkIdx;  // current reading table SBlockIdx
-  int         cidx;
-  SBlockInfo *  pBlkInfo;  // SBlockInfoV#
-  SBlockData *pBlkData;  // Block info
+  STsdbRepo    *pRepo;
+  SDFileSet     rSet;     // FSET to read
+  SArray       *aBlkIdx;  // SBlockIdx array
+  STable       *pTable;   // table to read
+  SBlockIdx    *pBlkIdx;  // current reading table SBlockIdx
+  int           cidx;
+  SBlockInfo   *pBlkInfo;      // SBlockInfoV#
+  SBlockData   *pBlkData;      // Block info
   SAggrBlkData *pAggrBlkData;  // Aggregate Block info
-  SDataCols * pDCols[2];
-  void *      pBuf;   // buffer
-  void *      pCBuf;  // compression buffer
-  void *      pExBuf;  // extra buffer
+  SDataCols    *pDCols[2];
+  void         *pBuf;    // buffer
+  void         *pCBuf;   // compression buffer
+  void         *pExBuf;  // extra buffer
+  bool          isCheckData;
 };
 
 #define TSDB_READ_REPO(rh) ((rh)->pRepo)

@@ -805,7 +805,7 @@ SKVRow tdGetKVRowFromBuilder(SKVRowBuilder *pBuilder) {
   return row;
 }
 
-void printDataCol(SDataCols *pCols, char *ext){
+void printDataCol(SDataCols *pCols, char *ext, const char* src, int32_t line, int32_t total, int32_t index){
   if(pCols == NULL) return;
   bool print = false;
   if(strstr(ext, "type_634771f8eb512f37bb8f47e9_1egKidUavmw") != NULL){
@@ -826,7 +826,8 @@ void printDataCol(SDataCols *pCols, char *ext){
             tmpLen += l;
           }
         }
-        uError("smlcoldata printDataCol tbname:%s,colId:%d, val:%s", ext, pDataCol->colId, tmp);
+        uError("smlcoldata %s:%d [%d-%d] printDataCol tbname:%s,colId:%d, val:%s", src, line, total, index, ext,
+               pDataCol->colId, tmp);
       }
     }
   }

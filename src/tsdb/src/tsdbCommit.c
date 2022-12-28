@@ -1490,23 +1490,23 @@ static void tsdbLoadAndMergeFromCache(SDataCols *pDataCols, int *iter, SCommitIt
   ASSERT(maxRows > 0 && dataColsKeyLast(pDataCols) <= maxKey);
   tdResetDataCols(pTarget);
 
-  while (true) {
-    bool    isCheckData = false;
-    int64_t row1_val59 = SML_COL_DATA_BIGINT_DEBUG_NULL;
-    int64_t row2_val59 = SML_COL_DATA_BIGINT_DEBUG_NULL;
-    int64_t row3_val59 = SML_COL_DATA_BIGINT_DEBUG_NULL;
+  bool    isCheckData = false;
+  int64_t row1_val59 = SML_COL_DATA_BIGINT_DEBUG_NULL;
+  int64_t row2_val59 = SML_COL_DATA_BIGINT_DEBUG_NULL;
+  int64_t row3_val59 = SML_COL_DATA_BIGINT_DEBUG_NULL;
 
-    int64_t row1_val246 = SML_COL_DATA_BIGINT_DEBUG_NULL;
-    int64_t row2_val246 = SML_COL_DATA_BIGINT_DEBUG_NULL;
-    int64_t row3_val246 = SML_COL_DATA_BIGINT_DEBUG_NULL;
+  int64_t row1_val246 = SML_COL_DATA_BIGINT_DEBUG_NULL;
+  int64_t row2_val246 = SML_COL_DATA_BIGINT_DEBUG_NULL;
+  int64_t row3_val246 = SML_COL_DATA_BIGINT_DEBUG_NULL;
 
-    if (update == TD_ROW_PARTIAL_UPDATE) {
-      const char *tbname = pCommitIter->pTable->name->data;
-      if (strstr(tbname, "type_634771f8eb512f37bb8f47e9_1egKidUavmw") != NULL) {
-        isCheckData = true;
-      }
+  if (update == TD_ROW_PARTIAL_UPDATE) {
+    const char *tbname = pCommitIter->pTable->name->data;
+    if (strstr(tbname, "type_634771f8eb512f37bb8f47e9_1egKidUavmw") != NULL) {
+      isCheckData = true;
     }
+  }
 
+  while (true) {
     key1 = (*iter >= pDataCols->numOfRows) ? INT64_MAX : dataColsKeyAt(pDataCols, *iter);
     SMemRow row = tsdbNextIterRow(pCommitIter->pIter);
     if (row == NULL || memRowKey(row) > maxKey) {
@@ -1543,7 +1543,7 @@ static void tsdbLoadAndMergeFromCache(SDataCols *pDataCols, int *iter, SCommitIt
         }
       }
       if(isCheckData){
-        tsdbError("smlcoldata mergefromcache key1 < key2 tbname:%s, %"PRId64":%"PRId64":%"PRId64, pCommitIter->pTable->name->data, key1, row2_val59, row2_val246);
+        tsdbError("smlcoldata mergefromcache from file tbname:%s, %"PRId64":%"PRId64":%"PRId64, pCommitIter->pTable->name->data, key1, row2_val59, row2_val246);
       }
 
       pTarget->numOfRows++;
@@ -1557,7 +1557,7 @@ static void tsdbLoadAndMergeFromCache(SDataCols *pDataCols, int *iter, SCommitIt
 
       tdAppendMemRowToDataCol(row, pSchema, pTarget, true, 0);
 
-      if(isCheckData){
+      if (isCheckData) {
         int32_t colIdx = 0;
         int8_t  colType59 = 0;
         int8_t  colType246 = 0;
@@ -1572,7 +1572,8 @@ static void tsdbLoadAndMergeFromCache(SDataCols *pDataCols, int *iter, SCommitIt
         if (colVal246 && !isNull(colVal246, TSDB_DATA_TYPE_BIGINT)) {
           row2_val246 = *(int64_t *)colVal246;
         }
-        tsdbError("smlcoldata mergefromcache key1 > key2 tbname:%s, %"PRId64":%"PRId64":%"PRId64, pCommitIter->pTable->name->data, key2, row2_val59, row2_val246);
+        tsdbError("smlcoldata mergefromcache from mem:%d tbname:%s, %" PRId64 ":%" PRId64 ":%" PRId64, __LINE__,
+                  pCommitIter->pTable->name->data, memRowKey(row), row2_val59, row2_val246);
       }
 
       tSkipListIterNext(pCommitIter->pIter);
@@ -1640,6 +1641,13 @@ static void tsdbLoadAndMergeFromCache(SDataCols *pDataCols, int *iter, SCommitIt
           // step 4: check update2 merge result
           tsdbSmlColDataCheckUpdate2(row1_val59, row2_val59, row3_val59);
           tsdbSmlColDataCheckUpdate2(row1_val246, row2_val246, row3_val246);
+
+          tsdbError("smlcoldata mergefromcache from file/mem(1):%d tbname:%s, %" PRId64 ":%" PRId64 ":%" PRId64,
+                    __LINE__, pCommitIter->pTable->name->data, memRowKey(row), row1_val59, row1_val246);
+          tsdbError("smlcoldata mergefromcache from file/mem(2):%d tbname:%s, %" PRId64 ":%" PRId64 ":%" PRId64,
+                    __LINE__, pCommitIter->pTable->name->data, memRowKey(row), row2_val59, row2_val246);
+          tsdbError("smlcoldata mergefromcache from file/mem(3):%d tbname:%s, %" PRId64 ":%" PRId64 ":%" PRId64,
+                    __LINE__, pCommitIter->pTable->name->data, memRowKey(row), row3_val59, row3_val246);
         }
       }
       (*iter)++;
@@ -1649,9 +1657,7 @@ static void tsdbLoadAndMergeFromCache(SDataCols *pDataCols, int *iter, SCommitIt
     if (pTarget->numOfRows >= maxRows) break;
   }
 
-  char tmp[128] = {0};
-  sprintf(tmp, "%s %s", pCommitIter->pTable->name->data, "tsdbLoadAndMergeFromCache");
-  printDataCol(pTarget, tmp);
+  printDataCol(pTarget, pCommitIter->pTable->name->data, __func__, __LINE__, 0, 0);
 }
 
 
