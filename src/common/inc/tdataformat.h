@@ -24,6 +24,8 @@
 extern "C" {
 #endif
 
+#define SML_COL_DATA_BIGINT_DEBUG_NULL (999999)
+
 #define STR_TO_VARSTR(x, str)                     \
   do {                                            \
     VarDataLenT __len = (VarDataLenT)strlen(str); \
