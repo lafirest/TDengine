@@ -555,6 +555,8 @@ int tfileWriterPut(TFileWriter* tw, void* data, bool order) {
     taosArraySortPWithExt((SArray*)(data), tfileValueCompare, &fn);
   }
 
+  int64_t st = taosGetTimestampMs();
+
   int32_t sz = taosArrayGetSize((SArray*)data);
   int32_t fstOffset = tw->offset;
 
@@ -569,6 +571,13 @@ int tfileWriterPut(TFileWriter* tw, void* data, bool order) {
   }
   tfileWriteFstOffset(tw, fstOffset);
 
+  {
+    int64_t et = taosGetTimestampMs();
+    if (et - st > 1000) {
+      indexWarn("index order batch data cost: %dms", (int)(et - st));
+    }
+    st = et;
+  }
   int32_t cap = 4 * 1024;
   char*   buf = taosMemoryCalloc(1, cap);
 
@@ -599,10 +608,25 @@ int tfileWriterPut(TFileWriter* tw, void* data, bool order) {
   }
   taosMemoryFree(buf);
 
+  {
+    int64_t et = taosGetTimestampMs();
+    if (et - st > 1000) {
+      indexWarn("index write data cost: %dms, batch size: %d", (int)(et - st), sz);
+    }
+    st = et;
+  }
+
   tw->fb = fstBuilderCreate(tw->ctx, 0);
   if (tw->fb == NULL) {
     tfileWriterClose(tw);
     return -1;
+  }
+  {
+    int64_t et = taosGetTimestampMs();
+    if (et - st > 1000) {
+      indexWarn("index write fst header cost: %dms", (int)(et - st));
+    }
+    st = et;
   }
 
   // write data
@@ -616,11 +640,26 @@ int tfileWriterPut(TFileWriter* tw, void* data, bool order) {
     if (tfileWriteData(tw, v) != 0) {
       indexError("failed to write data: %s, offset: %d len: %d", v->colVal, v->offset,
                  (int)taosArrayGetSize(v->tableId));
-    } else {
     }
+  }
+
+  {
+    int64_t et = taosGetTimestampMs();
+    if (et - st > 1000) {
+      indexWarn("index write fst data cost: %dms", (int)(et - st));
+    }
+    st = et;
   }
   fstBuilderDestroy(tw->fb);
   tfileWriteFooter(tw);
+
+  {
+    int64_t et = taosGetTimestampMs();
+    if (et - st > 1000) {
+      indexWarn("index write fst footer cost: %dms", (int)(et - st));
+    }
+    st = et;
+  }
   return 0;
 }
 void tfileWriterClose(TFileWriter* tw) {
