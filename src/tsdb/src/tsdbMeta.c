@@ -789,13 +789,17 @@ int tsdbRestoreTable(STsdbRepo *pRepo, void *cont, int contLen) {
 
 void tsdbOrgMeta(STsdbRepo *pRepo) {
   STsdbMeta *pMeta = pRepo->tsdbMeta;
+  int addCnt = 0;
 
+  tsdbWarn("  vgId:%d start tsdborgmeta maxTable=%d ", pRepo->config.tsdbId, pMeta->maxTables);
   for (int i = 1; i < pMeta->maxTables; i++) {
     STable *pTable = pMeta->tables[i];
     if (pTable != NULL && pTable->type == TSDB_CHILD_TABLE) {
       tsdbAddTableIntoIndex(pMeta, pTable, true);
+      addCnt ++;
     }
   }
+  tsdbWarn("  vgId:%d end tsdborgmeta addCnt=%d ", pRepo->config.tsdbId, addCnt);
 }
 
 // ------------------ LOCAL FUNCTIONS ------------------

@@ -807,7 +807,7 @@ int tsdbLoadMetaCache(STsdbRepo *pRepo, bool recoverMeta) {
     return -1;
   }
  
-  tsdbWarn("vgId=%d start read mfile nRecords=%" PRId64 " size=%" PRId64 " ... ", pRepo->config.tsdbId, minfo.nRecords, minfo.size);
+  tsdbWarn(" vgId:%d start read mfile nRecords=%" PRId64 " size=%" PRId64 " ... ", pRepo->config.tsdbId, minfo.nRecords, minfo.size);
   while (true) {
     int64_t tsize = tsdbReadMFile(pMFile, tbuf, sizeof(SKVRecord));
     if (tsize == 0) break;
@@ -852,10 +852,10 @@ int tsdbLoadMetaCache(STsdbRepo *pRepo, bool recoverMeta) {
     }
   }
 
-  tsdbWarn("vgId=%d end read mfile.", pRepo->config.tsdbId);
+  tsdbWarn(" vgId:%d end read mfile.", pRepo->config.tsdbId);
 
   if (recoverMeta) {
-    tsdbWarn("vgId=%d start read body. maxBufSize = %" PRId64 " ", pRepo->config.tsdbId, maxBufSize);
+    tsdbWarn(" vgId:%d start read body. maxBufSize = %" PRId64 " ", pRepo->config.tsdbId, maxBufSize);
     pBuf = malloc((size_t)maxBufSize);
     if (pBuf == NULL) {
       terrno = TSDB_CODE_TDB_OUT_OF_MEMORY;
@@ -902,9 +902,9 @@ int tsdbLoadMetaCache(STsdbRepo *pRepo, bool recoverMeta) {
       pRecord = taosHashIterate(pfs->metaCache, pRecord);
     }
     
-    tsdbWarn("vgId=%d end body. start call tsdborgmeta ", pRepo->config.tsdbId);
+    tsdbWarn(" vgId:%d end body. start call tsdborgmeta ", pRepo->config.tsdbId);
     tsdbOrgMeta(pRepo);
-    tsdbWarn("vgId=%d end call tsdborgmeta ", pRepo->config.tsdbId);
+    tsdbWarn(" vgId:%d end call tsdborgmeta ", pRepo->config.tsdbId);
   }
 
   tsdbCloseMFile(pMFile);
