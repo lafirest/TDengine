@@ -4,7 +4,9 @@ title: 缓存
 description: "TDengine 内部的缓存设计"
 ---
 
+
 ## 缓存
+
 
 为了实现高效的写入和查询，TDengine 充分利用了各种缓存技术，本节将对 TDengine 中对缓存的使用做详细的说明。
 
