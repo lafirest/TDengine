@@ -4,8 +4,9 @@ title: 流式计算
 description: 流式计算的相关 SQL 的详细语法
 ---
 
+## 流式计算
 
-## 创建流式计算
+### 创建流式计算
 
 ```sql
 CREATE STREAM [IF NOT EXISTS] stream_name [stream_options] INTO stb_name SUBTABLE(expression) AS subquery
@@ -50,7 +51,7 @@ CREATE STREAM avg_vol_s INTO avg_vol AS
 SELECT _wstart, count(*), avg(voltage) FROM meters PARTITION BY tbname INTERVAL(1m) SLIDING(30s);
 ```
 
-## 流式计算的 partition
+### 流式计算的 partition
 
 可以使用 PARTITION BY TBNAME，tag，普通列或者表达式，对一个流进行多分区的计算，每个分区的时间线与时间窗口是独立的，会各自聚合，并写入到目的表中的不同子表。
 
@@ -68,7 +69,7 @@ PARTITION 子句中，为 tbname 定义了一个别名 tname, 在PARTITION 子�
 
 注意，子表名的长度若超过 TDengine 的限制，将被截断。若要生成的子表名已经存在于另一超级表，由于 TDengine 的子表名是唯一的，因此对应新子表的创建以及数据的写入将会失败。
 
-## 流式计算读取历史数据
+### 流式计算读取历史数据
 
 正常情况下，流式计算不会处理创建前已经写入源表中的数据，若要处理已经写入的数据，可以在创建流时设置 fill_history 1 选项，这样创建的流式计算会自动处理创建前、创建中、创建后写入的数据。例如：
 
@@ -90,7 +91,7 @@ create stream if not exists s1 fill_history 1 into st1  as select count(*) from 
 
 如果该流任务已经彻底过期，并且您不再想让它检测或处理数据，您可以手动删除它，被计算出的数据仍会被保留。
 
-## 删除流式计算
+### 删除流式计算
 
 ```sql
 DROP STREAM [IF EXISTS] stream_name;
@@ -98,7 +99,7 @@ DROP STREAM [IF EXISTS] stream_name;
 
 仅删除流式计算任务，由流式计算写入的数据不会被删除。
 
-## 展示流式计算
+### 展示流式计算
 
 ```sql
 SHOW STREAMS;
@@ -110,7 +111,7 @@ SHOW STREAMS;
 SELECT * from information_schema.`ins_streams`;
 ```
 
-## 流式计算的触发模式
+### 流式计算的触发模式
 
 在创建流时，可以通过 TRIGGER 指令指定流式计算的触发模式。
 
@@ -128,7 +129,7 @@ SELECT * from information_schema.`ins_streams`;
 
 MAX_DELAY 模式在窗口关闭时会立即触发计算。此外，当数据写入后，计算触发的时间超过 max delay 指定的时间，则立即触发计算
 
-## 流式计算的窗口关闭
+### 流式计算的窗口关闭
 
 流式计算以事件时间（插入记录中的时间戳主键）为基准计算窗口关闭，而非以 TDengine 服务器的时间，以事件时间为基准，可以避免客户端与服务器时间不一致带来的问题，能够解决乱序数据写入等等问题。流式计算还提供了 watermark 来定义容忍的乱序程度。
 
@@ -157,7 +158,7 @@ T3 时刻，最新事件到达，T 向后推移超过了第二个窗口关闭的
 在 window_close 或 max_delay 模式下，窗口关闭直接影响推送结果。在 at_once 模式下，窗口关闭只与内存占用有关。
 
 
-## 流式计算的过期数据处理策略
+### 流式计算的过期数据处理策略
 
 对于已关闭的窗口，再次落入该窗口中的数据被标记为过期数据.
 

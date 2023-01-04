@@ -4,7 +4,9 @@ title: 数据库
 description: "创建、删除数据库，查看、修改数据库参数"
 ---
 
-## 创建数据库
+## 数据库
+
+### 创建数据库
 
 ```sql
 CREATE DATABASE [IF NOT EXISTS] db_name [database_options]
@@ -93,7 +95,7 @@ USE db_name;
 
 使用/切换数据库（在 REST 连接方式下无效）。
 
-## 删除数据库
+### 删除数据库
 
 ```
 DROP DATABASE [IF EXISTS] db_name
@@ -101,7 +103,7 @@ DROP DATABASE [IF EXISTS] db_name
 
 删除数据库。指定 Database 所包含的全部数据表将被删除，该数据库的所有 vgroups 也会被全部销毁，请谨慎使用！
 
-## 修改数据库参数
+### 修改数据库参数
 
 ```sql
 ALTER DATABASE db_name [alter_database_options]
@@ -123,15 +125,15 @@ alter_database_option: {
 
 :::
 
-## 查看数据库
+### 查看数据库
 
-### 查看系统中的所有数据库
+#### 查看系统中的所有数据库
 
 ```
 SHOW DATABASES;
 ```
 
-### 显示一个数据库的创建语句
+#### 显示一个数据库的创建语句
 
 ```
 SHOW CREATE DATABASE db_name;
@@ -139,7 +141,7 @@ SHOW CREATE DATABASE db_name;
 
 常用于数据库迁移。对一个已经存在的数据库，返回其创建语句；在另一个集群中执行该语句，就能得到一个设置完全相同的 Database。
 
-### 查看数据库参数
+#### 查看数据库参数
 
 ```sql
 SELECT * FROM INFORMATION_SCHEMA.INS_DATABASES WHERE NAME='DBNAME' \G;
@@ -147,7 +149,7 @@ SELECT * FROM INFORMATION_SCHEMA.INS_DATABASES WHERE NAME='DBNAME' \G;
 
 会列出指定数据库的配置参数，并且每行只显示一个参数。
 
-## 删除过期数据
+### 删除过期数据
 
 ```sql
 TRIM DATABASE db_name;

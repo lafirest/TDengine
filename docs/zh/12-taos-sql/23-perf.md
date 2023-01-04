@@ -4,9 +4,11 @@ title: 统计数据
 description: Performance_Schema 数据库中存储了系统中的各种统计信息
 ---
 
+## 统计数据
+
 TDengine 3.0 版本开始提供一个内置数据库 `performance_schema`，其中存储了与性能有关的统计数据。本节详细介绍其中的表和表结构。
 
-## PERF_APP
+### PERF_APP
 
 提供接入集群的应用（客户端）的相关信息。也可以使用 SHOW APPS 来查询这些信息。
 
@@ -28,7 +30,7 @@ TDengine 3.0 版本开始提供一个内置数据库 `performance_schema`，其�
 | 14  | current_req  | UBIGINT      | 当前正在处理的请求个数          |
 | 15  | last_access  | TIMESTAMP    | 最后更新时间                    |
 
-## PERF_CONNECTIONS
+### PERF_CONNECTIONS
 
 数据库的连接的相关信息。也可以使用 SHOW CONNECTIONS 来查询这些信息。
 
@@ -42,7 +44,7 @@ TDengine 3.0 版本开始提供一个内置数据库 `performance_schema`，其�
 | 6   | login_time  | TIMESTAMP    | 登录时间                                           |
 | 7   | last_access | TIMESTAMP    | 最后更新时间                                       |
 
-## PERF_QUERIES
+### PERF_QUERIES
 
 提供当前正在执行的 SQL 语句的信息。也可以使用 SHOW QUERIES 来查询这些信息。
 
@@ -62,7 +64,7 @@ TDengine 3.0 版本开始提供一个内置数据库 `performance_schema`，其�
 | 12  |  sub_status  | BINARY(1000) | 子查询状态                   |
 | 13  |     sql      | BINARY(1024) | SQL 语句                     |
 
-## PERF_CONSUMERS
+### PERF_CONSUMERS
 
 | #   |    **列名**    | **数据类型** | **说明**                                                    |
 | --- | :------------: | ------------ | ----------------------------------------------------------- |
@@ -75,7 +77,7 @@ TDengine 3.0 版本开始提供一个内置数据库 `performance_schema`，其�
 | 7   | subscribe_time | TIMESTAMP    | 上一次发起订阅的时间                                        |
 | 8   | rebalance_time | TIMESTAMP    | 上一次触发 rebalance 的时间                                 |
 
-## PERF_TRANS
+### PERF_TRANS
 
 | #   |     **列名**     | **数据类型** | **说明**                                                       |
 | --- | :--------------: | ------------ | -------------------------------------------------------------- |
@@ -88,7 +90,7 @@ TDengine 3.0 版本开始提供一个内置数据库 `performance_schema`，其�
 | 7   |  last_exec_time  | TIMESTAMP    | 事务上次执行的时间                                             |
 | 8   | last_action_info | BINARY(511)  | 事务上次执行失败的明细信息                                     |
 
-## PERF_SMAS
+### PERF_SMAS
 
 | #   |  **列名**   | **数据类型** | **说明**                                    |
 | --- | :---------: | ------------ | ------------------------------------------- |

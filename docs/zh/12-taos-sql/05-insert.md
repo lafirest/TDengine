@@ -4,7 +4,9 @@ title: 数据写入
 description: 写入数据的详细语法 
 ---
 
-## 写入语法
+## 数据写入
+
+### 写入语法
 
 ```sql
 INSERT INTO
@@ -52,7 +54,7 @@ INSERT INTO tb_name [(field1_name, ...)] subquery
 
 8. 可以使用 `INSERT ... subquery` 语句将 TDengine 中的数据插入到指定表中。subquery 可以是任意的查询语句。此语法只能用于子表和普通表，且不支持自动建表。
 
-## 插入一条记录
+### 插入一条记录
 
 指定已经创建好的数据子表的表名，并通过 VALUES 关键字提供一行或多行数据，即可向数据库写入这些数据。例如，执行如下语句可以写入一行记录：
 
@@ -60,7 +62,7 @@ INSERT INTO tb_name [(field1_name, ...)] subquery
 INSERT INTO d1001 VALUES (NOW, 10.2, 219, 0.32);
 ```
 
-## 插入多条记录
+### 插入多条记录
 
 或者，可以通过如下语句写入两行记录：
 
@@ -68,7 +70,7 @@ INSERT INTO d1001 VALUES (NOW, 10.2, 219, 0.32);
 INSERT INTO d1001 VALUES ('2021-07-13 14:06:32.272', 10.2, 219, 0.32) (1626164208000, 10.15, 217, 0.33);
 ```
 
-## 指定列插入
+### 指定列插入
 
 向数据子表中插入记录时，无论插入一行还是多行，都可以让数据对应到指定的列。对于 SQL 语句中没有出现的列，数据库将自动填充为 NULL。主键（时间戳）不能为 NULL。例如：
 
@@ -76,7 +78,7 @@ INSERT INTO d1001 VALUES ('2021-07-13 14:06:32.272', 10.2, 219, 0.32) (162616420
 INSERT INTO d1001 (ts, current, phase) VALUES ('2021-07-13 14:06:33.196', 10.27, 0.31);
 ```
 
-## 向多个表插入记录
+### 向多个表插入记录
 
 可以在一条语句中，分别向多个表插入一条或多条记录，并且也可以在插入过程中指定列。例如：
 
@@ -107,7 +109,7 @@ INSERT INTO d21001 USING meters TAGS ('California.SanFrancisco', 2) VALUES ('202
             d21003 USING meters (groupId) TAGS (2) (ts, current, phase) VALUES ('2021-07-13 14:06:34.255', 10.27, 0.31);
 ```
 
-## 插入来自文件的数据记录
+### 插入来自文件的数据记录
 
 除了使用 VALUES 关键字插入一行或多行数据外，也可以把要写入的数据放在 CSV 文件中（英文逗号分隔、时间戳和字符串类型的值需要用英文单引号括住）供 SQL 指令读取。其中 CSV 文件无需表头。例如，如果 /tmp/csvfile.csv 文件的内容为：
 
@@ -122,7 +124,7 @@ INSERT INTO d21001 USING meters TAGS ('California.SanFrancisco', 2) VALUES ('202
 INSERT INTO d1001 FILE '/tmp/csvfile.csv';
 ```
 
-## 插入来自文件的数据记录，并自动建表
+### 插入来自文件的数据记录，并自动建表
 
 ```sql
 INSERT INTO d21001 USING meters TAGS ('California.SanFrancisco', 2) FILE '/tmp/csvfile.csv';

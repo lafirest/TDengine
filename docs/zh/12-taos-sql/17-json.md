@@ -4,8 +4,10 @@ title: JSON 类型
 description: 对 JSON 类型如何使用的详细说明
 ---
 
+## JSON 类型
 
-## 语法说明
+
+### 语法说明
 
 1. 创建 json 类型 tag
 
@@ -31,7 +33,7 @@ description: 对 JSON 类型如何使用的详细说明
    select * from s1 where info contains 'k1'
    ```
 
-## 支持的操作
+### 支持的操作
 
 1. 在 where 条件中时，支持函数 match/nmatch/between and/like/and/or/is null/is no null，不支持 in
 
@@ -61,7 +63,7 @@ description: 对 JSON 类型如何使用的详细说明
 
    不支持添加 json 标签、删除 json 标签、修改 json 标签列宽
 
-## 其他约束条件
+### 其他约束条件
 
 1. 只有标签列可以使用 json 类型，如果用 json 标签，标签列只能有一个。
 

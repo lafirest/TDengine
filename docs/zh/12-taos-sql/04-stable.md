@@ -4,7 +4,9 @@ title: 超级表
 description: 对超级表的各种管理操作
 ---
 
-## 创建超级表
+## 超级表
+
+### 创建超级表
 
 ```sql
 CREATE STABLE [IF NOT EXISTS] stb_name (create_definition [, create_definition] ...) TAGS (create_definition [, create_definition] ...) [table_options]
@@ -26,9 +28,9 @@ column_definition:
     - TAGS 最多允许 128 个，至少 1 个，总长度不超过 16 KB。
 - 关于表参数的详细说明，参见 CREATE TABLE 中的介绍。
 
-## 查看超级表
+### 查看超级表
 
-### 显示当前数据库下的所有超级表信息
+#### 显示当前数据库下的所有超级表信息
 
 ```
 SHOW STABLES [LIKE tb_name_wildcard];
@@ -36,7 +38,7 @@ SHOW STABLES [LIKE tb_name_wildcard];
 
 查看数据库内全部 STable，及其相关信息，包括 STable 的名称、创建时间、列数量、标签（TAG）数量、通过该 STable 建表的数量。
 
-### 显示一个超级表的创建语句
+#### 显示一个超级表的创建语句
 
 ```
 SHOW CREATE STABLE stb_name;
@@ -44,13 +46,13 @@ SHOW CREATE STABLE stb_name;
 
 常用于数据库迁移。对一个已经存在的超级表，返回其创建语句；在另一个集群中执行该语句，就能得到一个结构完全相同的超级表。
 
-### 获取超级表的结构信息
+#### 获取超级表的结构信息
 
 ```
 DESCRIBE [db_name.]stb_name;
 ```
 
-### 获取超级表中所有子表的标签信息
+#### 获取超级表中所有子表的标签信息
 
 ```
 taos> SHOW TABLE TAGS FROM st1;
@@ -78,7 +80,7 @@ Query OK, 3 rows in database (0.002891s)
 
 需要注意，SELECT 语句中的 DISTINCT 和 TBNAME 都是必不可少的，TDengine 会根据它们对语句进行优化，使之在没有数据或数据非常多的情况下都可以正确并快速的返回标签值。
 
-### 获取某个子表的标签信息
+#### 获取某个子表的标签信息
 
 ```
 taos> SHOW TAGS FROM st1s1;
@@ -100,7 +102,7 @@ Query OK, 1 rows in database (0.001884s)
 ```
 
 
-## 删除超级表
+### 删除超级表
 
 ```
 DROP STABLE [IF EXISTS] [db_name.]stb_name
@@ -108,7 +110,7 @@ DROP STABLE [IF EXISTS] [db_name.]stb_name
 
 删除 STable 会自动删除通过 STable 创建的子表以及子表中的所有数据。
 
-## 修改超级表
+### 修改超级表
 
 ```sql
 ALTER STABLE [db_name.]tb_name alter_table_clause
@@ -145,19 +147,19 @@ alter_table_option: {
 - MODIFY TAG：修改超级表的一个标签的列宽度。标签的类型只能是 nchar 和 binary，使用此指令可以修改其宽度，只能改大，不能改小。
 - RENAME TAG：修改超级表的一个标签的名称。从超级表修改某个标签名后，该超级表下的所有子表也会自动更新该标签名。
 
-### 增加列
+#### 增加列
 
 ```
 ALTER STABLE stb_name ADD COLUMN col_name column_type;
 ```
 
-### 删除列
+#### 删除列
 
 ```
 ALTER STABLE stb_name DROP COLUMN col_name;
 ```
 
-### 修改列宽
+#### 修改列宽
 
 ```
 ALTER STABLE stb_name MODIFY COLUMN col_name data_type(length);
@@ -165,7 +167,7 @@ ALTER STABLE stb_name MODIFY COLUMN col_name data_type(length);
 
 如果数据列的类型是可变长格式（BINARY 或 NCHAR），那么可以使用此指令修改其宽度（只能改大，不能改小）。
 
-### 添加标签
+#### 添加标签
 
 ```
 ALTER STABLE stb_name ADD TAG tag_name tag_type;
@@ -173,7 +175,7 @@ ALTER STABLE stb_name ADD TAG tag_name tag_type;
 
 为 STable 增加一个新的标签，并指定新标签的类型。标签总数不能超过 128 个，总长度不超过 16KB 。
 
-### 删除标签
+#### 删除标签
 
 ```
 ALTER STABLE stb_name DROP TAG tag_name;
@@ -181,7 +183,7 @@ ALTER STABLE stb_name DROP TAG tag_name;
 
 删除超级表的一个标签，从超级表删除某个标签后，该超级表下的所有子表也会自动删除该标签。
 
-### 修改标签名
+#### 修改标签名
 
 ```
 ALTER STABLE stb_name RENAME TAG old_tag_name new_tag_name;
@@ -189,7 +191,7 @@ ALTER STABLE stb_name RENAME TAG old_tag_name new_tag_name;
 
 修改超级表的标签名，从超级表修改某个标签名后，该超级表下的所有子表也会自动更新该标签名。
 
-### 修改标签列宽度
+#### 修改标签列宽度
 
 ```
 ALTER STABLE stb_name MODIFY TAG tag_name data_type(length);

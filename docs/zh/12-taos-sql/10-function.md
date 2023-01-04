@@ -5,11 +5,11 @@ description: TDengine 支持的函数列表
 toc_max_heading_level: 4
 ---
 
-## 单行函数
+## 函数
+
+### 单行函数
 
 单行函数为查询结果中的每一行返回一个结果行。
-
-### 数学函数
 
 #### ABS
 
@@ -232,10 +232,6 @@ TAN(expr)
 
 **使用说明**：只能与普通列，选择（Selection）、投影（Projection）函数一起使用，不能与聚合（Aggregation）函数一起使用。
 
-### 字符串函数
-
-字符串函数的输入参数为字符串类型，返回结果为数值类型或字符串类型。
-
 #### CHAR_LENGTH
 
 ```sql
@@ -387,11 +383,6 @@ UPPER(expr)
 
 **适用于**: 表和超级表。
 
-
-### 转换函数
-
-转换函数将值从一种数据类型转换为另一种数据类型。
-
 #### CAST
 
 ```sql
@@ -477,8 +468,7 @@ TO_UNIXTIMESTAMP(expr)
 - 输入的日期时间字符串须符合 ISO8601/RFC3339 标准，无法转换的字符串格式将返回 NULL。
 - 返回的时间戳精度与当前 DATABASE 设置的时间精度一致。
 
-
-### 时间和日期函数
+==============================================================================================
 
 时间和日期函数对时间戳类型进行操作。
 
@@ -597,13 +587,13 @@ TODAY()
 - 返回的时间戳精度与当前 DATABASE 设置的时间精度一致。
 
 
-## 聚合函数
+### 聚合函数
 
 聚合函数为查询结果集的每一个分组返回单个结果行。可以由 GROUP BY 或窗口切分子句指定分组，如果没有，则整个查询结果集视为一个分组。
 
 TDengine 支持针对数据的聚合查询。提供如下聚合函数。
 
-### APERCENTILE
+#### APERCENTILE
 
 ```sql
 APERCENTILE(expr, p [, algo_type])
@@ -627,7 +617,7 @@ algo_type: {
 - algo_type 取值为 "default" 或 "t-digest"。 输入为 "default" 时函数使用基于直方图算法进行计算。输入为 "t-digest" 时使用t-digest算法计算分位数的近似结果。如果不指定 algo_type 则使用 "default" 算法。
 - "t-digest"算法的近似结果对于输入数据顺序敏感，对超级表查询时不同的输入排序结果可能会有微小的误差。
 
-### AVG
+#### AVG
 
 ```sql
 AVG(expr)
@@ -642,7 +632,7 @@ AVG(expr)
 **适用于**：表和超级表。
 
 
-### COUNT
+#### COUNT
 
 ```sql
 COUNT({* | expr})
@@ -662,7 +652,7 @@ COUNT({* | expr})
 - 如果统计字段是具体的列，则返回该列中非 NULL 值的记录数量。
 
 
-### ELAPSED
+#### ELAPSED
 
 ```sql
 ELAPSED(ts_primary_key [, time_unit])
@@ -688,7 +678,7 @@ ELAPSED(ts_primary_key [, time_unit])
 - 不支持与leastsquares、diff、derivative、top、bottom、last_row、interp等函数混合使用。
 
 
-### LEASTSQUARES
+#### LEASTSQUARES
 
 ```sql
 LEASTSQUARES(expr, start_val, step_val)
@@ -703,7 +693,7 @@ LEASTSQUARES(expr, start_val, step_val)
 **适用于**：表。
 
 
-### SPREAD
+#### SPREAD
 
 ```sql
 SPREAD(expr)
@@ -718,7 +708,7 @@ SPREAD(expr)
 **适用于**：表和超级表。
 
 
-### STDDEV
+#### STDDEV
 
 ```sql
 STDDEV(expr)
@@ -733,7 +723,7 @@ STDDEV(expr)
 **适用于**：表和超级表。
 
 
-### SUM
+#### SUM
 
 ```sql
 SUM(expr)
@@ -748,7 +738,7 @@ SUM(expr)
 **适用于**：表和超级表。
 
 
-### HYPERLOGLOG
+#### HYPERLOGLOG
 
 ```sql
 HYPERLOGLOG(expr)
@@ -765,7 +755,7 @@ HYPERLOGLOG(expr)
 **适用于**：表和超级表。
 
 
-### HISTOGRAM
+#### HISTOGRAM
 
 ```sql
 HISTOGRAM(expr，bin_type, bin_description, normalized)
@@ -795,7 +785,7 @@ HISTOGRAM(expr，bin_type, bin_description, normalized)
 - normalized 是否将返回结果归一化到 0~1 之间 。有效输入为 0 和 1。
 
 
-### PERCENTILE
+#### PERCENTILE
 
 ```sql
 PERCENTILE(expr, p)
@@ -812,11 +802,11 @@ PERCENTILE(expr, p)
 **使用说明**：*P*值取值范围 0≤*P*≤100，为 0 的时候等同于 MIN，为 100 的时候等同于 MAX。
 
 
-## 选择函数
+### 选择函数
 
 选择函数根据语义在查询结果集中选择一行或多行结果返回。用户可以同时指定输出 ts 列或其他列（包括 tbname 和标签列），这样就可以方便地知道被选出的值是源于哪个数据行的。
 
-### BOTTOM
+#### BOTTOM
 
 ```sql
 BOTTOM(expr, k)
@@ -836,7 +826,7 @@ BOTTOM(expr, k)
 - 系统同时返回该记录关联的时间戳列；
 - 限制：BOTTOM 函数不支持 FILL 子句。
 
-### FIRST
+#### FIRST
 
 ```sql
 FIRST(expr)
@@ -856,7 +846,7 @@ FIRST(expr)
 - 如果结果集中的某列全部为 NULL 值，则该列的返回结果也是 NULL；
 - 如果结果集中所有列全部为 NULL 值，则不返回结果。
 
-### INTERP
+#### INTERP
 
 ```sql
 INTERP(expr)
@@ -882,7 +872,7 @@ INTERP(expr)
 - INTERP 可以与伪列 _irowts 一起使用，返回插值点所对应的时间戳(3.0.1.4版本以后支持)。
 - INTERP 可以与伪列 _isfilled 一起使用，显示返回结果是否为原始记录或插值算法产生的数据(3.0.2.1版本以后支持)。
 
-### LAST
+#### LAST
 
 ```sql
 LAST(expr)
@@ -903,7 +893,7 @@ LAST(expr)
 - 在用于超级表时，时间戳完全一样且同为最大的数据行可能有多个，那么会从中随机返回一条，而并不保证多次运行所挑选的数据行必然一致。
 
 
-### LAST_ROW
+#### LAST_ROW
 
 ```sql
 LAST_ROW(expr)
@@ -922,7 +912,7 @@ LAST_ROW(expr)
 - 在用于超级表时，时间戳完全一样且同为最大的数据行可能有多个，那么会从中随机返回一条，而并不保证多次运行所挑选的数据行必然一致。
 - 不能与 INTERVAL 一起使用。
 
-### MAX
+#### MAX
 
 ```sql
 MAX(expr)
@@ -937,7 +927,7 @@ MAX(expr)
 **适用于**：表和超级表。
 
 
-### MIN
+#### MIN
 
 ```sql
 MIN(expr)
@@ -952,7 +942,7 @@ MIN(expr)
 **适用于**：表和超级表。
 
 
-### MODE
+#### MODE
 
 ```sql
 MODE(expr)
@@ -967,7 +957,7 @@ MODE(expr)
 **适用于**：表和超级表。
 
 
-### SAMPLE
+#### SAMPLE
 
 ```sql
 SAMPLE(expr, k)
@@ -989,7 +979,7 @@ SAMPLE(expr, k)
 - 使用在超级表上的时候，需要搭配 PARTITION by tbname 使用，将结果强制规约到单个时间线。
 
 
-### TAIL
+#### TAIL
 
 ```sql
 TAIL(expr, k [, offset_rows])
@@ -1006,7 +996,7 @@ TAIL(expr, k [, offset_rows])
 **适用于**：表、超级表。
 
 
-### TOP
+#### TOP
 
 ```sql
 TOP(expr, k)
@@ -1026,7 +1016,7 @@ TOP(expr, k)
 - 系统同时返回该记录关联的时间戳列；
 - 限制：TOP 函数不支持 FILL 子句。
 
-### UNIQUE
+#### UNIQUE
 
 ```sql
 UNIQUE(expr)
@@ -1045,7 +1035,7 @@ UNIQUE(expr)
 
 时序数据特有函数是 TDengine 为了满足时序数据的查询场景而量身定做出来的。在通用数据库中，实现类似功能通常需要复杂的查询语法，且效率很低。TDengine 以函数的方式内置了这些功能，最大程度的减轻了用户的使用成本。
 
-### CSUM
+#### CSUM
 
 ```sql
 CSUM(expr)
@@ -1068,7 +1058,7 @@ CSUM(expr)
 - 使用在超级表上的时候，需要搭配 PARTITION BY tbname使用，将结果强制规约到单个时间线。
 
 
-### DERIVATIVE
+#### DERIVATIVE
 
 ```sql
 DERIVATIVE(expr, time_interval, ignore_negative)
@@ -1092,7 +1082,7 @@ ignore_negative: {
 - DERIVATIVE 函数可以在由 PARTITION BY 划分出单独时间线的情况下用于超级表（也即 PARTITION BY tbname）。
 - 可以与选择相关联的列一起使用。 例如: select \_rowts, DERIVATIVE() from。
 
-### DIFF
+#### DIFF
 
 ```sql
 DIFF(expr [, ignore_negative])
@@ -1117,7 +1107,7 @@ ignore_negative: {
 - 可以与选择相关联的列一起使用。 例如: select \_rowts, DIFF() from。
 
 
-### IRATE
+#### IRATE
 
 ```sql
 IRATE(expr)
@@ -1132,7 +1122,7 @@ IRATE(expr)
 **适用于**：表和超级表。
 
 
-### MAVG
+#### MAVG
 
 ```sql
 MAVG(expr, k)
@@ -1155,7 +1145,7 @@ MAVG(expr, k)
 - 使用在超级表上的时候，需要搭配 PARTITION BY tbname使用，将结果强制规约到单个时间线。
 
 
-### STATECOUNT
+#### STATECOUNT
 
 ```sql
 STATECOUNT(expr, oper, val)
@@ -1182,7 +1172,7 @@ STATECOUNT(expr, oper, val)
 - 不能和窗口操作一起使用，例如 interval/state_window/session_window。
 
 
-### STATEDURATION
+#### STATEDURATION
 
 ```sql
 STATEDURATION(expr, oper, val, unit)
@@ -1210,7 +1200,7 @@ STATEDURATION(expr, oper, val, unit)
 - 不能和窗口操作一起使用，例如 interval/state_window/session_window。
 
 
-### TWA
+#### TWA
 
 ```sql
 TWA(expr)
@@ -1227,9 +1217,9 @@ TWA(expr)
 **使用说明**： TWA 函数可以在由 PARTITION BY 划分出单独时间线的情况下用于超级表（也即 PARTITION BY tbname）。
 
 
-## 系统信息函数
+### 系统信息函数
 
-### DATABASE
+#### DATABASE
 
 ```sql
 SELECT DATABASE();
@@ -1238,7 +1228,7 @@ SELECT DATABASE();
 **说明**：返回当前登录的数据库。如果登录的时候没有指定默认数据库，且没有使用USE命令切换数据库，则返回NULL。
 
 
-### CLIENT_VERSION
+#### CLIENT_VERSION
 
 ```sql
 SELECT CLIENT_VERSION();
@@ -1246,7 +1236,7 @@ SELECT CLIENT_VERSION();
 
 **说明**：返回客户端版本。
 
-### SERVER_VERSION
+#### SERVER_VERSION
 
 ```sql
 SELECT SERVER_VERSION();
@@ -1254,7 +1244,7 @@ SELECT SERVER_VERSION();
 
 **说明**：返回服务端版本。
 
-### SERVER_STATUS
+#### SERVER_STATUS
 
 ```sql
 SELECT SERVER_STATUS();

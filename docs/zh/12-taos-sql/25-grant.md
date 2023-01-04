@@ -4,9 +4,11 @@ title: 权限管理
 description: 企业版中才具有的权限管理功能
 ---
 
+## 权限管理
+
 本节讲述如何在 TDengine 中进行权限管理的相关操作。
 
-## 创建用户
+### 创建用户
 
 ```sql
 CREATE USER use_name PASS 'password' [SYSINFO {1|0}];
@@ -27,7 +29,7 @@ taos> create user test pass '123456' sysinfo 1;
 Query OK, 0 of 0 rows affected (0.001254s)
 ```
 
-## 查看用户
+### 查看用户
 
 ```sql
 SHOW USERS;
@@ -55,13 +57,13 @@ taos> select * from information_schema.ins_users;
 Query OK, 2 rows in database (0.001953s)
 ```
 
-## 删除用户
+### 删除用户
 
 ```sql
 DROP USER user_name;
 ```
 
-## 修改用户信息
+### 修改用户信息
 
 ```sql
 ALTER USER user_name alter_user_clause
@@ -84,7 +86,7 @@ taos> alter user test enable 0;
 Query OK, 0 of 0 rows affected (0.001160s)
 ```
 
-## 授权
+### 授权
 
 ```sql
 GRANT privileges ON priv_level TO user_name
@@ -113,7 +115,7 @@ TDengine 有超级用户和普通用户两类用户。超级用户缺省创建�
 
 对于非DATABASE的对象，如USER、DNODE、UDF、QNODE等，普通用户只有读权限（一般为SHOW命令），不能创建和修改。
 
-## 撤销授权
+### 撤销授权
 
 ```sql
 REVOKE privileges ON priv_level FROM user_name

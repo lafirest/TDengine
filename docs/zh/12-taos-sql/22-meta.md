@@ -4,6 +4,8 @@ title: 元数据
 description: Information_Schema 数据库中存储了系统中所有的元数据信息
 ---
 
+## 元数据
+
 TDengine 内置了一个名为 `INFORMATION_SCHEMA` 的数据库，提供对数据库元数据、数据库系统信息和状态的访问，例如数据库或表的名称，当前执行的 SQL 语句等。该数据库存储有关 TDengine 维护的所有其他数据库的信息。它包含多个只读表。实际上，这些表都是视图，而不是基表，因此没有与它们关联的文件。所以对这些表只能查询，不能进行 INSERT 等写入操作。`INFORMATION_SCHEMA` 数据库旨在以一种更一致的方式来提供对 TDengine 支持的各种 SHOW 语句（如 SHOW TABLES、SHOW DATABASES）所提供的信息的访问。与 SHOW 语句相比，使用 SELECT ... FROM INFORMATION_SCHEMA.tablename 具有以下优点：
 
 1. 可以使用 USE 语句将 INFORMATION_SCHEMA 设为默认数据库
@@ -12,19 +14,17 @@ TDengine 内置了一个名为 `INFORMATION_SCHEMA` 的数据库，提供对数�
 4. TDengine 在后续演进中可以灵活的添加已有 INFORMATION_SCHEMA 中表的列，而不用担心对既有业务系统造成影响
 5. 与其他数据库系统更具互操作性。例如，Oracle 数据库用户熟悉查询 Oracle 数据字典中的表
 
-:::info
-
+提示：
 - 由于 SHOW 语句已经被开发者熟悉和广泛使用，所以它们仍然被保留。
 - 系统表中的一些列可能是关键字，在查询时需要使用转义符'\`'，例如查询数据库 test 有几个 VGROUP：
 ```sql 
    select `vgroups` from ins_databases where name = 'test';
 ``` 
 
-:::
 
 本章将详细介绍 `INFORMATION_SCHEMA` 这个内置元数据库中的表和表结构。
 
-## INS_DNODES
+### INS_DNODES
 
 提供 dnode 的相关信息。也可以使用 SHOW DNODES 来查询这些信息。
 
@@ -38,7 +38,7 @@ TDengine 内置了一个名为 `INFORMATION_SCHEMA` 的数据库，提供对数�
 | 6   |    endpoint    | BINARY(134)  | dnode 的地址              |
 | 7   |     create     | TIMESTAMP    | 创建时间                  |
 
-## INS_MNODES
+### INS_MNODES
 
 提供 mnode 的相关信息。也可以使用 SHOW MNODES 来查询这些信息。
 
@@ -50,7 +50,7 @@ TDengine 内置了一个名为 `INFORMATION_SCHEMA` 的数据库，提供对数�
 | 4   |  role_time  | TIMESTAMP    | 成为当前角色的时间 |
 | 5   | create_time | TIMESTAMP    | 创建时间           |
 
-## INS_QNODES
+### INS_QNODES
 
 当前系统中 QNODE 的信息。也可以使用 SHOW QNODES 来查询这些信息。
 
@@ -60,7 +60,7 @@ TDengine 内置了一个名为 `INFORMATION_SCHEMA` 的数据库，提供对数�
 | 2   |  endpoint   | BINARY(134)  | qnode 的地址 |
 | 3   | create_time | TIMESTAMP    | 创建时间     |
 
-## INS_CLUSTER
+### INS_CLUSTER
 
 存储集群相关信息。
 
@@ -70,7 +70,7 @@ TDengine 内置了一个名为 `INFORMATION_SCHEMA` 的数据库，提供对数�
 | 2   |    name     | BINARY(134)  | 集群名称   |
 | 3   | create_time | TIMESTAMP    | 创建时间   |
 
-## INS_DATABASES
+### INS_DATABASES
 
 提供用户创建的数据库对象的相关信息。也可以使用 SHOW DATABASES 来查询这些信息。
 
@@ -107,7 +107,7 @@ TDengine 内置了一个名为 `INFORMATION_SCHEMA` 的数据库，提供对数�
 | 30  |   table_suffix   | SMALLINT | 内部存储引擎根据表名分配存储该表数据的 VNODE 时要忽略的后缀的长度。需要注意，`table_suffix` 为 TDengine 关键字，作为列名使用时需要使用 ` 进行转义。 |
 | 31  |   tsdb_pagesize   | INT | 时序数据存储引擎中的页大小。需要注意，`tsdb_pagesize` 为 TDengine 关键字，作为列名使用时需要使用 ` 进行转义。 |
 
-## INS_FUNCTIONS
+### INS_FUNCTIONS
 
 用户创建的自定义函数的信息。
 
@@ -121,7 +121,7 @@ TDengine 内置了一个名为 `INFORMATION_SCHEMA` 的数据库，提供对数�
 | 6   |  code_len   | INT          | 代码长度       |
 | 7   |   bufsize   | INT          | buffer 大小    |
 
-## INS_INDEXES
+### INS_INDEXES
 
 提供用户创建的索引的相关信息。也可以使用 SHOW INDEX 来查询这些信息。
 
@@ -134,7 +134,7 @@ TDengine 内置了一个名为 `INFORMATION_SCHEMA` 的数据库，提供对数�
 | 5   |    index_type    | BINARY(10)   | 目前有 SMA 和 FULLTEXT                                                             |
 | 6   | index_extensions | BINARY(256)  | 索引的额外信息。对 SMA 类型的索引，是函数名的列表。对 FULLTEXT 类型的索引为 NULL。 |
 
-## INS_STABLES
+### INS_STABLES
 
 提供用户创建的超级表的相关信息。
 
@@ -151,7 +151,7 @@ TDengine 内置了一个名为 `INFORMATION_SCHEMA` 的数据库，提供对数�
 | 9   |   max_delay   | BINARY(64)   | 推送计算结果的最大延迟。需要注意，`max_delay` 为 TDengine 关键字，作为列名使用时需要使用 ` 进行转义。   |
 | 10  |    rollup     | BINARY(128)  | rollup 聚合函数。需要注意，`rollup` 为 TDengine 关键字，作为列名使用时需要使用 ` 进行转义。          |
 
-## INS_TABLES
+### INS_TABLES
 
 提供用户创建的普通表和子表的相关信息
 
@@ -168,7 +168,7 @@ TDengine 内置了一个名为 `INFORMATION_SCHEMA` 的数据库，提供对数�
 | 9   | table_comment | BINARY(1024) | 表注释           |
 | 10  |     type      | BINARY(20)   | 表类型           |
 
-## INS_TAGS
+### INS_TAGS
 
 | #   |  **列名**   | **数据类型**  | **说明**               |
 | --- | :---------: | ------------- | ---------------------- |
@@ -179,7 +179,7 @@ TDengine 内置了一个名为 `INFORMATION_SCHEMA` 的数据库，提供对数�
 | 5   |  tag_type   | BINARY(64)    | tag 的类型             |
 | 6   |  tag_value  | BINARY(16384) | tag 的值               |
 
-## INS_USERS
+### INS_USERS
 
 提供系统中创建的用户的相关信息。
 
@@ -189,7 +189,7 @@ TDengine 内置了一个名为 `INFORMATION_SCHEMA` 的数据库，提供对数�
 | 2   |  privilege  | BINARY(256)  | 权限     |
 | 3   | create_time | TIMESTAMP    | 创建时间 |
 
-## INS_GRANTS
+### INS_GRANTS
 
 提供企业版授权的相关信息。
 
@@ -210,7 +210,7 @@ TDengine 内置了一个名为 `INFORMATION_SCHEMA` 的数据库，提供对数�
 | 13  |   expired   | BINARY(5)    | 是否到期，true：到期，false：未到期                |
 | 14  | expire_time | BINARY(19)   | 试用期到期时间                                     |
 
-## INS_VGROUPS
+### INS_VGROUPS
 
 系统中所有 vgroups 的信息。
 
@@ -230,7 +230,7 @@ TDengine 内置了一个名为 `INFORMATION_SCHEMA` 的数据库，提供对数�
 | 12  | file_size | INT          | 此 vgroup 中数据/元数据文件的大小                      |
 | 13  |   tsma    | TINYINT      | 此 vgroup 是否专用于 Time-range-wise SMA，1: 是, 0: 否 |
 
-## INS_CONFIGS
+### INS_CONFIGS
 
 系统配置参数。
 
@@ -239,7 +239,7 @@ TDengine 内置了一个名为 `INFORMATION_SCHEMA` 的数据库，提供对数�
 | 1   |   name   | BINARY(32)   | 配置项名称   |
 | 2   |  value   | BINARY(64)   | 该配置项的值。需要注意，`value` 为 TDengine 关键字，作为列名使用时需要使用 ` 进行转义。 |
 
-## INS_DNODE_VARIABLES
+### INS_DNODE_VARIABLES
 
 系统中每个 dnode 的配置参数。
 
@@ -249,7 +249,7 @@ TDengine 内置了一个名为 `INFORMATION_SCHEMA` 的数据库，提供对数�
 | 2   |   name   | BINARY(32)   | 配置项名称   |
 | 3   |  value   | BINARY(64)   | 该配置项的值。需要注意，`value` 为 TDengine 关键字，作为列名使用时需要使用 ` 进行转义。 |
 
-## INS_TOPICS
+### INS_TOPICS
 
 | #   |  **列名**   | **数据类型** | **说明**                       |
 | --- | :---------: | ------------ | ------------------------------ |
@@ -258,7 +258,7 @@ TDengine 内置了一个名为 `INFORMATION_SCHEMA` 的数据库，提供对数�
 | 3   | create_time | TIMESTAMP    | topic 的 创建时间              |
 | 4   |     sql     | BINARY(1024) | 创建该 topic 时所用的 SQL 语句 |
 
-## INS_SUBSCRIPTIONS
+### INS_SUBSCRIPTIONS
 
 | #   |    **列名**    | **数据类型** | **说明**                 |
 | --- | :------------: | ------------ | ------------------------ |
@@ -267,7 +267,7 @@ TDengine 内置了一个名为 `INFORMATION_SCHEMA` 的数据库，提供对数�
 | 3   |   vgroup_id    | INT          | 消费者被分配的 vgroup id |
 | 4   |  consumer_id   | BIGINT       | 消费者的唯一 id          |
 
-## INS_STREAMS
+### INS_STREAMS
 
 | #   |   **列名**   | **数据类型** | **说明**                                |
 | --- | :----------: | ------------ | --------------------------------------- |

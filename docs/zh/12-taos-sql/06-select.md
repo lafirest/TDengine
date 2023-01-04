@@ -4,7 +4,9 @@ title: 数据查询
 description: 查询数据的详细语法
 ---
 
-## 查询语法
+## 数据查询
+
+### 查询语法
 
 ```sql
 SELECT {DATABASE() | CLIENT_VERSION() | SERVER_VERSION() | SERVER_STATUS() | NOW() | TODAY() | TIMEZONE()}
@@ -66,11 +68,11 @@ order_expr:
     {expr | position | c_alias} [DESC | ASC] [NULLS FIRST | NULLS LAST]
 ```
 
-## 列表
+### 列表
 
 查询语句可以指定部分或全部列作为返回结果。数据列和标签列都可以出现在列表中。
 
-### 通配符
+#### 通配符
 
 通配符 \* 可以用于代指全部列。对于普通表和子表，结果中只有普通列。对于超级表，还包含了 TAG 列。
 
@@ -97,7 +99,7 @@ SELECT d1001.* FROM d1001,d1003 WHERE d1001.ts = d1003.ts;
 在使用 SQL 函数来进行查询的过程中，部分 SQL 函数支持通配符操作。其中的区别在于：
 `count(*)`函数只返回一列。`first`、`last`、`last_row`函数则是返回全部列。
 
-### 标签列
+#### 标签列
 
 在超级表和子表的查询中可以指定 _标签列_，且标签列的值会与普通列的数据一起返回。
 
@@ -105,7 +107,7 @@ SELECT d1001.* FROM d1001,d1003 WHERE d1001.ts = d1003.ts;
 SELECT location, groupid, current FROM d1001 LIMIT 2;
 ```
 
-### 结果去重
+#### 结果去重
 
 `DISTINCT` 关键字可以对结果集中的一列或多列进行去重，去除的列既可以是标签列也可以是数据列。
 
@@ -128,7 +130,7 @@ SELECT DISTINCT col_name [, col_name ...] FROM tb_name;
 
 :::
 
-### 结果集列名
+#### 结果集列名
 
 `SELECT`子句中，如果不指定返回结果集合的列名，结果集列名称默认使用`SELECT`子句中的表达式名称作为列名称。此外，用户可使用`AS`来重命名返回结果集合中列的名称。例如：
 
@@ -138,7 +140,7 @@ taos> SELECT ts, ts AS primary_key_ts FROM d1001;
 
 但是针对`first(*)`、`last(*)`、`last_row(*)`不支持针对单列的重命名。
 
-### 伪列
+#### 伪列
 
 **伪列**: 伪列的行为表现与普通数据列相似但其并不实际存储在表中。可以查询伪列，但不能对其做插入、更新和删除的操作。伪列有点像没有参数的函数。下面介绍是可用的伪列：
 
@@ -193,7 +195,7 @@ select _rowts, max(current) from meters;
 select _irowts, interp(current) from meters range('2020-01-01 10:00:00', '2020-01-01 10:30:00') every(1s) fill(linear);
 ```
 
-## 查询对象
+### 查询对象
 
 FROM 关键字后面可以是若干个表（超级表）列表，也可以是子查询的结果。
 如果没有指定用户的当前数据库，可以在表名称之前使用数据库的名称来指定表所属的数据库。例如：`power.d1001` 方式来跨库使用表。
@@ -208,7 +210,7 @@ TDengine 支持基于时间戳主键的 INNER JOIN，规则如下：
 6. 参与 JOIN 的表个数上限为 10 个。
 7. 不支持与 FILL 子句混合使用。
 
-## GROUP BY
+### GROUP BY
 
 如果在语句中同时指定了 GROUP BY 子句，那么 SELECT 列表只能包含如下表达式：
 
@@ -224,13 +226,13 @@ GROUP BY 子句中的表达式可以包含表或视图中的任何列，这些�
 该子句对行进行分组，但不保证结果集的顺序。若要对分组进行排序，请使用 ORDER BY 子句
 
 
-## PARTITION BY
+### PARTITION BY
 
 PARTITION BY 子句是 TDengine 特色语法，按 part_list 对数据进行切分，在每个切分的分片中进行计算。
 
 详见 [TDengine 特色查询](../distinguished)
 
-## ORDER BY
+### ORDER BY
 
 ORDER BY 子句对结果集排序。如果没有指定 ORDER BY，无法保证同一语句多次查询的结果集返回顺序一致。
 
@@ -240,23 +242,23 @@ ASC 表示升序，DESC 表示降序。
 
 NULLS 语法用来指定 NULL 值在排序中输出的位置。NULLS LAST 是升序的默认值，NULLS FIRST 是降序的默认值。
 
-## LIMIT
+### LIMIT
 
 LIMIT 控制输出条数，OFFSET 指定从第几条之后开始输出。LIMIT/OFFSET 对结果集的执行顺序在 ORDER BY 之后。LIMIT 5 OFFSET 2 可以简写为 LIMIT 2, 5，都输出第 3 行到第 7 行数据。
 
 在有 PARTITION BY 子句时，LIMIT 控制的是每个切分的分片中的输出，而不是总的结果集输出。
 
-## SLIMIT
+### SLIMIT
 
 SLIMIT 和 PARTITION BY 子句一起使用，用来控制输出的分片的数量。SLIMIT 5 SOFFSET 2 可以简写为 SLIMIT 2, 5，都表示输出第 3 个到第 7 个分片。
 
 需要注意，如果有 ORDER BY 子句，则输出只有一个分片。
 
-## 特殊功能
+### 特殊功能
 
 部分特殊的查询功能可以不使用 FROM 子句执行。
 
-### 获取当前数据库
+#### 获取当前数据库
 
 下面的命令可以获取当前所在的数据库 database()，如果登录的时候没有指定默认数据库，且没有使用`USE`命令切换数据，则返回 NULL。
 
@@ -264,14 +266,14 @@ SLIMIT 和 PARTITION BY 子句一起使用，用来控制输出的分片的数�
 SELECT DATABASE();
 ```
 
-### 获取服务器和客户端版本号
+#### 获取服务器和客户端版本号
 
 ```sql
 SELECT CLIENT_VERSION();
 SELECT SERVER_VERSION();
 ```
 
-### 获取服务器状态
+#### 获取服务器状态
 
 服务器状态检测语句。如果服务器正常，返回一个数字（例如 1）。如果服务器异常，返回 error code。该 SQL 语法能兼容连接池对于 TDengine 状态的检查及第三方工具对于数据库服务器状态的检查。并可以避免出现使用了错误的心跳检测 SQL 语句导致的连接池连接丢失的问题。
 
@@ -279,52 +281,52 @@ SELECT SERVER_VERSION();
 SELECT SERVER_STATUS();
 ```
 
-### 获取当前时间
+#### 获取当前时间
 
 ```sql
 SELECT NOW();
 ```
 
-### 获取当前日期
+#### 获取当前日期
 
 ```sql
 SELECT TODAY();
 ```
 
-### 获取当前时区
+#### 获取当前时区
 
 ```sql
 SELECT TIMEZONE();
 ```
 
-## 正则表达式过滤
+### 正则表达式过滤
 
-### 语法
+#### 语法
 
 ```txt
 WHERE (column|tbname) match/MATCH/nmatch/NMATCH _regex_
 ```
 
-### 正则表达式规范
+#### 正则表达式规范
 
 确保使用的正则表达式符合 POSIX 的规范，具体规范内容可参见[Regular Expressions](https://pubs.opengroup.org/onlinepubs/9699919799/basedefs/V1_chap09.html)
 
-### 使用限制
+#### 使用限制
 
 只能针对表名（即 tbname 筛选）、binary/nchar 类型标签值进行正则表达式过滤，不支持普通列的过滤。
 
 正则匹配字符串长度不能超过 128 字节。可以通过参数 _maxRegexStringLen_ 设置和调整最大允许的正则匹配字符串，该参数是客户端配置参数，需要重启才能生效。
 
-## CASE 表达式
+### CASE 表达式
 
-### 语法
+#### 语法
 
 ```txt
 CASE value WHEN compare_value THEN result [WHEN compare_value THEN result ...] [ELSE result] END
 CASE WHEN condition THEN result [WHEN condition THEN result ...] [ELSE result] END
 ```
 
-### 说明
+#### 说明
 
 TDengine 通过 CASE 表达式让用户可以在 SQL 语句中使用 IF ... THEN ... ELSE 逻辑。
 
@@ -334,7 +336,7 @@ TDengine 通过 CASE 表达式让用户可以在 SQL 语句中使用 IF ... THEN
 
 CASE 表达式的返回类型为第一个 WHEN THEN 部分的 result 类型，其余 WHEN THEN 部分和 ELSE 部分，result 类型都需要可以向其转换，否则 TDengine 会报错。
 
-### 示例
+#### 示例
 
 某设备有三个状态码，显示其状态，语句如下：
 
@@ -348,7 +350,7 @@ SELECT CASE dev_status WHEN 1 THEN 'Running' WHEN 2 THEN 'Warning' WHEN 3 THEN '
 SELECT AVG(CASE WHEN voltage < 200 or voltage > 250 THEN 220 ELSE voltage END) FROM meters;
 ```
 
-## JOIN 子句
+### JOIN 子句
 
 TDengine 支持“普通表与普通表之间”、“超级表与超级表之间”、“子查询与子查询之间” 进行自然连接。自然连接与内连接的主要区别是，自然连接要求参与连接的字段在不同的表/超级表中必须是同名字段。也即，TDengine 在连接关系的表达中，要求必须使用同名数据列/标签列的相等关系。
 
@@ -370,8 +372,7 @@ WHERE t1.ts = t2.ts AND t1.deviceid = t2.deviceid AND t1.status=0;
 
 类似地，也可以对多个子查询的查询结果进行 JOIN 操作。
 
-:::note
-
+注意：
 JOIN 语句存在如下限制要求：
 
 - 参与一条语句中 JOIN 操作的表/超级表最多可以有 10 个。
@@ -381,9 +382,7 @@ JOIN 语句存在如下限制要求：
 - JOIN 查询的不同表的过滤条件之间不能为 OR。
 - JOIN 查询要求连接条件不能是普通列，只能针对标签和主时间字段列（第一列）。
 
-:::
-
-## 嵌套查询
+### 嵌套查询
 
 “嵌套查询”又称为“子查询”，也即在一条 SQL 语句中，“内层查询”的计算结果可以作为“外层查询”的计算对象来使用。
 
@@ -393,7 +392,7 @@ JOIN 语句存在如下限制要求：
 SELECT ... FROM (SELECT ... FROM ...) ...;
 ```
 
-:::info
+提示：
 
 - 内层查询的返回结果将作为“虚拟表”供外层查询使用，此虚拟表建议起别名，以便于外层查询中方便引用。
 - 在内层和外层查询中，都支持普通的表间/超级表间 JOIN。内层查询的计算结果也可以再参与数据子表的 JOIN 操作。
@@ -405,9 +404,8 @@ SELECT ... FROM (SELECT ... FROM ...) ...;
     - 如果内层查询的结果数据不是按时间戳有序，那么计算过程依赖数据按时间有序的函数在外层会无法正常工作。例如：LEASTSQUARES, ELAPSED, INTERP, DERIVATIVE, IRATE, TWA, DIFF, STATECOUNT, STATEDURATION, CSUM, MAVG, TAIL, UNIQUE。
     - 计算过程需要两遍扫描的函数，在外层查询中无法正常工作。例如：此类函数包括：PERCENTILE。
 
-:::
 
-## UNION ALL 子句
+### UNION ALL 子句
 
 ```txt title=语法
 SELECT ...
@@ -417,7 +415,7 @@ UNION ALL SELECT ...
 
 TDengine 支持 UNION ALL 操作符。也就是说，如果多个 SELECT 子句返回结果集的结构完全相同（列名、列类型、列数、顺序），那么可以通过 UNION ALL 把这些结果集合并到一起。目前只支持 UNION ALL 模式，也即在结果集的合并过程中是不去重的。在同一个 sql 语句中，UNION ALL 最多支持 100 个。
 
-## SQL 示例
+### SQL 示例
 
 对于下面的例子，表 tb1 用以下语句创建：
 
