@@ -4,9 +4,11 @@ title: 使用 Helm 部署 TDengine 集群
 description: 使用 Helm 部署 TDengine 集群的详细指南
 ---
 
+## 基于 Helm 部署
+
 Helm 是 Kubernetes 的包管理器，上一节使用 Kubernets 部署 TDengine 集群的操作已经足够简单，但 Helm 依然可以提供更强大的能力。
 
-## 安装 Helm
+### 安装 Helm
 
 ```bash
 curl -fsSL -o get_helm.sh \
@@ -18,7 +20,7 @@ chmod +x get_helm.sh
 
 Helm 会使用 kubectl 和 kubeconfig 的配置来操作 Kubernetes，可以参考 Rancher 安装 Kubernetes 的配置来进行设置。
 
-## 安装 TDengine Chart
+### 安装 TDengine Chart
 
 TDengine Chart 尚未发布到 Helm 仓库，当前可以从 GitHub 直接下载：
 
@@ -77,7 +79,7 @@ kubectl --namespace default exec $POD_NAME -- \
 
 ```
 
-## 配置 Values
+### 配置 Values
 
 TDengine 支持 `values.yaml` 自定义。
 
@@ -246,7 +248,7 @@ taoscfg:
   #TAOS_ENABLE_CORE_FILE: "1"
 ```
 
-## 扩容
+### 扩容
 
 关于扩容可参考上一节的说明，有一些额外的操作需要从 helm 的部署中获取。
 
@@ -268,7 +270,7 @@ kubectl scale --replicas 3 statefulset/$STS_NAME
 
 使用命令 `show dnodes` 和 `show mnodes` 检查是否扩容成功。
 
-## 缩容
+### 缩容
 
 :::warning
 缩容操作并没有完整测试，可能造成数据风险，请谨慎使用。
@@ -286,7 +288,7 @@ kubectl --namespace default exec $POD_NAME -- taos -s 'drop dnode "<you dnode in
 
 ```
 
-## 清理集群
+### 清理集群
 
 Helm 管理下，清理操作也变得简单：
 
