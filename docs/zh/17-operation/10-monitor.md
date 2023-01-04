@@ -3,11 +3,13 @@ title: 系统监控
 description: 监控 TDengine 的运行状态
 ---
 
+## 系统监控
+
 TDengine 通过 [taosKeeper](/reference/taosKeeper/) 将服务器的 CPU、内存、硬盘空间、带宽、请求数、磁盘读写速度等信息定时写入指定数据库。TDengine 还将重要的系统操作（比如登录、创建、删除数据库等）日志以及各种错误报警信息进行记录。系统管理员可以从 CLI 直接查看这个数据库，也可以在 WEB 通过图形化界面查看这些监测信息。
 
 这些监测信息的采集缺省是打开的，但可以修改配置文件里的选项 monitor 将其关闭或打开。
 
-## TDinsight - 使用监控数据库 + Grafana 对 TDengine 进行监控的解决方案
+### TDinsight - 使用监控数据库 + Grafana 对 TDengine 进行监控的解决方案
 
 监控数据库将提供更多的监控项，您可以从 [TDinsight Grafana Dashboard](/reference/tdinsight/) 了解如何使用 TDinsight 方案对 TDengine 进行监控。
 

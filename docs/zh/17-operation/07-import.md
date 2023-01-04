@@ -3,13 +3,15 @@ title: 数据导入
 description: 如何导入外部数据到 TDengine
 ---
 
+## 数据导入
+
 TDengine 提供多种方便的数据导入功能，一种按脚本文件导入，一种按数据文件导入，一种是 taosdump 工具导入本身导出的文件。
 
-## 按脚本文件导入
+### 按脚本文件导入
 
 TDengine 的 shell 支持 source filename 命令，用于批量运行文件中的 SQL 语句。用户可将建库、建表、写数据等 SQL 命令写在同一个文件中，每条命令单独一行，在 shell 中运行 source 命令，即可按顺序批量运行文件中的 SQL 语句。以‘#’开头的 SQL 语句被认为是注释，shell 将自动忽略。
 
-## 按数据文件导入
+### 按数据文件导入
 
 TDengine 也支持在 shell 对已存在的表从 CSV 文件中进行数据导入。CSV 文件只属于一张表且 CSV 文件中的数据格式需与要导入表的结构相同，在导入的时候，其语法如下：
 
@@ -57,6 +59,6 @@ taos> insert into d1001 file '~/data.csv';
 Query OK, 9 row(s) affected (0.004763s)
 ```
 
-## taosdump 工具导入
+### taosdump 工具导入
 
 TDengine 提供了方便的数据库导入导出工具 taosdump。用户可以将 taosdump 从一个系统导出的数据，导入到其他系统中。具体使用方法，请参见：[TDengine 数据备份工具: taosdump](/reference/taosdump)。

@@ -3,18 +3,17 @@ title: 安装和卸载
 description: 安装、卸载、启动、停止和升级
 ---
 
-import Tabs from "@theme/Tabs";
-import TabItem from "@theme/TabItem";
+## 安装、卸载、启动、停止和升级
 
 本节将介绍一些关于安装和卸载更深层次的内容，以及升级的注意事项。
 
-## 安装
+### 安装
 
 关于安装，请参考 [使用安装包立即开始](../../get-started/package)
 
 
 
-## 安装目录说明
+### 安装目录说明
 
 TDengine 成功安装后，主安装目录是 /usr/local/taos，目录内容如下：
 
@@ -42,10 +41,9 @@ lrwxrwxrwx  1 root root   13 Feb 22 09:34 log -> /var/log/taos/
 - /usr/local/taos/driver 目录下的动态库文件，会软链接到 /usr/lib 目录下；
 - /usr/local/taos/include 目录下的头文件，会软链接到到 /usr/include 目录下；
 
-## 卸载
+### 卸载
 
-<Tabs>
-<TabItem label="apt-get 卸载" value="aptremove">
+#### apt-get 卸载>
 
 TDengine 卸载命令如下:
 
@@ -81,8 +79,7 @@ Do you want to continue? [Y/n]
 Removing taostools (2.1.2) ...
 ```
 
-</TabItem>
-<TabItem label="Deb 卸载" value="debuninst">
+#### Deb 卸载
 
 TDengine 卸载命令如下:
 
@@ -102,9 +99,7 @@ $ sudo dpkg -r taostools
 Removing taostools (2.1.2) ...
 ```
 
-</TabItem>
-
-<TabItem label="RPM 卸载" value="rpmuninst">
+#### RPM 卸载
 
 卸载 TDengine 命令如下:
 
@@ -120,9 +115,7 @@ sudo rpm -e taostools
 taosToole is removed successfully!
 ```
 
-</TabItem>
-
-<TabItem label="tar.gz 卸载" value="taruninst">
+#### tar.gz 卸载
 
 卸载 TDengine 命令如下:
 
@@ -140,13 +133,11 @@ Start to uninstall taos tools ...
 taos tools is uninstalled successfully!
 ```
 
-</TabItem>
-<TabItem label="Windows 卸载" value="windows">
+#### Windows 卸载
 在 C:\TDengine 目录下，通过运行 unins000.exe 卸载程序来卸载 TDengine。
-</TabItem>
-</Tabs>
 
-:::info
+
+注意：
 
 - TDengine 提供了多种安装包，但最好不要在一个系统上同时使用 tar.gz 安装包和 deb 或 rpm 安装包。否则会相互影响，导致在使用时出现问题。
 
@@ -166,15 +157,14 @@ taos tools is uninstalled successfully!
 
 然后再重新进行安装就可以了。
 
-:::
 
-## 卸载和更新文件说明
+### 卸载和更新文件说明
 
 卸载安装包的时候，将保留配置文件、数据库文件和日志文件，即 /etc/taos/taos.cfg 、 /var/lib/taos 、 /var/log/taos 。如果用户确认后不需保留，可以手工删除，但一定要慎重，因为删除后，数据将永久丢失，不可以恢复！
 
 如果是更新安装，当缺省配置文件（ /etc/taos/taos.cfg ）存在时，仍然使用已有的配置文件，安装包中携带的配置文件修改为 taos.cfg.orig 保存在 /usr/local/taos/cfg/ 目录，可以作为设置配置参数的参考样例；如果不存在配置文件，就使用安装包中自带的配置文件。
 
-## 升级
+### 升级
 升级分为两个层面：升级安装包 和 升级运行中的实例。
 
 升级安装包请遵循前述安装和卸载的步骤先卸载旧版本再安装新版本。
@@ -189,7 +179,5 @@ taos tools is uninstalled successfully!
 - 进行简单的写入操作确认 TDengine 集群可用
 - 重新恢复业务数据的写入
 
-:::warning
+注意：
 TDengine 不保证低版本能够兼容高版本的数据，所以任何时候都不推荐降级
-
-:::
