@@ -3,6 +3,8 @@ title: 负载均衡
 description: TDengine 的负载均衡设计
 ---
 
+## 负载均衡
+
 TDengine 中的负载均衡主要指对时序数据的处理的负载均衡。TDengine 采用 Hash 一致性算法将一个数据库中的所有表和子表的数据均衡分散在属于该数据库的所有 vgroup 中，每张表或子表只能由一个 vgroup 处理，一个 vgroup 可能负责处理多个表或子表。
 
 创建数据库时可以指定其中的 vgroup 的数量：

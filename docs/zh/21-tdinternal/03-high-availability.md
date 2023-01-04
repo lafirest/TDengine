@@ -3,7 +3,9 @@ title: 高可用
 description: TDengine 的高可用设计 
 ---
 
-## Vnode 的高可用性
+## 高可用
+
+### Vnode 的高可用性
 
 TDengine 通过多副本的机制来提供系统的高可用性，包括 vnode 和 mnode 的高可用性。
 
@@ -19,7 +21,7 @@ CREATE DATABASE demo replica 3;
 
 因为 vnode 的引入，无法简单地给出结论：“集群中过半数据节点 dnode 工作，集群就应该工作”。但是对于简单的情形，很好下结论。比如副本数为 3，只有三个 dnode，那如果仅有一个节点不工作，整个集群还是可以正常工作的，但如果有两个数据节点不工作，那整个集群就无法正常工作了。
 
-## Mnode 的高可用性
+### Mnode 的高可用性
 
 TDengine 集群是由 mnode（taosd 的一个模块，管理节点）负责管理的，为保证 mnode 的高可用，可以配置多个 mnode 副本，在集群启动时只有一个 mnode，用户可以通过 `create mnode` 来增加新的 mnode。用户可以通过该命令自主决定哪几个 dnode 会承担 mnode 的角色。为保证元数据的强一致性，在有多个 mnode 时，mnode 副本之间是通过同步的方式进行数据复制的。
 
