@@ -4,14 +4,13 @@ sidebar_label: TDinsight
 description: 基于Grafana的TDengine零依赖监控解决方案
 ---
 
-import Tabs from '@theme/Tabs'
-import TabItem from '@theme/TabItem'
+## TDinsight
 
 TDinsight 是使用监控数据库和 [Grafana] 对 TDengine 进行监控的解决方案。
 
 TDengine 通过 [taosKeeper](../taosKeeper) 将服务器的 CPU、内存、硬盘空间、带宽、请求数、磁盘读写速度、慢查询等信息定时写入指定数据库，并对重要的系统操作（比如登录、创建、删除数据库等）以及各种错误报警信息进行记录。通过 [Grafana] 和 [TDengine 数据源插件](https://github.com/taosdata/grafanaplugin/releases)，TDinsight 将集群状态、节点信息、插入及查询请求、资源使用情况等进行可视化展示，同时还支持 vnode、dnode、mnode 节点状态异常告警，为开发者实时监控 TDengine 集群运行状态提供了便利。本文将指导用户安装 Grafana 服务器并通过 `TDinsight.sh` 安装脚本自动安装 TDengine 数据源插件及部署 TDinsight 可视化面板。
 
-## 系统要求
+### 系统要求
 
 - 单节点的 TDengine 服务器或多节点的 [TDengine] 集群，以及一个[Grafana]服务器。此仪表盘需要 TDengine 3.0.0.0 及以上，并开启监控服务，具体配置请参考：[TDengine 监控配置](../config/#监控相关)。
 - taosAdapter 已经安装并正常运行。具体细节请参考：[taosAdapter 使用手册](../taosadapter)
@@ -23,12 +22,11 @@ TDengine 通过 [taosKeeper](../taosKeeper) 将服务器的 CPU、内存、硬�
 - taosAdapter 集群认证信息，可使用用户名及密码。
 - taosKeeper 记录监控指标的数据库名称。
 
-## 安装 Grafana
+### 安装 Grafana
 
 我们建议在此处使用最新的[Grafana] 8 或 9 版本。您可以在任何[支持的操作系统](https://grafana.com/docs/grafana/latest/installation/requirements/#supported-operating-systems)中，按照 [Grafana 官方文档安装说明](https://grafana.com/docs/grafana/latest/installation/) 安装 [Grafana]。
 
-<Tabs defaultValue="debian" groupId="install">
-<TabItem value="debian" label="基于 Debian 或 Ubuntu 系统">
+#### 基于 Debian 或 Ubuntu 系统
 
 对于 Debian 或 Ubuntu 操作系统，建议使用 Grafana 镜像仓库。使用如下命令从零开始安装：
 
@@ -43,10 +41,7 @@ sudo apt-get update
 sudo apt-get install grafana
 ```
 
-### 在 CentOS / RHEL 上安装 Grafana
-
-</TabItem>
-<TabItem label="redhat" value="基于 CentOS / RHEL 系统">
+#### 在 CentOS / RHEL 上安装 Grafana
 
 您可以从官方 YUM 镜像仓库安装。
 
@@ -75,12 +70,7 @@ sudo yum install \
   https://dl.grafana.com/oss/release/grafana-7.5.11-1.x86_64.rpm
 ```
 
-</TabItem>
-
-</Tabs>
-
-<Tabs defaultValue="auto" groupId="deploy">
-<TabItem value="auto" label="自动部署 TDinsight">
+### 自动部署 TDinsight
 
 我们提供了一个自动化安装脚本 [`TDinsight.sh`](https://github.com/taosdata/grafanaplugin/releases/latest/download/TDinsight.sh) 脚本以便用户快速进行安装配置。
 
@@ -174,10 +164,9 @@ sudo ./TDengine.sh -n TDengine-Env1 -a http://another:6041 -u root -p taosdata -
 
 特别地，当您使用 Grafana Cloud 或其他组织时，`-O` 可用于设置组织 ID。 `-G` 可指定 Grafana 插件安装目录。 `-e` 参数将仪表盘设置为可编辑。
 
-</TabItem>
-<TabItem label="manual" value="手动设置 TDinsight">
+### 手动设置 TDinsight
 
-### 安装 TDengine 数据源插件
+#### 安装 TDengine 数据源插件
 
 从 GitHub 安装 TDengine 最新版数据源插件。
 
@@ -193,7 +182,7 @@ sudo grafana-cli \
   plugins install tdengine-datasource
 ```
 
-:::note
+注意：
 3.1.6 和更早版本插件需要在配置文件 `/etc/grafana/grafana.ini` 中添加如下设置，以启用未签名插件。
 
 ```ini
@@ -201,21 +190,19 @@ sudo grafana-cli \
 allow_loading_unsigned_plugins = tdengine-datasource
 ```
 
-:::
-
-### 启动 Grafana 服务
+#### 启动 Grafana 服务
 
 ```bash
 sudo systemctl start grafana-server
 sudo systemctl enable grafana-server
 ```
 
-### 登录到 Grafana
+#### 登录到 Grafana
 
 在 Web 浏览器中打开默认的 Grafana 网址：`http://localhost:3000`。
 默认用户名/密码都是 `admin`。Grafana 会要求在首次登录后更改密码。
 
-### 添加 TDengine 数据源
+#### 添加 TDengine 数据源
 
 指向 **Configurations** -> **Data Sources** 菜单，然后点击 **Add data source** 按钮。
 
@@ -236,7 +223,7 @@ sudo systemctl enable grafana-server
 </TabItem>
 </Tabs>
 
-### 导入仪表盘
+#### 导入仪表盘
 
 在配置 TDengine 数据源界面，点击 **Dashboards** tab。
 
@@ -254,13 +241,13 @@ sudo systemctl enable grafana-server
 
 然后可以看到监控结果。
 
-## TDinsight 仪表盘详细信息
+### TDinsight 仪表盘详细信息
 
 TDinsight 仪表盘旨在提供 TDengine 相关资源的使用情况和状态，比如 dnodes、 mnodes、 vnodes 和数据库等。
 
 指标详情如下：
 
-### 集群状态
+#### 集群状态
 
 ![TDengine Database TDinsight mnodes overview](./assets/TDinsight-1-cluster-status.webp)
 
@@ -279,7 +266,7 @@ TDinsight 仪表盘旨在提供 TDengine 相关资源的使用情况和状态，
 - **Grants Expire Time**：启用告警规则的企业版过期时间（社区版无数据，默认情况是健康的）。
 - **Error Rate**：启用警报的集群总合错误率（每秒平均错误数）。
 
-### DNodes 状态
+#### DNodes 状态
 
 ![TDengine Database TDinsight mnodes overview](./assets/TDinsight-2-dnodes.webp)
 
@@ -287,21 +274,21 @@ TDinsight 仪表盘旨在提供 TDengine 相关资源的使用情况和状态，
 - **DNodes Lifetime**：从创建 dnode 开始经过的时间。
 - **DNodes Number**：DNodes 数量变化。
 
-### MNode 概述
+#### MNode 概述
 
 ![TDengine Database TDinsight mnodes overview](./assets/TDinsight-3-mnodes.webp)
 
 1. **MNodes Status**：`show mnodes` 的简单表格视图。
 2. **MNodes Number**：类似于`DNodes Number`，MNodes 数量变化。
 
-### 请求
+#### 请求
 
 ![TDengine Database TDinsight requests](./assets/TDinsight-4-requests.webp)
 
 1. **Requests Rate(Inserts per Second)**：平均每秒插入次数。
 2. **Requests (Selects)**：查询请求数及变化率（count of second）。
 
-### 数据库
+#### 数据库
 
 ![TDengine Database TDinsight database](./assets/TDinsight-5-database.webp)
 
@@ -312,7 +299,7 @@ TDinsight 仪表盘旨在提供 TDengine 相关资源的使用情况和状态，
 3. **Tables**：所有普通表数量随时间变化图。
 4. **Tables Number Foreach VGroups**：每个 VGroups 包含的表数量。
 
-### DNode 资源使用情况
+#### DNode 资源使用情况
 
 ![TDengine Database TDinsight dnode-usage](./assets/TDinsight-6-dnode-usage.webp)
 
@@ -333,13 +320,13 @@ TDinsight 仪表盘旨在提供 TDengine 相关资源的使用情况和状态，
 13. **Disk IO**：磁盘 IO 速率。
 14. **Net IO**：网络 IO，除本机网络之外的总合网络 IO 速率。
 
-### 登录历史
+#### 登录历史
 
 ![TDengine Database TDinsight 登录历史](./assets/TDinsight-7-login-history.webp)
 
 目前只报告每分钟登录次数。
 
-### 监控 taosAdapter
+#### 监控 taosAdapter
 
 ![TDengine Database TDinsight monitor taosadapter](./assets/TDinsight-8-taosadapter.webp)
 
@@ -351,13 +338,13 @@ TDinsight 仪表盘旨在提供 TDengine 相关资源的使用情况和状态，
 4. **CPU Used**: taosAdapter CPU 使用情况。
 5. **Memory Used**: taosAdapter 内存使用情况。
 
-## 升级
+### 升级
 
 通过 `TDinsight.sh` 脚本安装的 TDinsight，可以通过重新运行该脚本就可以升级到最新的 Grafana 插件和 TDinsight Dashboard。
 
 手动安装的情况下，可按照上述步骤自行安装新的 Grafana 插件和 Dashboard。
 
-## 卸载
+### 卸载
 
 通过 `TDinsight.sh` 脚本安装的 TDinsight，可以使用命令行 `TDinsight.sh -R` 清理相关资源。
 

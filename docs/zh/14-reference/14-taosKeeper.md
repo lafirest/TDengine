@@ -4,11 +4,13 @@ title: taosKeeper
 description: TDengine 3.0 版本监控指标的导出工具
 ---
 
-## 简介
+## taosKeeper
+
+### 简介
 
 TaosKeeper 是 TDengine 3.0 版本监控指标的导出工具，通过简单的几项配置即可获取 TDengine 的运行状态。taosKeeper 使用 TDengine RESTful 接口，所以不需要安装 TDengine 客户端即可使用。
 
-## 安装
+### 安装
 
 <!-- taosKeeper 有两种安装方式: -->
 taosKeeper 安装方式：
@@ -18,15 +20,15 @@ taosKeeper 安装方式：
 <!-- - 单独编译 taosKeeper 并安装，详情请参考 [taosKeeper](https://github.com/taosdata/taoskeeper) 仓库。-->
 - 单独编译 taosKeeper 并安装，详情请参考 [taosKeeper](https://github.com/taosdata/taoskeeper) 仓库。
 
-## 运行
+### 运行
 
-### 配置和运行方式
+#### 配置和运行方式
 
 taosKeeper 需要在操作系统终端执行，该工具支持三种配置方式：[命令行参数](#命令行参数启动)、[环境变量](#环境变量启动) 和 [配置文件](#配置文件启动)。优先级为：命令行参数、环境变量、配置文件参数。
 
 **在运行 taosKeeper 之前要确保 TDengine 集群与 taosAdapter 已经在正确运行。** 并且 TDengine 已经开启监控服务，具体请参考：[TDengine 监控配置](../config/#监控相关)。
 
-### 命令行参数启动
+#### 命令行参数启动
 
 在使用命令行参数运行 taosKeeper 并控制其行为。
 
@@ -34,7 +36,7 @@ taosKeeper 需要在操作系统终端执行，该工具支持三种配置方式
 $ taosKeeper
 ```
 
-### 环境变量启动
+#### 环境变量启动
 
 通过设置环境变量达到控制启动参数的目的，通常在容器中运行时使用。
 
@@ -46,7 +48,7 @@ $ taoskeeper
 
 具体参数列表请参照 `taoskeeper -h` 输入结果。
 
-### 配置文件启动
+#### 配置文件启动
 
 执行以下命令即可快速体验 taosKeeper。当不指定 taosKeeper 配置文件时，优先使用 `/etc/taos/keeper.toml` 配置，否则将使用默认配置。 
 

@@ -3,6 +3,8 @@ title: 文件目录结构
 description: "TDengine 安装目录说明"
 ---
 
+## 文件目录结构
+
 安装 TDengine 后，默认会在操作系统中生成下列目录或文件：
 
 | 目录/文件                 | 说明                                                                 |
@@ -15,7 +17,7 @@ description: "TDengine 安装目录说明"
 | /var/lib/taos             | TDengine 默认数据文件目录。可通过[配置文件]修改位置。                |
 | /var/log/taos             | TDengine 默认日志文件目录。可通过[配置文件]修改位置。                |
 
-## 可执行文件
+### 可执行文件
 
 TDengine 的所有可执行文件默认存放在 _/usr/local/taos/bin_ 目录下。其中包括：
 

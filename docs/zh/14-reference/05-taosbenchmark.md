@@ -5,11 +5,13 @@ toc_max_heading_level: 4
 description: 'taosBenchmark (曾用名 taosdemo ) 是一个用于测试 TDengine 产品性能的工具'
 ---
 
-## 简介
+## taosBenchmark
+
+### 简介
 
 taosBenchmark (曾用名 taosdemo ) 是一个用于测试 TDengine 产品性能的工具。taosBenchmark 可以测试 TDengine 的插入、查询和订阅等功能的性能，它可以模拟由大量设备产生的大量数据，还可以灵活地控制数据库、超级表、标签列的数量和类型、数据列的数量和类型、子表的数量、每张子表的数据量、插入数据的时间间隔、taosBenchmark 的工作线程数量、是否以及如何插入乱序数据等。为了兼容过往用户的使用习惯，安装包提供 了 taosdemo 作为 taosBenchmark 的软链接。
 
-## 安装
+### 安装
 
 taosBenchmark 有两种安装方式:
 
@@ -17,9 +19,9 @@ taosBenchmark 有两种安装方式:
 
 - 单独编译 taos-tools 并安装, 详情请参考 [taos-tools](https://github.com/taosdata/taos-tools) 仓库。
 
-## 运行
+### 运行
 
-### 配置和运行方式
+#### 配置和运行方式
 
 taosBenchmark 需要在操作系统的终端执行,该工具支持两种配置方式：[命令行参数](#命令行参数详解) 和 [JSON 配置文件](#配置文件参数详解)。这两种方式是互斥的，在使用配置文件时只能使用一个命令行参数 `-f <json file>` 指定配置文件。在使用命令行参数运行 taosBenchmark 并控制其行为时则不能使用 `-f` 参数而要用其它参数来进行配置。除此之外，taosBenchmark 还提供了一种特殊的运行方式，即无参数运行。
 
@@ -27,7 +29,7 @@ taosBenchmark 支持对 TDengine 做完备的性能测试，其所支持的 TDen
 
 **在运行 taosBenchmark 之前要确保 TDengine 集群已经在正确运行。**
 
-### 无命令行参数运行
+#### 无命令行参数运行
 
 执行下列命令即可快速体验 taosBenchmark 对 TDengine 进行基于默认配置的写入性能测试。
 
@@ -37,7 +39,7 @@ taosBenchmark
 
 在无参数运行时，taosBenchmark 默认连接 `/etc/taos` 下指定的 TDengine 集群，并在 TDengine 中创建一个名为 test 的数据库，test 数据库下创建名为 meters 的一张超级表，超级表下创建 10000 张表，每张表中写入 10000 条记录。注意，如果已有 test 数据库，这个命令会先删除该数据库后建立一个全新的 test 数据库。
 
-### 使用命令行配置参数运行
+#### 使用命令行配置参数运行
 
 在使用命令行参数运行 taosBenchmark 并控制其行为时，`-f <json file>` 参数不能使用。所有配置参数都必须通过命令行指定。以下是使用命令行方式测试 taosBenchmark 写入性能的一个示例。
 
@@ -47,7 +49,7 @@ taosBenchmark -I stmt -n 200 -t 100
 
 上面的命令 `taosBenchmark` 将创建一个名为`test`的数据库，在其中建立一张超级表`meters`，在该超级表中建立 100 张子表并使用参数绑定的方式为每张子表插入 200 条记录。
 
-### 使用配置文件运行
+#### 使用配置文件运行
 
 taosBenchmark 安装包中提供了配置文件的示例，位于 `<install_directory>/examples/taosbenchmark-json` 下
 
@@ -59,40 +61,21 @@ taosBenchmark -f <json file>
 
 **下面是几个配置文件的示例：**
 
-#### 插入场景 JSON 配置文件示例
+1.  插入场景 JSON 配置文件示例
 
-<details>
-<summary>insert.json</summary>
+https://github.com/taosdata/taos-tools/example/insert.json
 
-```json
-{{#include /taos-tools/example/insert.json}}
-```
 
-</details>
+2.  查询场景 JSON 配置文件示例
 
-#### 查询场景 JSON 配置文件示例
+https://github.com/taosdata/taos-tools/example/query.json
 
-<details>
-<summary>query.json</summary>
 
-```json
-{{#include /taos-tools/example/query.json}}
-```
+3. 订阅场景 JSON 配置文件示例
 
-</details>
+https://github.com/taosdata/taos-tools/example/subscribe.json
 
-#### 订阅场景 JSON 配置文件示例
-
-<details>
-<summary>subscribe.json</summary>
-
-```json
-{{#include /taos-tools/example/subscribe.json}}
-```
-
-</details>
-
-## 命令行参数详解
+### 命令行参数详解
 
 - **-f/--file <json file\>** :
   要使用的 JSON 配置文件，由该文件指定所有参数，本参数与命令行其他参数不能同时使用。没有默认值。
@@ -214,9 +197,9 @@ taosBenchmark -A INT,DOUBLE,NCHAR,BINARY\(16\)
 - **-?/--help** :
   显示帮助信息并退出。不能与其它参数混用。
 
-## 配置文件参数详解
+### 配置文件参数详解
 
-### 通用配置参数
+#### 通用配置参数
 
 本节所列参数适用于所有功能模式。
 
@@ -231,7 +214,7 @@ taosBenchmark -A INT,DOUBLE,NCHAR,BINARY\(16\)
 
 - **password** : 用于连接 TDengine 服务端的密码，默认值为 taosdata。
 
-### 插入场景配置参数
+#### 插入场景配置参数
 
 插入场景下 `filetype` 必须设置为 `insert`，该参数及其它通用参数详见[通用配置参数](#通用配置参数)
 
@@ -239,7 +222,7 @@ taosBenchmark -A INT,DOUBLE,NCHAR,BINARY\(16\)
 
 - ** trying_interval ** : 失败重试间隔时间，单位为毫秒，仅在 keep_trying 指定重试后有效。需使用 v3.0.9 以上版本。
 
-#### 数据库相关配置参数
+##### 数据库相关配置参数
 
 创建数据库时的相关参数在 json 配置文件中的 `dbinfo` 中配置，个别具体参数如下。其余参数均与 TDengine 中 `create database` 时所指定的数据库参数相对应，详见[../../taos-sql/database]
 
@@ -380,7 +363,7 @@ taosBenchmark -A INT,DOUBLE,NCHAR,BINARY\(16\)
 
 - **prepare_rand** : 生成的随机数据中唯一值的数量。若为 1 则表示所有数据都相同。默认值为 10000 。
 
-### 查询场景配置参数
+#### 查询场景配置参数
 
 查询场景下 `filetype` 必须设置为 `query`。
 
@@ -415,7 +398,7 @@ taosBenchmark -A INT,DOUBLE,NCHAR,BINARY\(16\)
     替换为超级表中所有的子表名。
   - **result** : 保存查询结果的文件，未指定则不保存。
 
-### 订阅场景配置参数
+#### 订阅场景配置参数
 
 订阅场景下 `filetype` 必须设置为 `subscribe`，该参数及其它通用参数详见[通用配置参数](#通用配置参数)
 

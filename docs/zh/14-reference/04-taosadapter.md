@@ -4,11 +4,7 @@ description: "taosAdapter 是一个 TDengine 的配套工具，是 TDengine 集�
 sidebar_label: "taosAdapter"
 ---
 
-import Prometheus from "./_prometheus.mdx"
-import CollectD from "./_collectd.mdx"
-import StatsD from "./_statsd.mdx"
-import Icinga2 from "./_icinga2.mdx"
-import TCollector from "./_tcollector.mdx"
+## taosAdapter
 
 taosAdapter 是一个 TDengine 的配套工具，是 TDengine 集群和应用程序之间的桥梁和适配器。它提供了一种易于使用和高效的方式来直接从数据收集代理软件（如 Telegraf、StatsD、collectd 等）摄取数据。它还提供了 InfluxDB/OpenTSDB 兼容的数据摄取接口，允许 InfluxDB/OpenTSDB 应用程序无缝移植到 TDengine。
 
@@ -23,11 +19,9 @@ taosAdapter 提供以下功能：
 - 支持 Prometheus remote_read 和 remote_write
 - 获取 table 所在的虚拟节点组（VGroup）的 VGroup ID
 
-## taosAdapter 架构图
+### taosAdapter 架构图
 
 ![TDengine Database taosAdapter Architecture](taosAdapter-architecture.webp)
-
-## taosAdapter 部署方法
 
 ### 安装 taosAdapter
 
@@ -46,7 +40,7 @@ taosAdapter 是 TDengine 服务端软件 的一部分，如果您使用 TDengine
 taosAdapter 和 TDengine server 需要使用相同版本。请通过升级 TDengine server 来升级 taosAdapter。
 与 taosd 分离部署的 taosAdapter 必须通过升级其所在服务器的 TDengine server 才能得到升级。
 
-## taosAdapter 参数列表
+### taosAdapter 参数列表
 
 taosAdapter 支持通过命令行参数、环境变量和配置文件来进行配置。默认配置文件是 /etc/taos/taosadapter.toml。
 
@@ -158,7 +152,7 @@ AllowWebSockets
 
 示例配置文件参见 [example/config/taosadapter.toml](https://github.com/taosdata/taosadapter/blob/3.0/example/config/taosadapter.toml)。
 
-## 功能列表
+### 功能列表
 
 - RESTful 接口
   [RESTful API](../../connector/rest-api)
@@ -181,13 +175,13 @@ AllowWebSockets
   remote_read 和 remote_write 是 Prometheus 数据读写分离的集群方案。请访问[https://prometheus.io/blog/2019/10/10/remote-read-meets-streaming/#remote-apis](https://prometheus.io/blog/2019/10/10/remote-read-meets-streaming/#remote-apis) 了解更多信息。
 - 获取 table 所在的虚拟节点组（VGroup）的 VGroup ID。关于虚拟节点组（VGroup）的更多信息，请访问[整体架构文档](/tdinternal/arch/#主要逻辑单元) 。
 
-## 接口
+### 接口
 
-### TDengine RESTful 接口
+#### TDengine RESTful 接口
 
 您可以使用任何支持 http 协议的客户端通过访问 RESTful 接口地址 `http://<fqdn>:6041/rest/sql` 来写入数据到 TDengine 或从 TDengine 中查询数据。细节请参考[官方文档](../../connector/rest-api/)。
 
-### InfluxDB
+#### InfluxDB
 
 您可以使用任何支持 http 协议的客户端访问 Restful 接口地址 `http://<fqdn>:6041/<APIEndPoint>` 来写入 InfluxDB 兼容格式的数据到 TDengine。EndPoint 如下：
 
@@ -205,7 +199,7 @@ AllowWebSockets
 
 注意： 目前不支持 InfluxDB 的 token 验证方式，仅支持 Basic 验证和查询参数验证。
 示例： curl --request POST http://127.0.0.1:6041/influxdb/v1/write?db=test --user "root:taosdata" --data-binary "measurement,host=host1 field1=2i,field2=2.0 1577836800000000000"
-### OpenTSDB
+#### OpenTSDB
 
 您可以使用任何支持 http 协议的客户端访问 Restful 接口地址 `http://<fqdn>:6041/<APIEndPoint>` 来写入 OpenTSDB 兼容格式的数据到 TDengine。EndPoint 如下：
 
@@ -214,23 +208,23 @@ AllowWebSockets
 /opentsdb/v1/put/telnet/<db>
 ```
 
-### collectd
+#### collectd
 
 <CollectD />
 
-### StatsD
+#### StatsD
 
 <StatsD />
 
-### icinga2 OpenTSDB writer
+#### icinga2 OpenTSDB writer
 
 <Icinga2 />
 
-### TCollector
+#### TCollector
 
 <TCollector />
 
-### node_exporter
+#### node_exporter
 
 Prometheus 使用的由 \*NIX 内核暴露的硬件和操作系统指标的输出器
 
@@ -238,15 +232,15 @@ Prometheus 使用的由 \*NIX 内核暴露的硬件和操作系统指标的输�
 - 设置 node_exporter 的相关配置
 - 重新启动 taosAdapter
 
-### prometheus
+#### prometheus
 
 <Prometheus />
 
-### 获取 table 的 VGroup ID
+#### 获取 table 的 VGroup ID
 
 可以访问 http 接口 `http://<fqdn>:6041/rest/vgid?db=<db>&table=<table>` 获取 table 的 VGroup ID。关于虚拟节点组（VGroup）的更多信息，请访问[整体架构文档](/tdinternal/arch/#主要逻辑单元) 。
 
-## 内存使用优化方法
+### 内存使用优化方法
 
 taosAdapter 将监测自身运行过程中内存使用率并通过两个阈值进行调节。有效值范围为 -1 到 100 的整数，单位为系统物理内存的百分比。
 
@@ -286,11 +280,11 @@ http 返回内容：
 
 您可以根据具体项目应用场景和运营策略进行相应调整，并建议使用运营监控软件及时进行系统内存状态监控。负载均衡器也可以通过这个接口检查 taosAdapter 运行状态。
 
-## taosAdapter 监控指标
+### taosAdapter 监控指标
 
 taosAdapter 采集 http 相关指标、CPU 百分比和内存百分比。
 
-### http 接口
+#### http 接口
 
 提供符合 [OpenMetrics](https://github.com/OpenObservability/OpenMetrics/blob/main/specification/OpenMetrics.md) 接口：
 
@@ -298,7 +292,7 @@ taosAdapter 采集 http 相关指标、CPU 百分比和内存百分比。
 http://<fqdn>:6041/metrics
 ```
 
-### 写入 TDengine
+#### 写入 TDengine
 
 taosAdapter 支持将 http 监控、CPU 百分比和内存百分比写入 TDengine。
 
@@ -314,7 +308,7 @@ taosAdapter 支持将 http 监控、CPU 百分比和内存百分比写入 TDengi
 | monitor.password        | TDengine 连接密码                              | taosdata |
 | monitor.writeInterval   | 写入TDengine 间隔                              | 30s      |
 
-## 结果返回条数限制
+### 结果返回条数限制
 
 taosAdapter 通过参数 `restfulRowLimit` 来控制结果的返回条数，-1 代表无限制，默认无限制。
 
@@ -323,13 +317,13 @@ taosAdapter 通过参数 `restfulRowLimit` 来控制结果的返回条数，-1 �
 - `http://<fqdn>:6041/rest/sql`
 - `http://<fqdn>:6041/prometheus/v1/remote_read/:db`
 
-## 故障解决
+### 故障解决
 
 您可以通过命令 `systemctl status taosadapter` 来检查 taosAdapter 运行状态。
 
 您也可以通过设置 --logLevel 参数或者环境变量 TAOS_ADAPTER_LOG_LEVEL 来调节 taosAdapter 日志输出详细程度。有效值包括： panic、fatal、error、warn、warning、info、debug 以及 trace。
 
-## 如何从旧版本 TDengine 迁移到 taosAdapter
+### 如何从旧版本 TDengine 迁移到 taosAdapter
 
 在 TDengine server 2.2.x.x 或更早期版本中，taosd 进程包含一个内嵌的 http 服务。如前面所述，taosAdapter 是一个使用 systemd 管理的独立软件，拥有自己的进程。并且两者有一些配置参数和行为是不同的，请见下表：
 
