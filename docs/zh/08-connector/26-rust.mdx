@@ -253,13 +253,13 @@ let taos = pool.get()?;
 
 [Taos][struct.Taos] 对象提供了多个数据库操作的 API：
 
-1. `exec`: 执行某个非查询类 SQL 语句，例如 `CREATE`，`ALTER`，`INSERT` 等。
+1. exec: 执行某个非查询类 SQL 语句，例如 `CREATE`，`ALTER`，`INSERT` 等。
 
     ```rust
     let affected_rows = taos.exec("INSERT INTO tb1 VALUES(now, NULL)").await?;
     ```
 
-2. `exec_many`: 同时（顺序）执行多个 SQL 语句。
+2. exec_many: 同时（顺序）执行多个 SQL 语句。
 
     ```rust
     taos.exec_many([
@@ -269,7 +269,7 @@ let taos = pool.get()?;
     ]).await?;
     ```
 
-3. `query`：执行查询语句，返回 [ResultSet] 对象。
+3. query：执行查询语句，返回 [ResultSet] 对象。
 
     ```rust
     let mut q = taos.query("select * from log.logs").await?;
@@ -331,9 +331,9 @@ let taos = pool.get()?;
 
 [Taos][struct.Taos] 提供部分 SQL 的 Rust 方法化以减少 `format!` 代码块的频率：
 
-- `.describe(table: &str)`: 执行 `DESCRIBE` 并返回一个 Rust 数据结构。
-- `.create_database(database: &str)`: 执行 `CREATE DATABASE` 语句。
-- `.use_database(database: &str)`: 执行 `USE` 语句。
+- describe(table: &str): 执行 `DESCRIBE` 并返回一个 Rust 数据结构。
+- create_database(database: &str): 执行 `CREATE DATABASE` 语句。
+- use_database(database: &str): 执行 `USE` 语句。
 
 除此之外，该结构也是 [参数绑定](#参数绑定接口) 和 [行协议接口](#行协议接口) 的入口，使用方法请参考具体的 API 说明。
 
@@ -348,7 +348,7 @@ stmt.prepare("INSERT INTO ? USING meters TAGS(?, ?) VALUES(?, ?, ?, ?)")?;
 
 参数绑定对象提供了一组接口用于实现参数绑定：
 
-#### `.set_tbname(name)`
+1. set_tbname(name)
 
 用于绑定表名。
 
@@ -357,7 +357,7 @@ let mut stmt = taos.stmt("insert into ? values(? ,?)")?;
 stmt.set_tbname("d0")?;
 ```
 
-#### `.set_tags(&[tag])`
+2. set_tags(&[tag])
 
 当 SQL 语句使用超级表时，用于绑定子表表名和标签值：
 
@@ -367,7 +367,7 @@ stmt.set_tbname("d0")?;
 stmt.set_tags(&[Value::VarChar("涛思".to_string())])?;
 ```
 
-#### `.bind(&[column])`
+3. bind(&[column])
 
 用于绑定值类型。使用 [ColumnView] 结构体构建需要的类型并绑定：
 
@@ -391,7 +391,7 @@ let params = vec![
 let rows = stmt.bind(&params)?.add_batch()?.execute()?;
 ```
 
-#### `.execute()`
+4. execute()
 
 执行 SQL。[Stmt] 对象可以复用，在执行后可以重新绑定并执行。执行前请确保所有数据已通过 `.add_batch` 加入到执行队列中。
 

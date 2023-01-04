@@ -82,35 +82,27 @@ phpize && ./configure --enable-swoole && make -j && make install
 
 方法二：运行带参数 `php -dextension=tdengine test.php`
 
-## 示例程序
+### 示例程序
 
 本节展示了使用客户端驱动访问 TDengine 集群的常见访问方式的示例代码。
 
 > 所有错误都会抛出异常: `TDengine\Exception\TDengineException`
 
-### 建立连接
+#### 建立连接
 
-```c
-{{#include docs/examples/php/connect.php}}
-```
+https://github.com/taosdata/TDengine/docs/examples/php/connect.php
 
 #### 插入数据
 
-```c
-{{#include docs/examples/php/insert.php}}
-```
+https://github.com/taosdata/TDengine/docs/examples/php/insert.php
 
 #### 同步查询
 
-```c
-{{#include docs/examples/php/query.php}}
-```
+https://github.com/taosdata/TDengine/docs/examples/php/query.php
 
 #### 参数绑定
 
-```c
-{{#include docs/examples/php/insert_stmt.php}}
-```
+https://github.com/taosdata/TDengine/docs/examples/php/insert_stmt.php
 
 ### 常量
 

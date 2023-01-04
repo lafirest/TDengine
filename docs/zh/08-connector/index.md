@@ -67,23 +67,13 @@ TDengine 版本更新往往会增加新的功能特性，列表中的连接器�
 | **批量拉取（基于 WebSocket）** | 支持     | 支持       | 支持     | 支持     | 支持        | 支持     |
 | **DataFrame**                  | 不支持   | 支持       | 不支持   | 不支持   | 不支持      | 不支持   |
 
-:::warning
-
+注意：
 - 无论选用何种编程语言的连接器，2.0 及以上版本的 TDengine 推荐数据库应用的每个线程都建立一个独立的连接，或基于线程建立连接池，以避免连接内的“USE statement”状态量在线程之间相互干扰（但连接的查询和写入操作都是线程安全的）。
 
-:::
 
-import Tabs from "@theme/Tabs";
-import TabItem from "@theme/TabItem";
-import InstallOnLinux from "./_linux_install.mdx";
-import InstallOnWindows from "./_windows_install.mdx";
-import InstallOnMacOS from "./_macos_install.mdx";
-import VerifyWindows from "./_verify_windows.mdx";
-import VerifyLinux from "./_verify_linux.mdx";
-import VerifyMacOS from "./_verify_macos.mdx";
-
-## 安装客户端驱动
+### 安装客户端驱动
 
 注意： 只有在没有安装 TDengine 服务端软件的系统上使用原生接口连接器才需要安装客户端驱动。
 
 具体安装和验证步骤请参考立即开始一章。
+

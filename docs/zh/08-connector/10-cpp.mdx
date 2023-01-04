@@ -64,130 +64,8 @@ TDengine 客户端驱动的安装请参考 [安装指南](../#安装步骤)
 
 ### 示例程序
 
-本节展示了使用客户端驱动访问 TDengine 集群的常见访问方式的示例代码。
+示例代码位于 https://github.com/taosdata/TDengine/docs/examples/c
 
-#### 同步查询示例
-
-```c
-{{#include examples/c/demo.c}}
-```
-格式化输出不同类型字段函数 taos_print_row
-```c
-int taos_print_row(char *str, TAOS_ROW row, TAOS_FIELD *fields, int num_fields) {
-  int32_t len = 0;
-  for (int i = 0; i < num_fields; ++i) {
-    if (i > 0) {
-      str[len++] = ' ';
-    }
-
-    if (row[i] == NULL) {
-      len += sprintf(str + len, "%s", TSDB_DATA_NULL_STR);
-      continue;
-    }
-
-    switch (fields[i].type) {
-      case TSDB_DATA_TYPE_TINYINT:
-        len += sprintf(str + len, "%d", *((int8_t *)row[i]));
-        break;
-
-      case TSDB_DATA_TYPE_UTINYINT:
-        len += sprintf(str + len, "%u", *((uint8_t *)row[i]));
-        break;
-
-      case TSDB_DATA_TYPE_SMALLINT:
-        len += sprintf(str + len, "%d", *((int16_t *)row[i]));
-        break;
-
-      case TSDB_DATA_TYPE_USMALLINT:
-        len += sprintf(str + len, "%u", *((uint16_t *)row[i]));
-        break;
-
-      case TSDB_DATA_TYPE_INT:
-        len += sprintf(str + len, "%d", *((int32_t *)row[i]));
-        break;
-
-      case TSDB_DATA_TYPE_UINT:
-        len += sprintf(str + len, "%u", *((uint32_t *)row[i]));
-        break;
-
-      case TSDB_DATA_TYPE_BIGINT:
-        len += sprintf(str + len, "%" PRId64, *((int64_t *)row[i]));
-        break;
-
-      case TSDB_DATA_TYPE_UBIGINT:
-        len += sprintf(str + len, "%" PRIu64, *((uint64_t *)row[i]));
-        break;
-
-      case TSDB_DATA_TYPE_FLOAT: {
-        float fv = 0;
-        fv = GET_FLOAT_VAL(row[i]);
-        len += sprintf(str + len, "%f", fv);
-      } break;
-
-      case TSDB_DATA_TYPE_DOUBLE: {
-        double dv = 0;
-        dv = GET_DOUBLE_VAL(row[i]);
-        len += sprintf(str + len, "%lf", dv);
-      } break;
-
-      case TSDB_DATA_TYPE_BINARY:
-      case TSDB_DATA_TYPE_NCHAR: {
-        int32_t charLen = varDataLen((char *)row[i] - VARSTR_HEADER_SIZE);
-        if (fields[i].type == TSDB_DATA_TYPE_BINARY) {
-          assert(charLen <= fields[i].bytes && charLen >= 0);
-        } else {
-          assert(charLen <= fields[i].bytes * TSDB_NCHAR_SIZE && charLen >= 0);
-        }
-
-        memcpy(str + len, row[i], charLen);
-        len += charLen;
-      } break;
-
-      case TSDB_DATA_TYPE_TIMESTAMP:
-        len += sprintf(str + len, "%" PRId64, *((int64_t *)row[i]));
-        break;
-
-      case TSDB_DATA_TYPE_BOOL:
-        len += sprintf(str + len, "%d", *((int8_t *)row[i]));
-      default:
-        break;
-    }
-  }
-  str[len] = 0;
-
-  return len;
-}
-  
-```  
-  
-</details>
-
-#### 异步查询示例
-
-```c
-{{#include examples/c/asyncdemo.c}}
-```
-
-#### 参数绑定示例
-
-```c
-{{#include examples/c/prepare.c}}
-```
-
-#### 无模式写入示例
-
-```c
-{{#include examples/c/schemaless.c}}
-```
-
-#### 订阅和消费示例
-
-```c
-  {{#include examples/c/tmq.c}}
-```
-
-提示：
-更多示例代码及下载请见 [GitHub](https://github.com/taosdata/TDengine/tree/develop/examples/c)。
 也可以在安装目录下的 `examples/c` 路径下找到。 该目录下有 makefile，在 Linux/macOS 环境下，直接执行 make 就可以编译得到执行文件。
 **提示：**在 ARM 环境下编译时，请将 makefile 中的 `-msse4.2` 去掉，这个选项只有在 x64/x86 硬件平台上才能支持。
 
@@ -227,10 +105,8 @@ int taos_print_row(char *str, TAOS_ROW row, TAOS_FIELD *fields, int num_fields) 
 
   返回值为空表示失败。应用程序需要保存返回的参数，以便后续使用。
 
-  :::info
+  提示：
   同一进程可以根据不同的 host/port 连接多个 TDengine 集群
-
-  :::
 
 - `char *taos_get_server_info(TAOS *taos)`
 

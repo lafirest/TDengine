@@ -156,9 +156,7 @@ curl -u root:taosdata http://<FQDN>:<PORT>/rest/sql -d "select server_version()"
 
 1. 原生连接
 
-```python
-{{#include docs/examples/python/connect_native_reference.py}}
-```
+https://github.com/taosdata/TDengine/docs/examples/python/connect_native_reference.py
 
 `connect` 函数的所有参数都是可选的关键字参数。下面是连接参数的具体说明：
 
@@ -177,9 +175,7 @@ curl -u root:taosdata http://<FQDN>:<PORT>/rest/sql -d "select server_version()"
 
 2. REST 连接
 
-```python
-{{#include docs/examples/python/connect_rest_examples.py:connect}}
-```
+https://github.com/taosdata/TDengine/docs/examples/python/connect_rest_examples.py:connect}}
 
 `connect()` 函数的所有参数都是可选的关键字参数。下面是连接参数的具体说明：
 
@@ -200,14 +196,14 @@ curl -u root:taosdata http://<FQDN>:<PORT>/rest/sql -d "select server_version()"
 上面 `TaosConnection` 类的使用示例中，我们已经展示了两种获取查询结果的方法： `fetch_all()` 和 `fetch_all_into_dict()`。除此之外 `TaosResult` 还提供了按行迭代(`rows_iter`)或按数据块迭代(`blocks_iter`)结果集的方法。在查询数据量较大的场景，使用这两个方法会更高效。
 
 ```python title="blocks_iter 方法"
-{{#include docs/examples/python/result_set_examples.py}}
+https://github.com/taosdata/TDengine/docs/examples/python/result_set_examples.py
 ```
 ##### TaosCursor 类的使用
 
 `TaosConnection` 类和 `TaosResult` 类已经实现了原生接口的所有功能。如果你对 PEP249 规范中的接口比较熟悉也可以使用 `TaosCursor` 类提供的方法。
 
 ```python title="TaosCursor 的使用"
-{{#include docs/examples/python/cursor_usage_native_reference.py}}
+https://github.com/taosdata/TDengine/docs/examples/python/cursor_usage_native_reference.py
 ```
 
 注意：
@@ -219,7 +215,7 @@ TaosCursor 类使用原生连接进行写入、查询操作。在客户端多线
 `TaosRestCursor` 类是对 PEP249 Cursor 接口的实现。
 
 ```python title="TaosRestCursor 的使用"
-{{#include docs/examples/python/connect_rest_examples.py:basic}}
+https://github.com/taosdata/TDengine/docs/examples/python/connect_rest_examples.py:basic
 ```
 - `cursor.execute` ： 用来执行任意 SQL 语句。
 - `cursor.rowcount`： 对于写入操作返回写入成功记录数。对于查询操作，返回结果集行数。
@@ -230,7 +226,7 @@ TaosCursor 类使用原生连接进行写入、查询操作。在客户端多线
 `RestClient` 类是对于 [REST API](../rest-api) 的直接封装。它只包含一个 `sql()` 方法用于执行任意 SQL 语句， 并返回执行结果。
 
 ```python title="RestClient 的使用"
-{{#include docs/examples/python/rest_client_example.py}}
+https://github.com/taosdata/TDengine/docs/examples/python/rest_client_example.py
 ```
 
 对于 `sql()` 方法更详细的介绍， 请参考 [RestClient](https://docs.taosdata.com/api/taospy/taosrest/restclient.html)。
@@ -240,15 +236,13 @@ TaosCursor 类使用原生连接进行写入、查询操作。在客户端多线
 
 1. 原生连接
 
-```python
-{{#include docs/examples/python/conn_native_pandas.py}}
-```
+https://github.com/taosdata/TDengine/docs/examples/python/conn_native_pandas.py
+
 
 2. REST  连接
 
-```python
-{{#include docs/examples/python/conn_rest_pandas.py}}
-```
+https://github.com/taosdata/TDengine/docs/examples/python/conn_rest_pandas.py
+
 
 #### 其它示例程序
 
@@ -266,9 +260,7 @@ TaosCursor 类使用原生连接进行写入、查询操作。在客户端多线
 
 所有数据库操作如果出现异常，都会直接抛出来。由应用程序负责异常处理。比如：
 
-```python
-{{#include docs/examples/python/handle_exception.py}}
-```
+https://github.com/taosdata/TDengine/docs/examples/python/handle_exception.py
 
 #### 关于纳秒 (nanosecond)
 
