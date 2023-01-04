@@ -4,6 +4,8 @@ title: 使用安装包立即开始
 description: 使用安装包快速体验 TDengine
 ---
 
+## 使用安装包立即开始
+
 import Tabs from "@theme/Tabs";
 import TabItem from "@theme/TabItem";
 import PkgListV3 from "/components/PkgListV3";
@@ -16,10 +18,9 @@ TDengine 完整的软件包包括服务端（taosd）、应用驱动（taosc）�
 
 在 Linux 系统上，TDengine 社区版提供 Deb 和 RPM 格式安装包，用户可以根据自己的运行环境选择合适的安装包。其中 Deb 支持 Debian/Ubuntu 及其衍生系统，RPM 支持 CentOS/RHEL/SUSE 及其衍生系统。同时我们也为企业用户提供 tar.gz 格式安装包，也支持通过 `apt-get` 工具从线上进行安装。需要注意的是，RPM 和 Deb 包不含 `taosdump` 和 TDinsight 安装脚本，这些工具需要通过安装 taosTools 包获得。TDengine 也提供 Windows x64 平台和 macOS x64/m1 平台的安装包。
 
-## 安装
+### 安装
 
-<Tabs>
-<TabItem label="Deb 安装" value="debinst">
+#### Deb 安装包
 
 1. 从列表中下载获得 Deb 安装包；
    <PkgListV3 type={6}/>
@@ -31,9 +32,7 @@ TDengine 完整的软件包包括服务端（taosd）、应用驱动（taosc）�
 sudo dpkg -i TDengine-server-<version>-Linux-x64.deb
 ```
 
-</TabItem>
-
-<TabItem label="RPM 安装" value="rpminst">
+#### RPM 安装包
 
 1. 从列表中下载获得 RPM 安装包；
    <PkgListV3 type={5}/>
@@ -45,9 +44,7 @@ sudo dpkg -i TDengine-server-<version>-Linux-x64.deb
 sudo rpm -ivh TDengine-server-<version>-Linux-x64.rpm
 ```
 
-</TabItem>
-
-<TabItem label="tar.gz 安装" value="tarinst">
+#### tar.gz 安装包
 
 1. 从列表中下载获得 tar.gz 安装包；
    <PkgListV3 type={0}/>
@@ -70,9 +67,7 @@ sudo ./install.sh
 install.sh 安装脚本在执行过程中，会通过命令行交互界面询问一些配置信息。如果希望采取无交互安装方式，那么可以运行 `./install.sh -e no`。运行 `./install.sh -h` 指令可以查看所有参数的详细说明信息。
 :::
 
-</TabItem>
-
-<TabItem value="apt-get" label="apt-get">
+#### apt-get 安装
 
 可以使用 `apt-get` 工具从官方仓库安装。
 
@@ -98,11 +93,9 @@ apt-cache policy tdengine
 sudo apt-get install tdengine
 ```
 
-:::tip
-apt-get 方式只适用于 Debian 或 Ubuntu 系统。
-::::
-</TabItem>
-<TabItem label="Windows 安装" value="windows">
+注意：apt-get 方式只适用于 Debian 或 Ubuntu 系统。
+
+#### Windows 平台
 
 注意：目前 TDengine 在 Windows 平台上只支持 Windows Server 2016/2019 和 Windows 10/11。
 
@@ -117,22 +110,14 @@ apt-get 方式只适用于 Debian 或 Ubuntu 系统。
    <PkgListV3 type={7}/>
 2. 运行可执行程序来安装 TDengine。如果安装被阻止，可以右键或者按 Ctrl 点击安装包，选择 `打开`。
 
-</TabItem>
-</Tabs>
+提示： 下载其他组件、最新 Beta 版及之前版本的安装包，请点击[发布历史页面](../../releases/tdengine)。
 
-:::info
-下载其他组件、最新 Beta 版及之前版本的安装包，请点击[发布历史页面](../../releases/tdengine)。
-:::
 
-:::note
-当安装第一个节点时，出现 `Enter FQDN:` 提示的时候，不需要输入任何内容。只有当安装第二个或以后更多的节点时，才需要输入已有集群中任何一个可用节点的 FQDN，支持该新节点加入集群。当然也可以不输入，而是在新节点启动前，配置到新节点的配置文件中。
+注意：当安装第一个节点时，出现 `Enter FQDN:` 提示的时候，不需要输入任何内容。只有当安装第二个或以后更多的节点时，才需要输入已有集群中任何一个可用节点的 FQDN，支持该新节点加入集群。当然也可以不输入，而是在新节点启动前，配置到新节点的配置文件中。
 
-:::
+### 启动
 
-## 启动
-
-<Tabs>
-<TabItem label="Linux 系统" value="linux">
+#### Linux 系统
 
 安装后，请使用 `systemctl` 命令来启动 TDengine 的服务进程。
 
@@ -170,31 +155,20 @@ Active: inactive (dead)
 
 - 查看服务状态：`systemctl status taosd`
 
-:::info
-
+提示：
 - `systemctl` 命令需要 _root_ 权限来运行，如果您非 _root_ 用户，请在命令前添加 `sudo`。
 - `systemctl stop taosd` 指令在执行后并不会马上停止 TDengine 服务，而是会等待系统中必要的落盘工作正常完成。在数据量很大的情况下，这可能会消耗较长时间。
 - 如果系统中不支持 `systemd`，也可以用手动运行 `/usr/local/taos/bin/taosd` 方式启动 TDengine 服务。
 
-:::
-
-## TDengine 命令行（CLI）
-
 为便于检查 TDengine 的状态，执行数据库（Database）的各种即席（Ad Hoc）查询，TDengine 提供一命令行应用程序（以下简称为 TDengine CLI）taos。要进入 TDengine 命令行，您只要在终端执行 `taos` 即可。
 
-</TabItem>
-
-<TabItem label="Windows 系统" value="windows">
+#### Windows 系统
 
 安装后，在 `C:\TDengine` 目录下，运行 `taosd.exe` 来启动 TDengine 服务进程。
 
-## TDengine 命令行（CLI）
-
 为便于检查 TDengine 的状态，执行数据库（Database）的各种即席（Ad Hoc）查询，TDengine 提供一命令行应用程序（以下简称为 TDengine CLI）taos。要进入 TDengine 命令行，您只要在终端执行 `taos` 即可。
 
-</TabItem>
-
-<TabItem label="macOS 系统" value="macos">
+#### macOS 系统
 
 安装后，在应用程序目录下，双击 TDengine 图标来启动程序，也可以运行 `launchctl start com.tdengine.taosd` 来启动 TDengine 服务进程。
 
@@ -206,19 +180,12 @@ Active: inactive (dead)
 
 - 查看服务状态：`launchctl list | grep taosd`
 
-:::info
-
+提示：
 - `launchctl` 命令不需要管理员权限，请不要在前面加 `sudo`。
 - `launchctl list | grep taosd` 指令返回的第一个内容是程序的 PID，若为 `-` 则说明 TDengine 服务未运行。
 
-:::
-
-## TDengine 命令行（CLI）
 
 为便于检查 TDengine 的状态，执行数据库（Database）的各种即席（Ad Hoc）查询，TDengine 提供一命令行应用程序（以下简称为 TDengine CLI）taos。要进入 TDengine 命令行，您只要在 Windows 终端的 C:\TDengine 目录下，运行 taos.exe 来启动 TDengine 命令行。
-
-</TabItem>
-</Tabs>
 
 ```bash
 taos
@@ -250,7 +217,7 @@ Query OK, 2 row(s) in set (0.003128s)
 
 除执行 SQL 语句外，系统管理员还可以从 TDengine CLI 进行检查系统运行状态、添加删除用户账号等操作。TDengine CLI 连同应用驱动也可以独立安装在机器上运行，更多细节请参考 [TDengine 命令行](../../reference/taos-shell/)。
 
-## 使用 taosBenchmark 体验写入速度
+### 使用 taosBenchmark 体验写入速度
 
 可以使用 TDengine 的自带工具 taosBenchmark 快速体验 TDengine 的写入速度。
 
@@ -266,7 +233,7 @@ $ taosBenchmark
 
 taosBenchmark 命令本身带有很多选项，配置表的数目、记录条数等等，您可以设置不同参数进行体验，请执行 `taosBenchmark --help` 详细列出。taosBenchmark 详细使用方法请参照[如何使用 taosBenchmark 对 TDengine 进行性能测试](https://www.taosdata.com/2021/10/09/3111.html)和 [taosBenchmark 参考手册](../../reference/taosbenchmark)。
 
-## 使用 TDengine CLI 体验查询速度
+### 使用 TDengine CLI 体验查询速度
 
 使用上述 `taosBenchmark` 插入数据后，可以在 TDengine CLI（taos）输入查询命令，体验查询速度。
 

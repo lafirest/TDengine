@@ -4,15 +4,7 @@ description: "数据订阅与推送服务。写入到 TDengine 中的时序数�
 title: 数据订阅
 ---
 
-import Tabs from "@theme/Tabs";
-import TabItem from "@theme/TabItem";
-import Java from "./_sub_java.mdx";
-import Python from "./_sub_python.mdx";
-import Go from "./_sub_go.mdx";
-import Rust from "./_sub_rust.mdx";
-import Node from "./_sub_node.mdx";
-import CSharp from "./_sub_cs.mdx";
-import CDemo from "./_sub_c.mdx";
+## 数据订阅
 
 为了帮助应用实时获取写入 TDengine 的数据，或者以事件到达顺序处理数据，TDengine 提供了类似消息队列产品的数据订阅、消费接口。这样在很多场景下，采用 TDengine 的时序数据处理系统不再需要集成消息队列产品，比如 kafka, 从而简化系统设计的复杂度，降低运营维护成本。
 
@@ -24,12 +16,11 @@ import CDemo from "./_sub_c.mdx";
 
 本文档不对消息队列本身的基础知识做介绍，如果需要了解，请自行搜索。
 
-## 主要数据结构和 API
+### 主要数据结构和 API
 
 不同语言下， TMQ 订阅相关的 API 及数据结构如下：
 
-<Tabs defaultValue="java" groupId="lang">
-<TabItem value="c" label="C">
+#### C 
 
 ```c
 typedef struct tmq_t      tmq_t;
@@ -66,8 +57,7 @@ DLL_EXPORT void           tmq_conf_set_auto_commit_cb(tmq_conf_t *conf, tmq_comm
 
 这些 API 的文档请见 [C/C++ Connector](../../connector/cpp)，下面介绍一下它们的具体用法（超级表和子表结构请参考“数据建模”一节），完整的示例代码请见下面 C 语言的示例代码。
 
-</TabItem>
-<TabItem value="java" label="Java">
+#### Java
 
 ```java
 void subscribe(Collection<String> topics) throws SQLException;
@@ -87,9 +77,7 @@ void commitSync() throws SQLException;
 void close() throws SQLException;
 ```
 
-</TabItem>
-
-<TabItem value="Python" label="Python">
+#### Python
 
 ```python
 class TaosConsumer():
@@ -110,9 +98,7 @@ class TaosConsumer():
     def __del__(self)
 ```
 
-</TabItem>
-
-<TabItem label="Go" value="Go">
+#### Go
 
 ```go
 func NewConsumer(conf *Config) (*Consumer, error)
@@ -130,9 +116,7 @@ func (c *Consumer) Subscribe(topics []string) error
 func (c *Consumer) Unsubscribe() error
 ```
 
-</TabItem>
-
-<TabItem label="Rust" value="Rust">
+#### Rust
 
 ```rust
 impl TBuilder for TmqBuilder
@@ -162,9 +146,7 @@ impl AsAsyncConsumer for Consumer
 
 可在 <https://docs.rs/taos> 上查看详细 API 说明。
 
-</TabItem>
-
-<TabItem label="Node.JS" value="Node.JS">
+#### Node.JS
 
 ```js
 function TMQConsumer(config)
@@ -182,9 +164,7 @@ function commit(msg)
 function close()
 ```
 
-</TabItem>
-
-<TabItem value="C#" label="C#">
+#### C#
 
 ```csharp
 ConsumerBuilder(IEnumerable<KeyValuePair<string, string>> config)
@@ -208,10 +188,7 @@ void Commit(ConsumeResult consumerResult)
 void Close()
 ```
 
-</TabItem>
-</Tabs>
-
-## 写入数据
+### 写入数据
 
 首先完成建库、建一张超级表和多张子表操作，然后就可以写入数据了，比如：
 
@@ -225,7 +202,7 @@ INSERT INTO tmqdb.ctb0 VALUES(now, 0, 0, 'a0')(now+1s, 0, 0, 'a00');
 INSERT INTO tmqdb.ctb1 VALUES(now, 1, 1, 'a1')(now+1s, 11, 11, 'a11');
 ```
 
-## 创建 *topic*
+### 创建 *topic*
 
 TDengine 使用 SQL 创建一个 topic：
 
@@ -274,7 +251,7 @@ CREATE TOPIC topic_name AS DATABASE db_name;
 
 通过该语句可创建一个包含数据库所有表数据的订阅
 
-## 创建消费者 *consumer*
+### 创建消费者 *consumer*
 
 消费者需要通过一系列配置选项创建，基础配置项如下表所示：
 
@@ -295,8 +272,7 @@ CREATE TOPIC topic_name AS DATABASE db_name;
 
 对于不同编程语言，其设置方式如下：
 
-<Tabs defaultValue="java" groupId="lang">
-<TabItem value="c" label="C">
+#### C
 
 ```c
 /* 根据需要，设置消费组 (group.id)、自动提交 (enable.auto.commit)、
@@ -316,8 +292,7 @@ tmq_t* tmq = tmq_consumer_new(conf, NULL, 0);
 tmq_conf_destroy(conf);
 ```
 
-</TabItem>
-<TabItem value="java" label="Java">
+#### Java
 
 对于 Java 程序，使用如下配置项：
 
@@ -350,9 +325,7 @@ public class MetersDeserializer extends ReferenceDeserializer<Meters> {
 }
 ```
 
-</TabItem>
-
-<TabItem label="Go" value="Go">
+#### Go
 
 ```go
 config := tmq.NewConfig()
@@ -401,9 +374,7 @@ if err != nil {
 }
 ```
 
-</TabItem>
-
-<TabItem label="Rust" value="Rust">
+#### Rust
 
 ```rust
 let mut dsn: Dsn = "taos://".parse()?;
@@ -416,9 +387,7 @@ let tmq = TmqBuilder::from_dsn(dsn)?;
 let mut consumer = tmq.build()?;
 ```
 
-</TabItem>
-
-<TabItem value="Python" label="Python">
+#### Python
 
 Python 语言下引入 `taos` 库的 `TaosConsumer` 类，创建一个 Consumer 示例：
 
@@ -449,9 +418,7 @@ consumer = TaosConsumer('topic1', 'topic2', td_connect_ip = "127.0.0.1", group_i
 |     `msg_with_table_name`      | string | 是否允许从消息中解析表名,不适用于列订阅                  | 合法值：`true`, `false`                     |
 |           `timeout`            |  int   | 消费者拉取数据的超时时间                                 |                                             |
 
-</TabItem>
-
-<TabItem label="Node.JS" value="Node.JS">
+#### Node.JS
 
 ```js
 // 根据需要，设置消费组 (group.id)、自动提交 (enable.auto.commit)、
@@ -470,9 +437,7 @@ let consumer = taos.consumer({
   });
 ```
 
-</TabItem>
-
-<TabItem value="C#" label="C#">
+#### C#
 
 ```csharp
 using TDengineTMQ;
@@ -496,18 +461,13 @@ var consumer = new ConsumerBuilder(cfg).Build();
 
 ```
 
-</TabItem>
-
-</Tabs>
-
 上述配置中包括 consumer group ID，如果多个 consumer 指定的 consumer group ID 一样，则自动形成一个 consumer group，共享消费进度。
 
-## 订阅 *topics*
+### 订阅 *topics*
 
 一个 consumer 支持同时订阅多个 topic。
 
-<Tabs defaultValue="java" groupId="lang">
-<TabItem value="c" label="C">
+#### C
 
 ```c
 // 创建订阅 topics 列表
@@ -519,8 +479,7 @@ tmq_list_destroy(topicList);
   
 ```
 
-</TabItem>
-<TabItem value="java" label="Java">
+#### Java
 
 ```java
 List<String> topics = new ArrayList<>();
@@ -528,8 +487,7 @@ topics.add("tmq_topic");
 consumer.subscribe(topics);
 ```
 
-</TabItem>
-<TabItem value="Go" label="Go">
+#### Go
 
 ```go
 consumer, err := tmq.NewConsumer(config)
@@ -542,24 +500,19 @@ if err != nil {
 }
 ```
 
-</TabItem>
-<TabItem value="Rust" label="Rust">
+#### Rust
 
 ```rust
 consumer.subscribe(["tmq_meters"]).await?;
 ```
 
-</TabItem>
-
-<TabItem value="Python" label="Python">
+#### Python
 
 ```python
 consumer = TaosConsumer('topic_ctb_column', group_id='vg2')
 ```
 
-</TabItem>
-
-<TabItem label="Node.JS" value="Node.JS">
+#### Node.JS
 
 ```js
 // 创建订阅 topics 列表
@@ -568,10 +521,7 @@ let topics = ['topic_test']
 // 启动订阅
 consumer.subscribe(topics);
 ```
-
-</TabItem>
-
-<TabItem value="C#" label="C#">
+#### 
 
 ```csharp
 // 创建订阅 topics 列表
@@ -581,16 +531,11 @@ topics.add("tmq_topic");
 consumer.Subscribe(topics);
 ```
 
-</TabItem>
-
-</Tabs>
-
-## 消费
+### 消费
 
 以下代码展示了不同语言下如何对 TMQ 消息进行消费。
 
-<Tabs defaultValue="java" groupId="lang">
-<TabItem value="c" label="C">
+#### C
 
 ```c
 // 消费数据
@@ -602,8 +547,7 @@ while (running) {
 
 这里是一个 **while** 循环，每调用一次 tmq_consumer_poll()，获取一个消息，该消息与普通查询返回的结果集完全相同，可以使用相同的解析 API 完成消息内容的解析。
 
-</TabItem>
-<TabItem value="java" label="Java">
+#### Java
 
 ```java
 while(running){
@@ -614,9 +558,7 @@ while(running){
 }
 ```
 
-</TabItem>
-
-<TabItem value="Go" label="Go">
+#### Go
 
 ```go
 for {
@@ -630,9 +572,7 @@ for {
 }
 ```
 
-</TabItem>
-
-<TabItem value="Rust" label="Rust">
+#### Rust
 
 ```rust
 {
@@ -665,8 +605,7 @@ for {
 }
 ```
 
-</TabItem>
-<TabItem value="Python" label="Python">
+#### Python
 
 ```python
 for msg in consumer:
@@ -674,9 +613,7 @@ for msg in consumer:
         print(row)
 ```
 
-</TabItem>
-
-<TabItem label="Node.JS" value="Node.JS">
+#### Node.JS
 
 ```js
 while(true){
@@ -688,9 +625,7 @@ while(true){
 }
 ```
 
-</TabItem>
-
-<TabItem value="C#" label="C#">
+#### C#
 
 ```csharp
 // 消费数据
@@ -703,17 +638,11 @@ while (true)
 }
 ```
 
-</TabItem>
-
-</Tabs>
-
-## 结束消费
+### 结束消费
 
 消费结束后，应当取消订阅。
 
-<Tabs defaultValue="java" groupId="lang">
-<TabItem value="c" label="C">
-
+#### C
 ```c
 /* 取消订阅 */
 tmq_unsubscribe(tmq);
@@ -722,8 +651,7 @@ tmq_unsubscribe(tmq);
 tmq_consumer_close(tmq);
 ```
 
-</TabItem>
-<TabItem value="java" label="Java">
+#### Java
 
 ```java
 /* 取消订阅 */
@@ -733,25 +661,19 @@ consumer.unsubscribe();
 consumer.close();
 ```
 
-</TabItem>
-
-<TabItem value="Go" label="Go">
+#### Go
 
 ```go
 consumer.Close()
 ```
 
-</TabItem>
-
-<TabItem value="Rust" label="Rust">
+#### Rust
 
 ```rust
 consumer.unsubscribe().await;
 ```
 
-</TabItem>
-
-<TabItem value="Python" label="Python">
+#### Python
 
 ```py
 # 取消订阅
@@ -760,17 +682,14 @@ consumer.unsubscribe()
 consumer.close()
 ```
 
-</TabItem>
-<TabItem label="Node.JS" value="Node.JS">
+#### Node.JS
 
 ```js
 consumer.unsubscribe();
 consumer.close();
 ```
 
-</TabItem>
-
-<TabItem value="C#" label="C#">
+#### C#
 
 ```csharp
 // 取消订阅
@@ -780,11 +699,7 @@ consumer.Unsubscribe();
 consumer.Close();
 ```
 
-</TabItem>
-
-</Tabs>
-
-## 删除 *topic*
+### 删除 *topic*
 
 如果不再需要订阅数据，可以删除 topic，需要注意：只有当前未在订阅中的 TOPIC 才能被删除。
 
@@ -793,7 +708,7 @@ consumer.Close();
 DROP TOPIC topic_name;
 ```
 
-## 状态查看
+#### 状态查看
 
 1、*topics*：查询已经创建的 topic
 
@@ -813,38 +728,6 @@ SHOW CONSUMERS;
 SHOW SUBSCRIPTIONS;
 ```
 
-## 示例代码
+#### 示例代码
 
-以下是各语言的完整示例代码。
-
-<Tabs defaultValue="java" groupId="lang">
-
-<TabItem label="C" value="c">
-  <CDemo />
-</TabItem>
-
-<TabItem label="Java" value="java">
-    <Java />
-</TabItem>
-
-<TabItem label="Go" value="Go">
-   <Go/>
-</TabItem>
-
-<TabItem label="Rust" value="Rust">
-    <Rust />
-</TabItem>
-
-<TabItem label="Python" value="Python">
-    <Python />
-</TabItem>
-
-<TabItem label="Node.JS" value="Node.JS">
-   <Node/>
-</TabItem>
-
-<TabItem label="C#" value="C#">
-   <CSharp/>
-</TabItem>
-
-</Tabs>
+各语言的详细示例代码位于: https://github.com/taosdata/TDengine/tree/main/docs/examples

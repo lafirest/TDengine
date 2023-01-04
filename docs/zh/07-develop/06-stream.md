@@ -4,6 +4,8 @@ description: "TDengine 流式计算将数据的写入、预处理、复杂分析
 title: 流式计算
 ---
 
+## 流式计算
+
 在时序数据的处理中，经常要对原始数据进行清洗、预处理，再使用时序数据库进行长久的储存。在传统的时序数据解决方案中，常常需要部署 Kafka、Flink 等流处理系统。而流处理系统的复杂性，带来了高昂的开发与运维成本。
 
 TDengine 3.0 的流式计算引擎提供了实时处理写入的数据流的能力，使用 SQL 定义实时流变换，当数据被写入流的源表后，数据会被以定义的方式自动处理，并根据定义的触发模式向目的表推送结果。它提供了替代复杂流处理系统的轻量级解决方案，并能够在高吞吐的数据写入的情况下，提供毫秒级的计算结果延迟。
@@ -15,7 +17,7 @@ TDengine 的流式计算能够支持分布在多个 vnode 中的超级表聚合�
 详见 [流式计算](../../taos-sql/stream)
 
 
-## 流式计算的创建
+### 流式计算的创建
 
 ```sql
 CREATE STREAM [IF NOT EXISTS] stream_name [stream_options] INTO stb_name AS subquery
@@ -28,11 +30,11 @@ stream_options: {
 
 详细的语法规则参考 [流式计算](../../taos-sql/stream)
 
-## 示例一
-
 企业电表的数据经常都是成百上千亿条的，那么想要将这些分散、凌乱的数据清洗或转换都需要比较长的时间，很难做到高效性和实时性，以下例子中，通过流计算可以将电表电压大于 220V 的数据清洗掉，然后以 5 秒为窗口整合并计算出每个窗口中电流的最大值，最后将结果输出到指定的数据表中。
 
-### 创建 DB 和原始数据表
+### 示例一
+
+#### 创建 DB 和原始数据表
 
 首先准备数据，完成建库、建一张超级表和多张子表操作
 
@@ -49,13 +51,13 @@ CREATE TABLE d1003 USING meters TAGS ("California.LosAngeles", 2);
 CREATE TABLE d1004 USING meters TAGS ("California.LosAngeles", 3);
 ```
 
-### 创建流
+#### 创建流
 
 ```sql
 create stream current_stream into current_stream_output_stb as select _wstart as start, _wend as wend, max(current) as max_current from meters where voltage <= 220 interval (5s);
 ```
 
-### 写入数据
+#### 写入数据
 ```sql
 insert into d1001 values("2018-10-03 14:38:05.000", 10.30000, 219, 0.31000);
 insert into d1001 values("2018-10-03 14:38:15.000", 12.60000, 218, 0.33000);
@@ -67,7 +69,7 @@ insert into d1004 values("2018-10-03 14:38:05.000", 10.80000, 223, 0.29000);
 insert into d1004 values("2018-10-03 14:38:06.500", 11.50000, 221, 0.35000);
 ```
 
-### 查询以观察结果
+#### 查询以观察结果
 
 ```sql
 taos> select start, wend, max_current from current_stream_output_stb;
@@ -78,25 +80,25 @@ taos> select start, wend, max_current from current_stream_output_stb;
 Query OK, 2 rows in database (0.018762s)
 ```
 
-## 示例二
+### 示例二
 
 依然以示例一中的数据为基础，我们已经采集到了每个智能电表的电流和电压数据，现在需要求出有功功率和无功功率，并将地域和电表名以符号 "." 拼接，然后以电表名称分组输出到新的数据表中。
 
-### 创建 DB 和原始数据表
+#### 创建 DB 和原始数据表
 
 参考示例一 [创建 DB 和原始数据表](#创建-db-和原始数据表)
 
-### 创建流
+#### 创建流
 
 ```sql
 create stream power_stream into power_stream_output_stb as select ts, concat_ws(".", location, tbname) as meter_location, current*voltage*cos(phase) as active_power, current*voltage*sin(phase) as reactive_power from meters partition by tbname;
 ```
 
-### 写入数据
+#### 写入数据
 
 参考示例一 [写入数据](#写入数据)
 
-### 查询以观察结果
+#### 查询以观察结果
 ```sql
 taos> select ts, meter_location, active_power, reactive_power from power_stream_output_stb;
            ts            |         meter_location         |       active_power        |      reactive_power       |

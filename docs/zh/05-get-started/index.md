@@ -3,6 +3,8 @@ title: 立即开始
 description: '快速设置 TDengine 环境并体验其高效写入和查询'
 ---
 
+# 立即开始
+
 import xiaot from './xiaot.webp'
 import channel from './channel.webp'
 import official_account from './official-account.webp'
@@ -18,7 +20,7 @@ import {useCurrentSidebarCategory} from '@docusaurus/theme-common';
 <DocCardList items={useCurrentSidebarCategory().items}/>
 ```
 
-## 学习 TDengine 知识地图
+**学习 TDengine 知识地图**
 
 TDengine 知识地图中涵盖了 TDengine 的各种知识点，揭示了各概念实体之间的调用关系和数据流向。学习和了解 TDengine 知识地图有助于你快速掌握 TDengine 的知识体系。
 
@@ -29,7 +31,7 @@ TDengine 知识地图中涵盖了 TDengine 的各种知识点，揭示了各概�
 </center>
 </figure>
 
-## 加入 TDengine 官方社区
+**加入 TDengine 官方社区**
 
 微信扫描以下二维码，学习了解 TDengine 的最新技术，与大家共同交流物联网大数据技术应用、TDengine 使用问题和技巧等话题。
 

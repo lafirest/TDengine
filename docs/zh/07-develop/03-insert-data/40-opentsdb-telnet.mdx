@@ -3,6 +3,8 @@ sidebar_label: OpenTSDB 行协议
 title: OpenTSDB 行协议
 ---
 
+OpenTSDB 行协议写入
+
 import Tabs from "@theme/Tabs";
 import TabItem from "@theme/TabItem";
 import JavaTelnet from "./_java_opts_telnet.mdx";
@@ -13,7 +15,7 @@ import NodeTelnet from "./_js_opts_telnet.mdx";
 import CsTelnet from "./_cs_opts_telnet.mdx";
 import CTelnet from "./_c_opts_telnet.mdx";
 
-## 协议介绍
+#### 协议介绍
 
 OpenTSDB 行协议同样采用一行字符串来表示一行数据。OpenTSDB 采用的是单列模型，因此一行只能包含一个普通数据列。标签列依然可以有多个。分为四部分，具体格式约定如下：
 
@@ -35,30 +37,10 @@ meters.current 1648432611250 11.3 location=California.LosAngeles groupid=3
 - 默认生产的子表名是根据规则生成的唯一 ID 值。用户也可以通过在 taos.cfg 里配置 smlChildTableName 参数来指定某个标签值作为子表名。该标签值应该具有全局唯一性。举例如下：假设有个标签名为tname, 配置 smlChildTableName=tname, 插入数据为 meters.current 1648432611250 11.3 tname=cpu1 location=California.LosAngeles groupid=3 则创建的表名为 cpu1，注意如果多行数据 tname 相同，但是后面的 tag_set 不同，则使用第一行自动建表时指定的 tag_set，其他的行会忽略）。
   参考 [OpenTSDB Telnet API 文档](http://opentsdb.net/docs/build/html/api_telnet/put.html)。
 
-## 示例代码
+**示例代码**
+示例代码位于：https://github.com/taosdata/TDengine/tree/main/docs/examples
 
-<Tabs defaultValue="java" groupId="lang">
-  <TabItem label="Java" value="java">
-    <JavaTelnet />
-  </TabItem>
-  <TabItem label="Python" value="Python">
-    <PyTelnet />
-  </TabItem>
-  <TabItem label="Go" value="go">
-    <GoTelnet />
-  </TabItem>
-  <TabItem label="Node.js" value="nodejs">
-    <NodeTelnet />
-  </TabItem>
-  <TabItem label="C#" value="csharp">
-    <CsTelnet />
-  </TabItem>
-  <TabItem label="C" value="c">
-    <CTelnet />
-  </TabItem>
-</Tabs>
-
-以上示例代码会自动创建 2 个超级表， 每个超级表有 4 条数据。
+#### SQL 查询示例
 
 ```cmd
 taos> USE test;
@@ -80,8 +62,6 @@ taos> SELECT TBNAME, * FROM `meters.current`;
  t_7e7b26dd860280242c6492a16... | 2022-03-28 09:56:51.250 |              12.600000000 | 2       | California.SanFrancisco               |
 Query OK, 4 row(s) in set (0.005399s)
 ```
-
-## SQL 查询示例
 
 `meters.current` 是插入数据的超级表名。
 

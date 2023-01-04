@@ -4,6 +4,8 @@ title: UDF（用户定义函数）
 description: "支持用户编码的聚合函数和标量函数，在查询中嵌入并使用用户定义函数，拓展查询的能力和功能。"
 ---
 
+## 用户定义函数 UDF
+
 在有些应用场景中，应用逻辑需要的查询无法直接使用系统内置的函数来表示。利用 UDF(User Defined Function) 功能，TDengine 可以插入用户编写的处理代码并在查询中使用它们，就能够很方便地解决特殊应用场景中的使用需求。 UDF 通常以数据表中的一列数据做为输入，同时支持以嵌套子查询的结果作为输入。
 
 TDengine 支持通过 C/C++ 语言进行 UDF 定义。接下来结合示例讲解 UDF 的使用方法。
@@ -17,7 +19,7 @@ TDengine 支持通过 C/C++ 语言进行 UDF 定义。接下来结合示例讲�
 
 接口函数的名称是 UDF 名称，或者是 UDF 名称和特定后缀（_start, _finish, _init, _destroy)的连接。列表中的scalarfn，aggfn, udf需要替换成udf函数名。
 
-## 实现标量函数
+### 实现标量函数
 标量函数实现模板如下
 ```c
 #include "taos.h"
@@ -49,7 +51,7 @@ int32_t scalarfn_destroy() {
 ```
 scalarfn 为函数名的占位符，需要替换成函数名，如bit_and。
 
-## 实现聚合函数
+### 实现聚合函数
 
 聚合函数的实现模板如下
 ```c
@@ -100,7 +102,7 @@ int32_t aggfn_destroy() {
 ```
 aggfn为函数名的占位符，需要修改为自己的函数名，如l2norm。
 
-## 接口函数定义
+### 接口函数定义
 
 接口函数的名称是 udf 名称，或者是 udf 名称和特定后缀（_start, _finish, _init, _destroy)的连接。以下描述中函数名称中的 scalarfn，aggfn, udf 需要替换成udf函数名。
 
@@ -108,7 +110,7 @@ aggfn为函数名的占位符，需要修改为自己的函数名，如l2norm。
 
 接口函数参数类型见数据结构定义。
 
-### 标量接口函数
+#### 标量接口函数
 
  `int32_t scalarfn(SUdfDataBlock* inputDataBlock, SUdfColumn *resultColumn)` 
  
@@ -118,7 +120,7 @@ aggfn为函数名的占位符，需要修改为自己的函数名，如l2norm。
   - inputDataBlock: 输入的数据块
   - resultColumn: 输出列 
 
-### 聚合接口函数
+#### 聚合接口函数
 
 `int32_t aggfn_start(SUdfInterBuf *interBuf)`
 
@@ -143,7 +145,7 @@ aggfn为函数名的占位符，需要修改为自己的函数名，如l2norm。
 其中 udf 是函数名的占位符。udf_init 完成初始化工作。 udf_destroy 完成清理工作。如果没有初始化工作，无需定义udf_init函数。如果没有清理工作，无需定义udf_destroy函数。
 
 
-## UDF 数据结构
+### UDF 数据结构
 ```c
 typedef struct SUdfColumnMeta {
   int16_t type;
@@ -201,7 +203,7 @@ typedef struct SUdfInterBuf {
 
 为了更好的操作以上数据结构，提供了一些便利函数，定义在 taosudf.h。
 
-## 编译 UDF
+### 编译 UDF
 
 用户定义函数的 C 语言源代码无法直接被 TDengine 系统使用，而是需要先编译为 动态链接库，之后才能载入 TDengine 系统。
 
@@ -213,33 +215,16 @@ gcc -g -O0 -fPIC -shared bit_and.c -o libbitand.so
 
 这样就准备好了动态链接库 libbitand.so 文件，可以供后文创建 UDF 时使用了。为了保证可靠的系统运行，编译器 GCC 推荐使用 7.5 及以上版本。
 
-## 管理和使用UDF
+### 管理和使用UDF
 编译好的UDF，还需要将其加入到系统才能被正常的SQL调用。关于如何管理和使用UDF，参见[UDF使用说明](../12-taos-sql/26-udf.md)
 
-## 示例代码
+### 示例代码
 
-### 标量函数示例 [bit_and](https://github.com/taosdata/TDengine/blob/develop/tests/script/sh/bit_and.c)
+#### 标量函数示例 [bit_and](https://github.com/taosdata/TDengine/blob/develop/tests/script/sh/bit_and.c)
 
 bit_add 实现多列的按位与功能。如果只有一列，返回这一列。bit_add 忽略空值。
 
-<details>
-<summary>bit_and.c</summary>
 
-```c
-{{#include tests/script/sh/bit_and.c}}
-```
-
-</details>
-
-### 聚合函数示例 [l2norm](https://github.com/taosdata/TDengine/blob/develop/tests/script/sh/l2norm.c)
+#### 聚合函数示例 [l2norm](https://github.com/taosdata/TDengine/blob/develop/tests/script/sh/l2norm.c)
 
 l2norm 实现了输入列的所有数据的二阶范数，即对每个数据先平方，再累加求和，最后开方。
-
-<details>
-<summary>l2norm.c</summary>
-
-```c
-{{#include tests/script/sh/l2norm.c}}
-```
-
-</details>

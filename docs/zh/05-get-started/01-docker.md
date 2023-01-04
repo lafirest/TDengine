@@ -4,9 +4,11 @@ title: 通过 Docker 快速体验 TDengine
 description: 使用 Docker 快速体验 TDengine 的高效写入和查询
 ---
 
+## 通过 Docker 快速体验 TDengine
+
 本节首先介绍如何通过 Docker 快速体验 TDengine，然后介绍如何在 Docker 环境下体验 TDengine 的写入和查询功能。如果你不熟悉 Docker，请使用[安装包的方式快速体验](../../get-started/package/)。如果您希望为 TDengine 贡献代码或对内部技术实现感兴趣，请参考 [TDengine GitHub 主页](https://github.com/taosdata/TDengine)下载源码构建和安装。
 
-## 启动 TDengine
+### 启动 TDengine
 
 如果已经安装了 Docker，首先拉取最新的 TDengine 容器镜像：
 
@@ -44,7 +46,7 @@ docker exec -it <container name> bash
 
 注：Docker 工具自身的下载和使用请参考 [Docker 官网文档](https://docs.docker.com/get-docker/)。
 
-## 运行 TDengine CLI
+### 运行 TDengine CLI
 
 进入容器，执行 `taos`：
 
@@ -54,7 +56,7 @@ $ taos
 taos>
 ```
 
-## 使用 taosBenchmark 体验写入速度
+### 使用 taosBenchmark 体验写入速度
 
 可以使用 TDengine 的自带工具 taosBenchmark 快速体验 TDengine 的写入速度。
 
@@ -70,7 +72,7 @@ $ taosBenchmark
 
 taosBenchmark 命令本身带有很多选项，配置表的数目、记录条数等等，您可以设置不同参数进行体验，请执行 `taosBenchmark --help` 详细列出。taosBenchmark 详细使用方法请参照[如何使用 taosBenchmark 对 TDengine 进行性能测试](https://www.taosdata.com/2021/10/09/3111.html)和 [taosBenchmark 参考手册](../../reference/taosbenchmark)。
 
-## 使用 TDengine CLI 体验查询速度
+### 使用 TDengine CLI 体验查询速度
 
 使用上述 `taosBenchmark` 插入数据后，可以在 TDengine CLI（taos）输入查询命令，体验查询速度。
 
@@ -106,6 +108,6 @@ SELECT FIRST(ts), AVG(current), MAX(voltage), MIN(phase) FROM test.d10 INTERVAL(
 
 在上面的查询中，你选择的是区间内的第一个时间戳（ts），另一种选择方式是 `\_wstart`，它将给出时间窗口的开始。关于窗口查询的更多信息，参见[特色查询](../../taos-sql/distinguished/)。
 
-## 其它
+### 其它
 
 更多关于在 Docker 环境下使用 TDengine 的细节，请参考 [在 Docker 下使用 TDengine](../../reference/docker)。

@@ -4,22 +4,9 @@ title: 查询数据
 description: "主要查询功能，通过连接器执行同步查询和异步查询"
 ---
 
-import Tabs from "@theme/Tabs";
-import TabItem from "@theme/TabItem";
-import JavaQuery from "./_java.mdx";
-import PyQuery from "./_py.mdx";
-import GoQuery from "./_go.mdx";
-import RustQuery from "./_rust.mdx";
-import NodeQuery from "./_js.mdx";
-import CsQuery from "./_cs.mdx";
-import CQuery from "./_c.mdx";
-import PhpQuery from "./_php.mdx";
-import PyAsync from "./_py_async.mdx";
-import NodeAsync from "./_js_async.mdx";
-import CsAsync from "./_cs_async.mdx";
-import CAsync from "./_c_async.mdx";
+## 查询数据
 
-## 主要查询功能
+### 主要查询功能
 
 TDengine 采用 SQL 作为查询语言。应用程序可以通过 REST API 或连接器发送 SQL 语句，用户还可以通过 TDengine 命令行工具 taos 手动执行 SQL 即席查询（Ad-Hoc Query）。TDengine 支持如下查询功能：
 
@@ -46,11 +33,11 @@ Query OK, 2 row(s) in set (0.001100s)
 
 具体的查询语法请看 [TDengine SQL 的数据查询](../../taos-sql/select) 章节。
 
-## 多表聚合查询
+### 多表聚合查询
 
 物联网场景中，往往同一个类型的数据采集点有多个。TDengine 采用超级表(STable)的概念来描述某一个类型的数据采集点，一张普通的表来描述一个具体的数据采集点。同时 TDengine 使用标签来描述数据采集点的静态属性，一个具体的数据采集点有具体的标签值。通过指定标签的过滤条件，TDengine 提供了一高效的方法将超级表(某一类型的数据采集点)所属的子表进行聚合查询。对普通表的聚合函数以及绝大部分操作都适用于超级表，语法完全一样。
 
-### 示例一
+**示例一**
 
 在 TDengine CLI，查找加利福尼亚州所有智能电表采集的电压平均值，并按照 location 分组。
 
@@ -63,7 +50,7 @@ taos> SELECT AVG(voltage), location FROM meters GROUP BY location;
 Query OK, 2 rows in database (0.005995s)
 ```
 
-### 示例二
+**示例二**
 
 在 TDengine CLI, 查找 groupId 为 2 的所有智能电表的记录条数，电流的最大值。
 
@@ -77,7 +64,7 @@ Query OK, 1 row(s) in set (0.002136s)
 
 在 [TDengine SQL 的数据查询](../../taos-sql/select) 一章，查询类操作都会注明是否支持超级表。
 
-## 降采样查询、插值
+### 降采样查询、插值
 
 物联网场景里，经常需要通过降采样（down sampling）将采集的数据按时间段进行聚合。TDengine 提供了一个简便的关键词 interval 让按照时间窗口的查询操作变得极为简单。比如，将智能电表 d1001 采集的电流值每 10 秒钟求和
 
@@ -125,45 +112,12 @@ Query OK, 6 rows in database (0.005515s)
 
 语法规则细节请见 [TDengine SQL 的按时间窗口切分聚合](../../taos-sql/distinguished) 章节。
 
-## 示例代码
+**示例代码**
+示例代码位于：https://github.com/taosdata/TDengine/tree/main/docs/examples
 
-### 查询数据
-
-在 [SQL 写入](/develop/insert-data/sql-writing) 一章，我们创建了 power 数据库，并向 meters 表写入了一些数据，以下示例代码展示如何查询这个表的数据。
-
-<Tabs defaultValue="java" groupId="lang">
-  <TabItem label="Java" value="java">
-    <JavaQuery />
-  </TabItem>
-  <TabItem label="Python" value="python">
-    <PyQuery />
-  </TabItem>
-  <TabItem label="Go" value="go">
-    <GoQuery />
-  </TabItem>
-  <TabItem label="Rust" value="rust">
-    <RustQuery />
-  </TabItem>
-  <TabItem label="Node.js" value="nodejs">
-    <NodeQuery />
-  </TabItem>
-  <TabItem label="C#" value="csharp">
-    <CsQuery />
-  </TabItem>
-  <TabItem label="C" value="c">
-    <CQuery />
-  </TabItem>
-  <TabItem label="PHP" value="php">
-    <PhpQuery />
-  </TabItem>
-</Tabs>
-
-:::note
-
+注意：
 1. 无论是使用 REST 连接还是原生连接的连接器，以上示例代码都能正常工作。
 2. 唯一需要注意的是：由于 REST 接口无状态， 不能使用 `use db` 语句来切换数据库。
-
-:::
 
 ### 异步查询
 
@@ -171,14 +125,4 @@ Query OK, 6 rows in database (0.005515s)
 
 需要注意的是，只有使用原生连接的连接器，才能使用异步查询功能。
 
-<Tabs defaultValue="python" groupId="lang">
-  <TabItem label="Python" value="python">
-    <PyAsync />
-  </TabItem>
-  <TabItem label="C#" value="csharp">
-    <CsAsync />
-  </TabItem>
-  <TabItem label="C" value="c">
-    <CAsync />
-  </TabItem>
-</Tabs>
+异步查询示例代码位于：https://github.com/taosdata/TDengine/tree/main/docs/examples

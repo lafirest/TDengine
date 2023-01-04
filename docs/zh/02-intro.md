@@ -4,11 +4,11 @@ description: 简要介绍 TDengine 的主要功能
 toc_max_heading_level: 2
 ---
 
+# 主要功能
+
 TDengine 是一款开源、高性能、云原生的[时序数据库](https://tdengine.com/tsdb/)，且针对物联网、车联网、工业互联网、金融、IT 运维等场景进行了优化。TDengine 的代码，包括集群功能，都在 GNU AGPL v3.0 下开源。除核心的时序数据库功能外，TDengine 还提供[缓存](../develop/cache/)、[数据订阅](../develop/tmq)、[流式计算](../develop/stream)等其它功能以降低系统复杂度及研发和运维成本。
 
 本章节介绍 TDengine 的主要功能、竞争优势、适用场景、与其他数据库的对比测试等等，让大家对 TDengine 有个整体的了解。
-
-## 主要功能
 
 TDengine 的主要功能如下：
 

@@ -1,13 +1,13 @@
 import Tabs from "@theme/Tabs";
 import TabItem from "@theme/TabItem";
 
-# 高效写入
+### 高效写入
 
 本节介绍如何高效地向 TDengine 写入数据。
 
-## 高效写入原理 {#principle}
+#### 高效写入原理 {#principle}
 
-### 客户端程序的角度 {#application-view}
+**客户端程序的角度 {#application-view}**
 
 从客户端程序的角度来说，高效写入数据要考虑以下几个因素：
 
@@ -21,7 +21,7 @@ import TabItem from "@theme/TabItem";
 
 客户端程序要充分且恰当地利用以上几个因素。在单次写入中尽量只向同一张表（或子表）写入数据，每批次写入的数据量经过测试和调优设定为一个最适合当前系统处理能力的数值，并发写入的连接数同样经过测试和调优后设定为一个最适合当前系统处理能力的数值，以实现在当前系统中的最佳写入速度。
 
-### 数据源的角度 {#datasource-view}
+**数据源的角度 {#datasource-view}**
 
 客户端程序通常需要从数据源读数据再写入 TDengine。从数据源角度来说，以下几种情况需要在读线程和写线程之间增加队列：
 
@@ -36,15 +36,15 @@ import TabItem from "@theme/TabItem";
 3. 通过增加 Consumer 线程数增加写入的并发度
 4. 通过增加每次 Fetch 的最大数据量来增加单次写入的最大数据量
 
-### 服务器配置的角度 {#setting-view}
+**服务器配置的角度 {#setting-view}**
 
 从服务端配置的角度，要根据系统中磁盘的数量，磁盘的 I/O 能力，以及处理器能力在创建数据库时设置适当的 vgroups 数量以充分发挥系统性能。如果 vgroups 过少，则系统性能无法发挥；如果 vgroups 过多，会造成无谓的资源竞争。常规推荐 vgroups 数量为 CPU 核数的 2 倍，但仍然要结合具体的系统资源配置进行调优。
 
 更多调优参数，请参考 [数据库管理](../../../taos-sql/database) 和 [服务端配置](../../../reference/config)。
 
-## 高效写入示例 {#sample-code}
+#### 高效写入示例 {#sample-code}
 
-### 场景设计 {#scenario}
+**场景设计 {#scenario}**
 
 下面的示例程序展示了如何高效写入数据，场景设计如下：
 
@@ -55,16 +55,16 @@ import TabItem from "@theme/TabItem";
 
 ![TDengine 高效写入示例场景的线程模型](highvolume.webp)
 
-### 示例代码 {#code}
+**示例代码 {#code}**
 
 这一部分是针对以上场景的示例代码。对于其它场景高效写入原理相同，不过代码需要适当修改。
 
 本示例代码假设源数据属于同一张超级表（meters）的不同子表。程序在开始写入数据之前已经在 test 库创建了这个超级表。对于子表，将根据收到的数据，由应用程序自动创建。如果实际场景是多个超级表，只需修改写任务自动建表的代码。
 
-<Tabs defaultValue="java" groupId="lang">
-<TabItem label="Java" value="java">
+**Java 示例程序**
+   位于 https://github.com/taosdata/TDengine/tree/main/docs/examples/java/src/main/java/com/taos/example/highvolume
 
-**程序清单**
+程序清单
 
 | 类名             | 功能说明                                                                    |
 | ---------------- | --------------------------------------------------------------------------- |
@@ -78,8 +78,6 @@ import TabItem from "@theme/TabItem";
 
 以下是各类的完整代码和更详细的功能说明。
 
-<details>
-<summary>FastWriteExample</summary>
 主程序负责：
 
 1. 创建消息队列
@@ -96,70 +94,15 @@ import TabItem from "@theme/TabItem";
 
 队列容量（taskQueueCapacity）也是与性能有关的参数，可通过修改程序调节。一般来讲，队列容量越大，入队被阻塞的概率越小，队列的吞吐量越大，但是内存占用也会越大。示例程序默认值已经设置地足够大。
 
-```java
-{{#include docs/examples/java/src/main/java/com/taos/example/highvolume/FastWriteExample.java}}
-```
-
-</details>
-
-<details>
-<summary>ReadTask</summary>
 
 读任务负责从数据源读数据。每个读任务都关联了一个模拟数据源。每个模拟数据源可生成一点数量表的数据。不同的模拟数据源生成不同表的数据。
 
 读任务采用阻塞的方式写消息队列。也就是说，一旦队列满了，写操作就会阻塞。
 
-```java
-{{#include docs/examples/java/src/main/java/com/taos/example/highvolume/ReadTask.java}}
-```
-
-</details>
-
-<details>
-<summary>WriteTask</summary>
-
-```java
-{{#include docs/examples/java/src/main/java/com/taos/example/highvolume/WriteTask.java}}
-```
-
-</details>
-
-<details>
-
-<summary>MockDataSource</summary>
-
-```java
-{{#include docs/examples/java/src/main/java/com/taos/example/highvolume/MockDataSource.java}}
-```
-
-</details>
-
-<details>
-
-<summary>SQLWriter</summary>
-
 SQLWriter 类封装了拼 SQL 和写数据的逻辑。注意，所有的表都没有提前创建，而是在 catch 到表不存在异常的时候，再以超级表为模板批量建表，然后重新执行 INSERT 语句。对于其它异常，这里简单地记录当时执行的 SQL 语句到日志中，你也可以记录更多线索到日志，已便排查错误和故障恢复。
 
-```java
-{{#include docs/examples/java/src/main/java/com/taos/example/highvolume/SQLWriter.java}}
-```
-
-</details>
-
-<details>
-
-<summary>DataBaseMonitor</summary>
-
-```java
-{{#include docs/examples/java/src/main/java/com/taos/example/highvolume/DataBaseMonitor.java}}
-```
-
-</details>
 
 **执行步骤**
-
-<details>
-<summary>执行 Java 示例程序</summary>
 
 执行程序前需配置环境变量 `TDENGINE_JDBC_URL`。如果 TDengine Server 部署在本机，且用户名、密码和端口都是默认值，那么可配置：
 
@@ -256,12 +199,9 @@ TDENGINE_JDBC_URL="jdbc:TAOS://localhost:6030?user=root&password=taosdata"
    18:58:11.646 [main] INFO  c.t.e.highvolume.FastWriteExample - count=185019808 speed=2136950
    ```
 
-</details>
+**Python示例程序**
 
-</TabItem>
-<TabItem label="Python" value="python">
-
-**程序清单**
+程序清单
 
 Python 示例程序中采用了多进程的架构，并使用了跨进程的消息队列。
 
@@ -274,9 +214,6 @@ Python 示例程序中采用了多进程的架构，并使用了跨进程的消�
 | run_write_task 函数      | 写进程主要逻辑。每次从队列中取出尽量多的数据，并批量写入             |
 | SQLWriter 类             | SQL 写入和自动建表                                                   |
 | StmtWriter 类            | 实现参数绑定方式批量写入（暂未完成）                                 |
-
-<details>
-<summary>main 函数</summary>
 
 main 函数负责创建消息队列和启动子进程，子进程有 3 类：
 
@@ -292,75 +229,18 @@ main 函数可以接收 5 个启动参数，依次是：
 4. 队列大小（单位字节），默认为 1,000,000
 5. 每批最多写入记录数量， 默认为 3,000
 
-```python
-{{#include docs/examples/python/fast_write_example.py:main}}
-```
-
-</details>
-
-<details>
-<summary>run_monitor_process</summary>
-
 监控进程负责初始化数据库，并监控当前的写入速度。
 
-```python
-{{#include docs/examples/python/fast_write_example.py:monitor}}
-```
+run_read_task 函数: 读进程，负责从其它数据系统读数据，并分发数据到为之分配的队列。
 
-</details>
+MockDataSource: 模拟数据源的实现，我们假设数据源生成的每一条数据都带有目标表名信息。实际中你可能需要一定的规则确定目标表名。
 
-<details>
-
-<summary>run_read_task 函数</summary>
-
-读进程，负责从其它数据系统读数据，并分发数据到为之分配的队列。
-
-```python
-{{#include docs/examples/python/fast_write_example.py:read}}
-```
-
-</details>
-
-<details>
-
-<summary>MockDataSource</summary>
-
-以下是模拟数据源的实现，我们假设数据源生成的每一条数据都带有目标表名信息。实际中你可能需要一定的规则确定目标表名。
-
-```python
-{{#include docs/examples/python/mockdatasource.py}}
-```
-
-</details>
-
-<details>
-<summary>run_write_task 函数</summary>
-
-写进程每次从队列中取出尽量多的数据，并批量写入。
-
-```python
-{{#include docs/examples/python/fast_write_example.py:write}}
-```
-
-</details>
-
-<details>
+run_write_task 函数: 写进程每次从队列中取出尽量多的数据，并批量写入。
 
 SQLWriter 类封装了拼 SQL 和写数据的逻辑。所有的表都没有提前创建，而是在发生表不存在错误的时候，再以超级表为模板批量建表，然后重新执行 INSERT 语句。对于其它错误会记录当时执行的 SQL， 以便排查错误和故障恢复。这个类也对 SQL 是否超过最大长度限制做了检查，根据 TDengine 3.0 的限制由输入参数 maxSQLLength 传入了支持的最大 SQL 长度，即 1,048,576 。
 
-<summary>SQLWriter</summary>
-
-```python
-{{#include docs/examples/python/sql_writer.py}}
-```
-
-</details>
-
 **执行步骤**
-
-<details>
-
-<summary>执行 Python 示例程序</summary>
+执行 Python 示例程序
 
 1. 前提条件
 
@@ -420,13 +300,6 @@ SQLWriter 类封装了拼 SQL 和写数据的逻辑。所有的表都没有提�
    2022-07-14 19:16:19,995 [DataBaseMonitor] - count=179976310 speed=1237300.0
    ```
 
-</details>
-
-:::note
+注意：
 使用 Python 连接器多进程连接 TDengine 的时候，有一个限制：不能在父进程中建立连接，所有连接只能在子进程中创建。
 如果在父进程中创建连接，子进程再创建连接就会一直阻塞。这是个已知问题。
-
-:::
-
-</TabItem>
-</Tabs>
