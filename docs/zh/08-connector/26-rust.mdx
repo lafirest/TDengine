@@ -4,15 +4,8 @@ sidebar_label: Rust
 title: TDengine Rust Connector
 ---
 
-import Tabs from '@theme/Tabs';
-import TabItem from '@theme/TabItem';
+## Rust 连接器
 
-import Preparation from "./_preparation.mdx"
-import RustInsert from "../07-develop/03-insert-data/_rust_sql.mdx"
-import RustBind from "../07-develop/03-insert-data/_rust_stmt.mdx"
-import RustQuery from "../07-develop/04-query-data/_rust.mdx"
-
-[![Crates.io](https://img.shields.io/crates/v/taos)](https://crates.io/crates/taos) ![Crates.io](https://img.shields.io/crates/d/taos) [![docs.rs](https://img.shields.io/docsrs/taos)](https://docs.rs/taos)
 
 `taos` 是 TDengine 的官方 Rust 语言连接器。Rust 开发人员可以通过它开发存取 TDengine 数据库的应用软件。
 
@@ -20,30 +13,29 @@ import RustQuery from "../07-develop/04-query-data/_rust.mdx"
 
 该 Rust 连接器的源码托管在 [GitHub](https://github.com/taosdata/taos-connector-rust)。
 
-## 支持的平台
+### 支持的平台
 
 原生连接支持的平台和 TDengine 客户端驱动支持的平台一致。
 Websocket 连接支持所有能运行 Rust 的平台。
 
-## 版本支持
+### 版本支持
 
 请参考[版本支持列表](../#版本支持)
 
 Rust 连接器仍然在快速开发中，1.0 之前无法保证其向后兼容。建议使用 3.0 版本以上的 TDengine，以避免已知问题。
 
-## 安装
+### 安装
 
-### 安装前准备
+#### 安装前准备
 
 * 安装 Rust 开发工具链
 * 如果使用原生连接，请安装 TDengine 客户端驱动，具体步骤请参考[安装客户端驱动](../#安装客户端驱动)
 
-### 添加 taos 依赖
+#### 添加 taos 依赖
 
 根据选择的连接方式，按照如下说明在 [Rust](https://rust-lang.org) 项目中添加 [taos][taos] 依赖：
 
-<Tabs defaultValue="default">
-<TabItem value="default" label="同时支持">
+1. 同时支持原生连接 和 WebSocket
 
 在 `Cargo.toml` 文件中添加 [taos][taos]：
 
@@ -53,9 +45,7 @@ Rust 连接器仍然在快速开发中，1.0 之前无法保证其向后兼容�
 taos = "*"
 ```
 
-</TabItem>
-
-<TabItem value="rest" label="仅 Websocket">
+2. 仅支持 WebSocket 连接
 
 在 `Cargo.toml` 文件中添加 [taos][taos]，并启用 `ws` 特性。
 
@@ -64,9 +54,7 @@ taos = "*"
 taos = { version = "*", default-features = false, features = ["ws"] }
 ```
 
-</TabItem>
-
-<TabItem value="native" label="仅原生连接">
+3. 仅支持原生连接
 
 在 `Cargo.toml` 文件中添加 [taos][taos]，并启用 `native` 特性：
 
@@ -75,10 +63,7 @@ taos = { version = "*", default-features = false, features = ["ws"] }
 taos = { version = "*", default-features = false, features = ["native"] }
 ```
 
-</TabItem>
-</Tabs>
-
-## 建立连接
+### 建立连接
 
 [TaosBuilder] 通过 DSN 连接描述字符串创建一个连接构造器。
 
@@ -218,25 +203,9 @@ async fn demo(taos: &Taos, db: &str) -> Result<(), Error> {
     Ok(())
 ```
 
-## 使用示例
+### API 参考
 
-### 写入数据
-
-#### SQL 写入
-
-<RustInsert />
-
-#### STMT 写入
-
-<RustBind />
-
-### 查询数据
-
-<RustQuery />
-
-## API 参考
-
-### 连接构造器
+#### 连接构造器
 
 通过 DSN 来构建一个连接器构造器。
 
@@ -250,7 +219,7 @@ let cfg = TaosBuilder::default().build()?;
 let conn: Taos = cfg.build();
 ```
 
-### 连接池
+#### 连接池
 
 在复杂应用中，建议启用连接池。[taos] 的连接池使用 [r2d2] 实现。
 
@@ -280,7 +249,7 @@ let pool = TaosBuilder::from_dsn(dsn)?.with_pool_builder(opts)?;
 let taos = pool.get()?;
 ```
 
-### 连接
+#### 连接
 
 [Taos][struct.Taos] 对象提供了多个数据库操作的 API：
 
@@ -368,7 +337,7 @@ let taos = pool.get()?;
 
 除此之外，该结构也是 [参数绑定](#参数绑定接口) 和 [行协议接口](#行协议接口) 的入口，使用方法请参考具体的 API 说明。
 
-### 参数绑定接口
+#### 参数绑定接口
 
 与 C 接口类似，Rust 提供参数绑定接口。首先，通过 [Taos][struct.Taos] 对象创建一个 SQL 语句的参数绑定对象 [Stmt]：
 
@@ -437,7 +406,7 @@ stmt.execute()?;
 
 一个可运行的示例请见 [GitHub 上的示例](https://github.com/taosdata/taos-connector-rust/blob/main/examples/bind.rs)。
 
-### 订阅
+#### 订阅
 
 TDengine 通过消息队列 [TMQ](../../../taos-sql/tmq/) 启动一个订阅。
 
@@ -447,7 +416,7 @@ TDengine 通过消息队列 [TMQ](../../../taos-sql/tmq/) 启动一个订阅。
 let tmq = TmqBuilder::from_dsn("taos://localhost:6030/?group.id=test")?;
 ```
 
-创建消费者：
+#### 创建消费者：
 
 ```rust
 let mut consumer = tmq.build()?;
@@ -492,7 +461,7 @@ TMQ 消息队列是一个 [futures::Stream](https://docs.rs/futures/latest/futur
 }
 ```
 
-停止订阅：
+#### 停止订阅：
 
 ```rust
 consumer.unsubscribe().await;

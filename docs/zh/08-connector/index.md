@@ -4,6 +4,8 @@ title: 连接器
 description: 详细介绍各种语言的连接器及 REST API
 ---
 
+# 连接器
+
 TDengine 提供了丰富的应用程序开发接口，为了便于用户快速开发自己的应用，TDengine 支持了多种编程语言的连接器，其中官方连接器包括支持 C/C++、Java、Python、Go、Node.js、C# 和 Rust 的连接器。这些连接器支持使用原生接口（taosc）和 REST 接口（部分语言暂不支持）连接 TDengine 集群。社区开发者也贡献了多个非官方连接器，例如 ADO.NET 连接器、Lua 连接器和 PHP 连接器。
 
 ![TDengine Database connector architecture](./connector.webp)
@@ -82,38 +84,6 @@ import VerifyMacOS from "./_verify_macos.mdx";
 
 ## 安装客户端驱动
 
-:::info
-只有在没有安装 TDengine 服务端软件的系统上使用原生接口连接器才需要安装客户端驱动。
+注意： 只有在没有安装 TDengine 服务端软件的系统上使用原生接口连接器才需要安装客户端驱动。
 
-:::
-
-### 安装步骤
-
-<Tabs defaultValue="linux" groupId="os">
-  <TabItem value="linux" label="Linux">
-    <InstallOnLinux />
-  </TabItem>
-  <TabItem value="windows" label="Windows">
-    <InstallOnWindows />
-  </TabItem>
-  <TabItem value="macos" label="MacOS">
-    <InstallOnMacOS />
-  </TabItem>
-</Tabs>
-
-### 安装验证
-
-以上安装和配置完成后，并确认 TDengine 服务已经正常启动运行，此时可以执行 TDengine CLI 工具进行登录。
-
-<Tabs defaultValue="linux" groupId="os">
-  <TabItem value="linux" label="Linux">
-    <VerifyLinux />
-  </TabItem>
-  <TabItem value="windows" label="Windows">
-    <VerifyWindows />
-  </TabItem>
-  <TabItem value="macos" label="MacOS">
-    <VerifyMacOS />
-  </TabItem>
-</Tabs>
-
+具体安装和验证步骤请参考立即开始一章。

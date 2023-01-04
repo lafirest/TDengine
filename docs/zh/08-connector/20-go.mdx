@@ -5,15 +5,7 @@ sidebar_label: Go
 title: TDengine Go Connector
 ---
 
-import Tabs from '@theme/Tabs';
-import TabItem from '@theme/TabItem';
-
-import Preparation from "./_preparation.mdx"
-import GoInsert from "../07-develop/03-insert-data/_go_sql.mdx"
-import GoInfluxLine from "../07-develop/03-insert-data/_go_line.mdx"
-import GoOpenTSDBTelnet from "../07-develop/03-insert-data/_go_opts_telnet.mdx"
-import GoOpenTSDBJson from "../07-develop/03-insert-data/_go_opts_json.mdx"
-import GoQuery from "../07-develop/04-query-data/_go.mdx"
+## Go 连接器
 
 `driver-go` 是 TDengine 的官方 Go 语言连接器，实现了 Go 语言[ database/sql ](https://golang.org/pkg/database/sql/) 包的接口。Go 开发人员可以通过它开发存取 TDengine 集群数据的应用软件。
 
@@ -23,16 +15,14 @@ import GoQuery from "../07-develop/04-query-data/_go.mdx"
 
 `driver-go` 的源码托管在 [GitHub](https://github.com/taosdata/driver-go)。
 
-## 支持的平台
+### 支持的平台
 
 原生连接支持的平台和 TDengine 客户端驱动支持的平台一致。
 REST 连接支持所有能运行 Go 的平台。
 
-## 版本支持
+### 版本支持
 
 请参考[版本支持列表](../#版本支持)
-
-## 支持的功能特性
 
 ### 原生连接
 
@@ -51,9 +41,9 @@ REST 连接支持所有能运行 Go 的平台。
 * 普通查询
 * 连续查询
 
-## 安装步骤
+### 安装步骤
 
-### 安装前准备
+#### 安装前准备
 
 * 安装 Go 开发环境（Go 1.14 及以上，GCC 4.8.5 及以上）
 * 如果使用原生连接器，请安装 TDengine 客户端驱动，具体步骤请参考[安装客户端驱动](../#安装客户端驱动)
@@ -63,11 +53,11 @@ REST 连接支持所有能运行 Go 的平台。
 * ```go env```
 * ```gcc -v```
 
-### 使用 go get 安装
+#### 使用 go get 安装
 
 `go get -u github.com/taosdata/driver-go/v3@latest`
 
-### 使用 go mod 管理
+#### 使用 go mod 管理
 
 1. 使用 `go mod` 命令初始化项目：
 
@@ -97,9 +87,9 @@ REST 连接支持所有能运行 Go 的平台。
   go build
   ```
 
-## 建立连接
+### 建立连接
 
-### 数据源名称（DSN）
+#### 数据源名称（DSN）
 
 数据源名称具有通用格式，例如 [PEAR DB](http://pear.php.net/manual/en/package.database.db.intro-dsn.php)，但没有类型前缀（方括号表示可选）：
 
@@ -112,9 +102,8 @@ REST 连接支持所有能运行 Go 的平台。
 ```text
 username:password@protocol(address)/dbname?param=value
 ```
-### 使用连接器进行连接
+####  原生连接
 
-<Tabs defaultValue="rest">
 <TabItem value="native" label="原生连接">
 
 _taosSql_ 通过 cgo 实现了 Go 的 `database/sql/driver` 接口。只需要引入驱动就可以使用 [`database/sql`](https://golang.org/pkg/database/sql/) 的接口。
@@ -145,8 +134,7 @@ func main() {
 }
 ```
 
-</TabItem>
-<TabItem value="rest" label="REST 连接">
+#### REST 连接
 
 _taosRestful_ 通过 `http client` 实现了 Go 的 `database/sql/driver` 接口。只需要引入驱动就可以使用[`database/sql`](https://golang.org/pkg/database/sql/)的接口。
 
@@ -176,8 +164,6 @@ func main() {
     }
 }
 ```
-</TabItem>
-<TabItem value="WebSocket" label="WebSocket 连接">
 
 _taosWS_ 通过 `WebSocket` 实现了 Go 的 `database/sql/driver` 接口。只需要引入驱动（driver-go 最低版本 3.0.2）就可以使用[`database/sql`](https://golang.org/pkg/database/sql/)的接口。
 
@@ -210,36 +196,12 @@ func main() {
 </TabItem>
 </Tabs>
 
-## 使用示例
-
-### 写入数据
-
-#### SQL 写入
-
-<GoInsert />
-
-#### InfluxDB 行协议写入
-
-<GoInfluxLine />
-
-#### OpenTSDB Telnet 行协议写入
-
-<GoOpenTSDBTelnet />
-
-#### OpenTSDB JSON 行协议写入
-
-<GoOpenTSDBJson />
-
-### 查询数据
-
-<GoQuery />
-
-### 更多示例程序
+### 使用示例
 
 * [示例程序](https://github.com/taosdata/driver-go/tree/3.0/examples)
 * [视频教程](https://www.taosdata.com/blog/2020/11/11/1951.html)。
 
-## 使用限制
+### 使用限制
 
 由于 REST 接口无状态所以 `use db` 语法不会生效，需要将 db 名称放到 SQL 语句中，如：`create table if not exists tb1 (ts timestamp, a int)`改为`create table if not exists test.tb1 (ts timestamp, a int)`否则将报错`[0x217] Database not specified or available`。
 
@@ -295,7 +257,7 @@ func main() {
 }
 ```
 
-## 常见问题
+### 常见问题
 
 1. database/sql 中 stmt（参数绑定）相关接口崩溃
 
@@ -321,17 +283,17 @@ func main() {
 
   设置 Go 代理 `go env -w GOPROXY=https://goproxy.cn,direct`。
 
-## 常用 API
+### 常用 API
 
-### database/sql API
+#### database/sql API
 
 * `sql.Open(DRIVER_NAME string, dataSourceName string) *DB`
 
   该 API 用来打开 DB，返回一个类型为 \*DB 的对象。
 
-:::info
+提示：
 该 API 成功创建的时候，并没有做权限等检查，只有在真正执行 Query 或者 Exec 的时候才能真正的去创建连接，并同时检查 user/password/host/port 是不是合法。
-:::
+
 
 * `func (db *DB) Exec(query string, args ...interface{}) (Result, error)`
 
@@ -465,7 +427,7 @@ func main() {
 
 完整订阅示例参见 [GitHub 示例文件](https://github.com/taosdata/driver-go/blob/3.0/examples/tmqoverws/main.go)
 
-### 通过 WebSocket 进行参数绑定
+#### 通过 WebSocket 进行参数绑定
 
 * `func NewConnector(config *Config) (*Connector, error)`
 
@@ -513,6 +475,6 @@ func main() {
 
 完整参数绑定示例参见 [GitHub 示例文件](https://github.com/taosdata/driver-go/blob/3.0/examples/stmtoverws/main.go)
 
-## API 参考
+### API 参考
 
 全部 API 见 [driver-go 文档](https://pkg.go.dev/github.com/taosdata/driver-go/v3)

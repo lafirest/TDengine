@@ -3,6 +3,8 @@ sidebar_label: PHP
 title: PHP Connector
 ---
 
+## PHP 连接器
+
 `php-tdengine` 是由社区贡献的 PHP 连接器扩展，还特别支持了 Swoole 协程化。
 
 PHP 连接器依赖 TDengine 客户端驱动。
@@ -21,7 +23,7 @@ TDengine 客户端驱动的动态库位于：
 - Windows: `C:\TDengine\taos.dll`
 - macOS：`/usr/local/lib/libtaos.dylib`
 
-## 支持的平台
+### 支持的平台
 
 * Windows、Linux、MacOS
 
@@ -31,17 +33,17 @@ TDengine 客户端驱动的动态库位于：
 
 * Swoole >= 4.8 (可选)
 
-## 支持的版本
+### 支持的版本
 
 TDengine 客户端驱动的版本号与 TDengine 服务端的版本号是一一对应的强对应关系，建议使用与 TDengine 服务端完全相同的客户端驱动。虽然低版本的客户端驱动在前三段版本号一致（即仅第四段版本号不同）的情况下也能够与高版本的服务端相兼容，但这并非推荐用法。强烈不建议使用高版本的客户端驱动访问低版本的服务端。
 
-## 安装步骤
+### 安装步骤
 
-### 安装 TDengine 客户端驱动
+#### 安装 TDengine 客户端驱动
 
 TDengine 客户端驱动的安装请参考 [安装指南](../#安装步骤)
 
-### 编译安装 php-tdengine
+#### 编译安装 php-tdengine
 
 **下载代码并解压：**
 
@@ -88,49 +90,29 @@ phpize && ./configure --enable-swoole && make -j && make install
 
 ### 建立连接
 
-<details>
-<summary>建立连接</summary>
-
 ```c
 {{#include docs/examples/php/connect.php}}
 ```
 
-</details>
-
-### 插入数据
-
-<details>
-<summary>插入数据</summary>
+#### 插入数据
 
 ```c
 {{#include docs/examples/php/insert.php}}
 ```
 
-</details>
-
-### 同步查询
-
-<details>
-<summary>同步查询</summary>
+#### 同步查询
 
 ```c
 {{#include docs/examples/php/query.php}}
 ```
 
-</details>
-
-### 参数绑定
-
-<details>
-<summary>参数绑定</summary>
+#### 参数绑定
 
 ```c
 {{#include docs/examples/php/insert_stmt.php}}
 ```
 
-</details>
-
-## 常量
+### 常量
 
 | 常量 | 说明 |
 | ------------ | ------------ 

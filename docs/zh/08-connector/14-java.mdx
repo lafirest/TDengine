@@ -5,8 +5,7 @@ title: TDengine Java Connector
 description: TDengine Java 连接器基于标准 JDBC API 实现, 并提供原生连接与 REST连接两种连接器。
 ---
 
-import Tabs from '@theme/Tabs';
-import TabItem from '@theme/TabItem';
+## Java 连接器
 
 `taos-jdbcdriver` 是 TDengine 的官方 Java 语言连接器，Java 开发人员可以通过它开发存取 TDengine 数据库的应用软件。`taos-jdbcdriver` 实现了 JDBC driver 标准的接口，并提供两种形式的连接器。一种是通过 TDengine 客户端驱动程序（taosc）原生连接 TDengine 实例，支持数据写入、查询、订阅、schemaless 接口和参数绑定接口等功能，一种是通过 taosAdapter 提供的 REST 接口连接 TDengine 实例。REST 连接实现的功能集合和原生连接有少量不同。
 
@@ -19,24 +18,23 @@ import TabItem from '@theme/TabItem';
 
 使用 REST 连接，不依赖 TDengine 客户端驱动，可以跨平台，更加方便灵活，但性能比原生连接器低约 30%。
 
-:::info
+提示：
 TDengine 的 JDBC 驱动实现尽可能与关系型数据库驱动保持一致，但 TDengine 与关系对象型数据库的使用场景和技术特征存在差异，所以`taos-jdbcdriver` 与传统的 JDBC driver 也存在一定差异。在使用时需要注意以下几点：
 
 - TDengine 目前不支持针对单条数据记录的删除操作。
 - 目前不支持事务操作。
 
-:::
 
-## 支持的平台
+### 支持的平台
 
 原生连接支持的平台和 TDengine 客户端驱动支持的平台一致。
 REST 连接支持所有能运行 Java 的平台。
 
-## 版本支持
+### 版本支持
 
 请参考[版本支持列表](../#版本支持)
 
-## TDengine DataType 和 Java DataType
+### TDengine DataType 和 Java DataType
 
 TDengine 目前支持时间戳、数字、字符、布尔类型，与 Java 对应类型转换如下：
 
@@ -56,19 +54,18 @@ TDengine 目前支持时间戳、数字、字符、布尔类型，与 Java 对�
 
 **注意**：JSON 类型仅在 tag 中支持。
 
-## 安装步骤
+### 安装步骤
 
-### 安装前准备
+#### 安装前准备
 
 使用 Java Connector 连接数据库前，需要具备以下条件：
 
 - 已安装 Java 1.8 或以上版本运行时环境和 Maven 3.6 或以上版本
 - 已安装 TDengine 客户端驱动（使用原生连接必须安装，使用 REST 连接无需安装），具体步骤请参考[安装客户端驱动](../#安装客户端驱动)
 
-### 安装连接器
+#### 安装连接器
 
-<Tabs defaultValue="maven">
-<TabItem value="maven" label="使用 Maven 安装">
+1. 使用 maven 安装
 
 目前 taos-jdbcdriver 已经发布到 [Sonatype Repository](https://search.maven.org/artifact/com.taosdata.jdbc/taos-jdbcdriver) 仓库，且各大仓库都已同步。
 
@@ -86,8 +83,7 @@ Maven 项目中，在 pom.xml 中添加以下依赖：
 </dependency>
 ```
 
-</TabItem>
-<TabItem value="source" label="使用源码编译安装">
+2. 使用源码编译安装
 
 可以通过下载 TDengine 的源码，自己编译最新版本的 Java connector
 
@@ -99,18 +95,15 @@ mvn clean install -Dmaven.test.skip=true
 
 编译后，在 target 目录下会产生 taos-jdbcdriver-3.0.*-dist.jar 的 jar 包，并自动将编译的 jar 文件放在本地的 Maven 仓库中。
 
-</TabItem>
-</Tabs>
 
-## 建立连接
+### 建立连接
 
 TDengine 的 JDBC URL 规范格式为：
 `jdbc:[TAOS|TAOS-RS]://[host_name]:[port]/[database_name]?[user={user}|&password={password}|&charset={charset}|&cfgdir={config_dir}|&locale={locale}|&timezone={timezone}]`
 
 对于建立连接，原生连接与 REST 连接有细微不同。
 
-<Tabs defaultValue="rest">
-<TabItem value="native" label="原生连接">
+#### 原生连接
 
 ```java
 Class.forName("com.taosdata.jdbc.TSDBDriver");
@@ -177,8 +170,7 @@ TDengine 中，只要保证 firstEp 和 secondEp 中一个节点有效，就可�
 
 > **注意**：这里的配置文件指的是调用 JDBC Connector 的应用程序所在机器上的配置文件，Linux OS 上默认值 /etc/taos/taos.cfg ，Windows OS 上默认值 C://TDengine/cfg/taos.cfg。
 
-</TabItem>
-<TabItem value="rest" label="REST 连接">
+#### REST  
 
 ```java
 Class.forName("com.taosdata.jdbc.rs.RestfulDriver");
@@ -206,10 +198,8 @@ url 中的配置参数如下：
 - messageWaitTimeout: 消息超时时间, 单位 ms， 默认值为 3000。 仅在 batchfetch 设置为 true 时生效。
 - useSSL: 连接中是否使用 SSL。
 
-**注意**：部分配置项（比如：locale、timezone）在 REST 连接中不生效。
-
-:::note
-
+**注意**：
+- 部分配置项（比如：locale、timezone）在 REST 连接中不生效。
 - 与原生连接方式不同，REST 接口是无状态的。在使用 JDBC REST 连接时，需要在 SQL 中指定表、超级表的数据库名称。例如：
 
 ```sql
@@ -218,12 +208,8 @@ INSERT INTO test.t1 USING test.weather (ts, temperature) TAGS('California.SanFra
 
 - 如果在 url 中指定了 dbname，那么，JDBC REST 连接会默认使用/rest/sql/dbname 作为 restful 请求的 url，在 SQL 中不需要指定 dbname。例如：url 为 jdbc:TAOS-RS://127.0.0.1:6041/test，那么，可以执行 sql：insert into t1 using weather(ts, temperature) tags('California.SanFrancisco') values(now, 24.6);
 
-:::
 
-</TabItem>
-</Tabs>
-
-### 指定 URL 和 Properties 获取连接
+#### 指定 URL 和 Properties 获取连接
 
 除了通过指定的 URL 获取连接，还可以使用 Properties 指定建立连接时的参数。
 
@@ -274,7 +260,7 @@ properties 中的配置参数如下：
 - TSDBDriver.PROPERTY_KEY_USE_SSL: 连接中是否使用 SSL。仅在 REST 连接时生效。
 此外对 JDBC 原生连接，通过指定 URL 和 Properties 还可以指定其他参数，比如日志级别、SQL 长度等。更多详细配置请参考[客户端配置](/reference/config/#仅客户端适用)。
 
-### 配置参数的优先级
+#### 配置参数的优先级
 
 通过前面三种方式获取连接，如果配置参数在 url、Properties、客户端配置文件中有重复，则参数的`优先级由高到低`分别如下：
 
@@ -284,9 +270,9 @@ properties 中的配置参数如下：
 
 例如：在 url 中指定了 password 为 taosdata，在 Properties 中指定了 password 为 taosdemo，那么，JDBC 会使用 url 中的 password 建立连接。
 
-## 使用示例
+### 使用示例
 
-### 创建数据库和表
+#### 创建数据库和表
 
 ```java
 Statement stmt = conn.createStatement();
@@ -303,7 +289,7 @@ stmt.executeUpdate("create table if not exists tb (ts timestamp, temperature int
 
 > **注意**：如果不使用 `use db` 指定数据库，则后续对表的操作都需要增加数据库名称作为前缀，如 db.tb。
 
-### 插入数据
+#### 插入数据
 
 ```java
 // insert data
@@ -315,7 +301,7 @@ System.out.println("insert " + affectedRows + " rows.");
 > now 为系统内部函数，默认为客户端所在计算机当前时间。
 > `now + 1s` 代表客户端当前时间往后加 1 秒，数字后面代表时间单位：a(毫秒)，s(秒)，m(分)，h(小时)，d(天)，w(周)，n(月)，y(年)。
 
-### 查询数据
+#### 查询数据
 
 ```java
 // query data
@@ -336,7 +322,7 @@ while(resultSet.next()){
 
 > 查询和操作关系型数据库一致，使用下标获取返回字段内容时从 1 开始，建议使用字段名称获取。
 
-### 处理异常
+#### 处理异常
 
 在报错后，通过 SQLException 可以获取到错误的信息和错误码：
 
@@ -360,7 +346,7 @@ JDBC 连接器可能报错的错误码包括 3 种：JDBC driver 本身的报错
 - [TDengine Java Connector](https://github.com/taosdata/taos-connector-jdbc/blob/main/src/main/java/com/taosdata/jdbc/TSDBErrorNumbers.java)
 <!-- - [TDengine_ERROR_CODE](../error-code) -->
 
-### 通过参数绑定写入数据
+#### 通过参数绑定写入数据
 
 TDengine 的 JDBC 原生连接实现大幅改进了参数绑定方式对数据写入（INSERT）场景的支持。采用这种方式写入数据时，能避免 SQL 语法解析的资源消耗，从而在很多情况下显著提升写入性能。
 
@@ -628,7 +614,7 @@ public void setString(int columnIndex, ArrayList<String> list, int size) throws 
 public void setNString(int columnIndex, ArrayList<String> list, int size) throws SQLException
 ```
 
-### 无模式写入
+#### 无模式写入
 
 TDengine 支持无模式写入功能。无模式写入兼容 InfluxDB 的 行协议（Line Protocol）、OpenTSDB 的 telnet 行协议和 OpenTSDB 的 JSON 格式协议。详情请参见[无模式写入](../../reference/schemaless/)。
 
@@ -666,7 +652,7 @@ public class SchemalessInsertTest {
 }
 ```
 
-### 数据订阅
+#### 数据订阅
 
 TDengine Java 连接器支持订阅功能，应用 API 如下：
 
@@ -877,7 +863,7 @@ public static void main(String[] args) throws Exception {
 
 请参考：[JDBC example](https://github.com/taosdata/TDengine/tree/3.0/examples/JDBC)
 
-## 最近更新记录
+### 最近更新记录
 
 | taos-jdbcdriver 版本 |            主要变化            |
 | :------------------: | :----------------------------: |
@@ -925,6 +911,6 @@ public static void main(String[] args) throws Exception {
 
 其它问题请参考 [FAQ](../../../train-faq/faq)
 
-## API 参考
+### API 参考
 
 [taos-jdbcdriver doc](https://docs.taosdata.com/api/taos-jdbcdriver)
