@@ -4,13 +4,15 @@ title: Telegraf 写入
 description: 使用 Telegraf 向 TDengine 写入数据
 ---
 
+## Telegraf
+
 import Telegraf from "../14-reference/_telegraf.mdx"
 
 Telegraf 是一款十分流行的指标采集开源软件。在数据采集和平台监控系统中，Telegraf 可以采集多种组件的运行信息，而不需要自己手写脚本定时采集，降低数据获取的难度。
 
 只需要将 Telegraf 的输出配置增加指向 taosAdapter 对应的 url 并修改若干配置项即可将 Telegraf 的数据写入到 TDengine 中。将 Telegraf 的数据存在到 TDengine 中可以充分利用 TDengine 对时序数据的高效存储查询性能和集群处理能力。
 
-## 前置条件
+### 前置条件
 
 要将 Telegraf 数据写入 TDengine 需要以下几方面的准备工作。
 - TDengine 集群已经部署并正常运行
@@ -18,10 +20,10 @@ Telegraf 是一款十分流行的指标采集开源软件。在数据采集和�
 - Telegraf 已经安装。安装 Telegraf 请参考[官方文档](https://docs.influxdata.com/telegraf/v1.22/install/)
 - Telegraf 默认采集系统运行状态数据。通过使能[输入插件](https://docs.influxdata.com/telegraf/v1.22/plugins/)方式可以输出[其他格式](https://docs.influxdata.com/telegraf/v1.24/data_formats/input/)的数据到 Telegraf 再写入到 TDengine中。
 
-## 配置步骤
+### 配置步骤
 <Telegraf />
 
-## 验证方法
+### 验证方法
 
 重启 Telegraf 服务：
 

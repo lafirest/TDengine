@@ -4,12 +4,11 @@ title: Grafana
 description: 使用 Grafana 与 TDengine 的详细说明
 ---
 
-import Tabs from "@theme/Tabs";
-import TabItem from "@theme/TabItem";
+## Grafana
 
 TDengine 能够与开源数据可视化系统 [Grafana](https://www.grafana.com/) 快速集成搭建数据监测报警系统，整个过程无需任何代码开发，TDengine 中数据表的内容可以在仪表盘(DashBoard)上进行可视化展现。关于 TDengine 插件的使用您可以在[GitHub](https://github.com/taosdata/grafanaplugin/blob/master/README.md)中了解更多。
 
-## 前置条件
+### 前置条件
 
 要让 Grafana 能正常添加 TDengine 数据源，需要以下几方面的准备工作。
 
@@ -21,16 +20,11 @@ TDengine 能够与开源数据可视化系统 [Grafana](https://www.grafana.com/
 - TDengine 集群 REST API 地址，如：`http://tdengine.local:6041`。
 - TDengine 集群认证信息，可使用用户名及密码。
 
-## 安装 Grafana
+### 安装和配置Grafana
 
 目前 TDengine 支持 Grafana 7.5 以上的版本。用户可以根据当前的操作系统，到 Grafana 官网下载安装包，并执行安装。下载地址如下：<https://grafana.com/grafana/download>。
 
-## 配置 Grafana
-
-### 安装 Grafana Plugin 并配置数据源
-
-<Tabs defaultValue="script">
-<TabItem value="gui" label="图形化界面安装">
+#### 图形化界面安装
 
 使用 Grafana 最新版本（8.5+），您可以在 Grafana 中[浏览和管理插件](https://grafana.com/docs/grafana/next/administration/plugin-management/#plugin-catalog)（对于 7.x 版本，请使用 **安装脚本** 或 **手动安装并配置** 方式）。在 Grafana 管理界面中的 **Configurations > Plugins** 页面直接搜索并按照提示安装 TDengine。
 
@@ -63,8 +57,7 @@ bash -c "$(curl -fsSL \
 
 保存该脚本并执行 `./install.sh --help` 可查看详细帮助文档。
 
-</TabItem>
-<TabItem value="manual" label="手动安装">
+#### 手动安装
 
 使用 [`grafana-cli` 命令行工具](https://grafana.com/docs/grafana/latest/administration/cli/) 进行插件[安装](https://grafana.com/grafana/plugins/tdengine-datasource/?tab=installation)。
 
@@ -116,8 +109,7 @@ GF_INSTALL_PLUGINS=tdengine-datasource
 
 ![TDengine Database Grafana plugin add data source](./add_datasource4.webp)
 
-</TabItem>
-<TabItem value="container" label="K8s/Docker 容器">
+#### K8s/Docker 容器
 
 参考 [Grafana 容器化安装说明](https://grafana.com/docs/grafana/next/setup-grafana/installation/docker/#install-plugins-in-the-docker-container)。使用如下命令启动一个容器，并自动安装 TDengine 插件：
 
@@ -182,9 +174,6 @@ docker run -d \
 3. 使用 docker-compose 命令启动 TDengine + Grafana ：`docker-compose up -d`。
 
 打开 Grafana <http://localhost:3000>，现在可以添加 Dashboard 了。
-
-</TabItem>
-</Tabs>
 
 ### 创建 Dashboard
 

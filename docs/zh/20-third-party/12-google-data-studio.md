@@ -4,6 +4,8 @@ title: TDengine Google Data Studio Connector
 description: 使用 Google Data Studio 存取 TDengine 数据的详细指南
 ---
 
+## Google Data Studio
+
 Google Data Studio 是一个强大的报表可视化工具，它提供了丰富的数据图表和数据连接，可以非常方便地按照既定模板生成报表。因其简便易用和生态丰富而在数据分析领域得到一众数据科学家的青睐。
 
 Data Studio 可以支持多种数据来源，除了诸如 Google Analytics、Google AdWords、Search Console、BigQuery 等 Google 自己的服务之外，用户也可以直接将离线文件上传至 Google Cloud Storage，或是通过连接器来接入其它数据源。
