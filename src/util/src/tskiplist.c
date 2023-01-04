@@ -129,6 +129,22 @@ SSkipListNode *tSkipListPut(SSkipList *pSkipList, void *pData) {
   return pNode;
 }
 
+SSkipListNode *tSkipListPutNoLock(SSkipList *pSkipList, void *pData) {
+  if (pSkipList == NULL || pData == NULL) return NULL;
+
+  SSkipListNode *backward[MAX_SKIP_LIST_LEVEL] = {0};
+  SSkipListNode *pNode = NULL;
+
+  //tSkipListWLock(pSkipList);
+
+  bool hasDup = tSkipListGetPosToPut(pSkipList, backward, pData);
+  pNode = tSkipListPutImpl(pSkipList, pData, backward, false, hasDup);
+
+  //tSkipListUnlock(pSkipList);
+
+  return pNode;
+}
+
 void tSkipListPutBatchByIter(SSkipList *pSkipList, void *iter, iter_next_fn_t iterate) {
   SSkipListNode *backward[MAX_SKIP_LIST_LEVEL] = {0};
   SSkipListNode *forward[MAX_SKIP_LIST_LEVEL] = {0};

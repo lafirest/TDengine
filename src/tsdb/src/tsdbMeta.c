@@ -1096,10 +1096,12 @@ int tsdbCompareJsonMapValue(const void* a, const void* b) {
   return 0;
 }
 
+SSkipListNode *tSkipListPutNoLock(SSkipList *pSkipList, void *pData);
+
 static int tsdbAddTableIntoIndex(STsdbMeta *pMeta, STable *pTable, bool refSuper) {
-  ASSERT(pTable->type == TSDB_CHILD_TABLE && pTable != NULL);
+  //ASSERT(pTable->type == TSDB_CHILD_TABLE && pTable != NULL);
   STable *pSTable = tsdbGetTableByUid(pMeta, TABLE_SUID(pTable));
-  ASSERT(pSTable != NULL);
+  //ASSERT(pSTable != NULL);
 
   pTable->pSuper = pSTable;
   if (refSuper) T_REF_INC(pSTable);
@@ -1158,7 +1160,7 @@ static int tsdbAddTableIntoIndex(STsdbMeta *pMeta, STable *pTable, bool refSuper
       }
     }
   }else{
-    tSkipListPut(pSTable->pIndex, (void *)pTable);
+    tSkipListPutNoLock(pSTable->pIndex, (void *)pTable);
   }
 
   return 0;
