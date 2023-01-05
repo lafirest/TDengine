@@ -6,8 +6,6 @@ description: 使用安装包快速体验 TDengine
 
 ## 使用安装包立即开始
 
-import Tabs from "@theme/Tabs";
-import TabItem from "@theme/TabItem";
 import PkgListV3 from "/components/PkgListV3";
 
 您可以[用 Docker 立即体验](../../get-started/docker/) TDengine。如果您希望对 TDengine 贡献代码或对内部实现感兴趣，请参考我们的 [TDengine GitHub 主页](https://github.com/taosdata/TDengine) 下载源码构建和安装.
@@ -103,8 +101,7 @@ sudo apt-get install tdengine
    <PkgListV3 type={3}/>
 2. 运行可执行程序来安装 TDengine。
 
-</TabItem>
-<TabItem label="macOS 安装" value="macos">
+#### macOS 安装
 
 1. 从列表中下载获得 pkg 安装程序；
    <PkgListV3 type={7}/>

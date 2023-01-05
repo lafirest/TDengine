@@ -104,8 +104,6 @@ username:password@protocol(address)/dbname?param=value
 ```
 ####  原生连接
 
-<TabItem value="native" label="原生连接">
-
 _taosSql_ 通过 cgo 实现了 Go 的 `database/sql/driver` 接口。只需要引入驱动就可以使用 [`database/sql`](https://golang.org/pkg/database/sql/) 的接口。
 
 使用 `taosSql` 作为 `driverName` 并且使用一个正确的 [DSN](#DSN) 作为 `dataSourceName`，DSN 支持的参数：
@@ -193,8 +191,6 @@ func main() {
     }
 }
 ```
-</TabItem>
-</Tabs>
 
 ### 使用示例
 

@@ -5,8 +5,6 @@ description: 使用连接器建立与 TDengine 的连接，以及连接器的安
 
 ## 建立连接
 
-import Tabs from "@theme/Tabs";
-import TabItem from "@theme/TabItem";
 import ConnJava from "./_connect_java.mdx";
 import ConnGo from "./_connect_go.mdx";
 import ConnRust from "./_connect_rust.mdx";
@@ -164,12 +162,6 @@ dotnet add package TDengine.Connector
 ```R
 install.packages("RJDBC")
 ```
-
-</TabItem>
-<TabItem label="C" value="c">
-
-如果已经安装了 TDengine 服务端软件或 TDengine 客户端驱动 taosc， 那么已经安装了 C 连接器，无需额外操作。
-<br/>
 
 8. PHP 连接器
 
