@@ -1,5 +1,4 @@
 ---
-title: TDengine 文档
 sidebar_label: 文档首页
 slug: /
 ---

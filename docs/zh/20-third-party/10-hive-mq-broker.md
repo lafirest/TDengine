@@ -1,6 +1,5 @@
 ---
 sidebar_label: HiveMQ Broker
-title: HiveMQ Broker 写入
 description: 使用 HivMQ Broker 写入 TDengine
 ---
 

@@ -1,6 +1,5 @@
 ---
 sidebar_label: Google Data Studio
-title: TDengine Google Data Studio Connector
 description: 使用 Google Data Studio 存取 TDengine 数据的详细指南
 ---
 

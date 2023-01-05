@@ -1,5 +1,4 @@
 ---
-title: TDengine 命令行(CLI)
 sidebar_label: TDengine CLI
 description: TDengine CLI 的使用说明和技巧
 ---

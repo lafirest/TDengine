@@ -1,6 +1,5 @@
 ---
 sidebar_label: 数据类型
-title: 数据类型
 description: 'TDengine 支持的数据类型: 时间戳、浮点型、JSON 类型等'
 ---
 

@@ -1,6 +1,5 @@
 ---
 sidebar_label: 元数据
-title: 元数据
 description: Information_Schema 数据库中存储了系统中所有的元数据信息
 ---
 

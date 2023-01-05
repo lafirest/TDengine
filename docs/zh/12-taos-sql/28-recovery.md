@@ -1,6 +1,5 @@
 ---
 sidebar_label: 异常恢复
-title: 异常恢复
 description: 如何终止出现问题的连接、查询和事务以使系统恢复正常
 ---
 

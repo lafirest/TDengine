@@ -1,5 +1,4 @@
 ---
-title: Schemaless 写入
 description: 'Schemaless 写入方式，可以免于预先创建超级表/子表的步骤，随着数据写入接口能够自动创建与数据对应的存储结构'
 ---
 

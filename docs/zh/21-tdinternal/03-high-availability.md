@@ -1,5 +1,4 @@
 ---
-title: 高可用
 description: TDengine 的高可用设计 
 ---
 

@@ -1,6 +1,5 @@
 ---
 sidebar_label: 部署集群
-title: 部署集群
 description: 部署 TDengine 集群的多种方式
 ---
 

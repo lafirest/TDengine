@@ -1,11 +1,11 @@
 import Tabs from "@theme/Tabs";
 import TabItem from "@theme/TabItem";
 
-### 高效写入
+## 高效写入
 
 本节介绍如何高效地向 TDengine 写入数据。
 
-#### 高效写入原理 {#principle}
+### 高效写入原理 {#principle}
 
 **客户端程序的角度 {#application-view}**
 
@@ -42,7 +42,7 @@ import TabItem from "@theme/TabItem";
 
 更多调优参数，请参考 [数据库管理](../../../taos-sql/database) 和 [服务端配置](../../../reference/config)。
 
-#### 高效写入示例 {#sample-code}
+### 高效写入示例 {#sample-code}
 
 **场景设计 {#scenario}**
 

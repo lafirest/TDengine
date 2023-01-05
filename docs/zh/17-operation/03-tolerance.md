@@ -1,5 +1,4 @@
 ---
-title: 容错和灾备
 sidebar_label: 容错和灾备
 description: TDengine 的容错和灾备功能
 ---

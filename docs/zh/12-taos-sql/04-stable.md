@@ -1,6 +1,5 @@
 ---
 sidebar_label: 超级表
-title: 超级表
 description: 对超级表的各种管理操作
 ---
 

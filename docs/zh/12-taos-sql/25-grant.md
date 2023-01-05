@@ -1,6 +1,5 @@
 ---
 sidebar_label: 权限管理
-title: 权限管理
 description: 企业版中才具有的权限管理功能
 ---
 

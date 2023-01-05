@@ -1,6 +1,5 @@
 ---
 sidebar_label: taosKeeper
-title: taosKeeper
 description: TDengine 3.0 版本监控指标的导出工具
 ---
 

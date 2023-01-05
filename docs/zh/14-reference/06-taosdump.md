@@ -1,5 +1,4 @@
 ---
-title: taosdump
 description: "taosdump 是一个支持从运行中的 TDengine 集群备份数据并将备份的数据恢复到相同或另一个运行中的 TDengine 集群中的工具应用程序"
 ---
 

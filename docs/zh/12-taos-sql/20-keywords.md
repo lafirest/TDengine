@@ -1,6 +1,5 @@
 ---
 sidebar_label: 保留关键字
-title: 保留关键字
 description: TDengine 保留关键字的详细列表
 ---
 

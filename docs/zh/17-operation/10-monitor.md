@@ -1,5 +1,4 @@
 ---
-title: 系统监控
 description: 监控 TDengine 的运行状态
 ---
 

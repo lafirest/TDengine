@@ -1,5 +1,4 @@
 ---
-title: 文件目录结构
 description: "TDengine 安装目录说明"
 ---
 

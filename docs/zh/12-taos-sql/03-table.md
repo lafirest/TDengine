@@ -1,5 +1,4 @@
 ---
-title: 表
 sidebar_label: 表
 description: 对表的各种管理操作
 ---

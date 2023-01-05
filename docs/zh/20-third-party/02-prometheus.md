@@ -1,6 +1,5 @@
 ---
 sidebar_label: Prometheus
-title: Prometheus 
 description: 使用 Prometheus 访问 TDengine
 ---
 

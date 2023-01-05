@@ -1,6 +1,5 @@
 ---
 sidebar_label: EMQX Broker
-title: EMQX Broker 写入
 description: 使用 EMQX Broker 写入 TDengine
 ---
 

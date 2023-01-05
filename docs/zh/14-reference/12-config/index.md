@@ -1,5 +1,4 @@
 ---
-title: 配置参数
 description: "TDengine 客户端和服务配置列表"
 ---
 

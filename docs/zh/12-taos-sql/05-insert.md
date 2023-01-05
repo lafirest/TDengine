@@ -1,6 +1,5 @@
 ---
 sidebar_label: 数据写入
-title: 数据写入
 description: 写入数据的详细语法 
 ---
 

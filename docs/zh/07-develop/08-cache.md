@@ -1,6 +1,5 @@
 ---
 sidebar_label: 缓存
-title: 缓存
 description: "TDengine 内部的缓存设计"
 ---
 

@@ -1,6 +1,5 @@
 ---
 sidebar_label: JSON 类型
-title: JSON 类型
 description: 对 JSON 类型如何使用的详细说明
 ---
 

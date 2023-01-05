@@ -1,6 +1,5 @@
 ---
 sidebar_label: 集群管理
-title: 集群管理
 description: 管理集群的 SQL 命令的详细解析
 ---
 

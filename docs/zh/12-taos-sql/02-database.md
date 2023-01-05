@@ -1,6 +1,5 @@
 ---
 sidebar_label: 数据库
-title: 数据库
 description: "创建、删除数据库，查看、修改数据库参数"
 ---
 

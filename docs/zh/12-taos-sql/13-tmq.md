@@ -1,6 +1,5 @@
 ---
 sidebar_label: 数据订阅
-title: 数据订阅
 description: TDengine 消息队列提供的数据订阅功能
 ---
 

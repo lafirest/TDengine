@@ -1,5 +1,4 @@
 ---
-title: 数据导入
 description: 如何导入外部数据到 TDengine
 ---
 

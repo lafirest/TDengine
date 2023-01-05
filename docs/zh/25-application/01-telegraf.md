@@ -1,10 +1,9 @@
 ---
 sidebar_label: TDengine + Telegraf + Grafana
-title: TDengine + Telegraf + Grafana
 description: 使用 TDengine + Telegraf + Grafana 快速搭建 IT 运维展示系统
 ---
 
-## IT 运维展示系统
+## IT 运维展示系统 (TDengine + Telegraf + Grafana)
 
 ### 背景介绍
 

@@ -1,6 +1,5 @@
 ---
 sidebar_label: SHOW 命令
-title: SHOW 命令
 description: SHOW 命令的完整列表
 ---
 

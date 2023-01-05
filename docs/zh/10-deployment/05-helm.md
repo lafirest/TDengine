@@ -1,6 +1,5 @@
 ---
 sidebar_label: Helm
-title: 使用 Helm 部署 TDengine 集群
 description: 使用 Helm 部署 TDengine 集群的详细指南
 ---
 

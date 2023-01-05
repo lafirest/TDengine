@@ -1,5 +1,4 @@
 ---
-title: 数据导出
 description: 如何导出 TDengine 中的数据
 ---
 

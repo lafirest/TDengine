@@ -1,6 +1,5 @@
 ---
 sidebar_label: Telegraf
-title: Telegraf 写入
 description: 使用 Telegraf 向 TDengine 写入数据
 ---
 

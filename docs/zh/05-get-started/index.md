@@ -1,5 +1,4 @@
 ---
-title: 立即开始
 description: '快速设置 TDengine 环境并体验其高效写入和查询'
 ---
 

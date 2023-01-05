@@ -1,5 +1,4 @@
 ---
-title: 用 Docker 部署 TDengine
 description: '本章主要介绍如何在容器中启动 TDengine 服务并访问它'
 ---
 

@@ -1,9 +1,8 @@
 ---
 sidebar_label: OpenTSDB 行协议
-title: OpenTSDB 行协议
 ---
 
-OpenTSDB 行协议写入
+## OpenTSDB 行协议写入
 
 import Tabs from "@theme/Tabs";
 import TabItem from "@theme/TabItem";
@@ -15,7 +14,7 @@ import NodeTelnet from "./_js_opts_telnet.mdx";
 import CsTelnet from "./_cs_opts_telnet.mdx";
 import CTelnet from "./_c_opts_telnet.mdx";
 
-#### 协议介绍
+### 协议介绍
 
 OpenTSDB 行协议同样采用一行字符串来表示一行数据。OpenTSDB 采用的是单列模型，因此一行只能包含一个普通数据列。标签列依然可以有多个。分为四部分，具体格式约定如下：
 
@@ -40,7 +39,7 @@ meters.current 1648432611250 11.3 location=California.LosAngeles groupid=3
 **示例代码**
 示例代码位于：https://github.com/taosdata/TDengine/tree/main/docs/examples
 
-#### SQL 查询示例
+### SQL 查询示例
 
 ```cmd
 taos> USE test;

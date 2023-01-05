@@ -1,5 +1,4 @@
 ---
-title: 建立连接
 description: 使用连接器建立与 TDengine 的连接，以及连接器的安装和连接
 ---
 

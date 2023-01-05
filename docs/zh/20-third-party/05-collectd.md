@@ -1,6 +1,5 @@
 ---
 sidebar_label: collectd
-title: collectd 写入
 description: 使用 collected 向 TDengine 写入数据
 ---
 

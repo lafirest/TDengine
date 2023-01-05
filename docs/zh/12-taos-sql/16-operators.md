@@ -1,6 +1,5 @@
 ---
 sidebar_label: 运算符
-title: 运算符
 description: TDengine 支持的所有运算符
 ---
 
